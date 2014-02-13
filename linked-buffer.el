@@ -1,5 +1,11 @@
-;; -*- lexical-binding: t -*-
-;;
+;; linked-buffer.el --- One buffer as a view of another -*- lexical-binding: t -*-
+
+;; This file is not part of Emacs
+
+;; Author: Phillip Lord <phillip.lord@newcastle.ac.uk>
+;; Maintainer: Phillip Lord <phillip.lord@newcastle.ac.uk>
+;; Version: 0.1
+
 ;; The contents of this file are subject to the GPL License, Version 3.0.
 ;;
 ;; Copyright (C) 2014, Phillip Lord, Newcastle University
@@ -17,47 +23,67 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+;;; Commentary:
+;;
+;; Sometimes, it would be nice to edit a file in two ways at once. For
+;; instance, you might have a source file in a computational language with
+;; richly marked documentation. As Emacs is a modal editor, you can edit one
+;; in a mode for the computational language or for the marked up
+;; documentation.
+;;
+;; One solution to this is to use one of the multiple-mode tools which are
+;; available. The problem with this is that generally need some support from
+;; the modes in question. In addition, they also require tools that work with
+;; the mixed content; for example, Haskells literate mode.
+;;
+;; Linked buffers provide an alternative solution. Two linked buffers, by
+;; default, the two share identical content but are otherwise independent.
+;; Therefore, you can have two buffers open, each showing the content in
+;; different modes; to switch modes, you simply switch buffers. The content,
+;; location of point, and view are shared.
+;;
+;; However, linked-buffers also a bi-directional transformation between the
+;; two. If this is done, then the two can have different but related text. It
+;; is possible to configure the transformation for any two pairs of modes.
+;;
+;; Main entry points are `linked-buffer-split-window-right' and
+;; `linked-buffer-split-window-below' both of which create a linked buffer in
+;; the new window. Programmatically `linked-buffer-create', well, creates a
+;; linked-buffer.
+;;
+;;; Configuration:
+;;
+;; Currently, I have this configured only for clojure-mode and latex-mode.
+;; Comments in Clojure are translated into non-commented latex. At the moment,
+;; the configuration is not stable; I need to try it with a least one other
+;; pair of modes. R and latex should be trivial to add. Org-mode and any of
+;; the languages it supports should work also.
+;;
+;;; Status:
+;;
+;; This is an early release partly because I am interested in comments. The
+;; API is open to change and it make behave badly, crash or eat your children.
+;; Hopefully, it will crash rather than hang Emacs.
+
+(require 'dash)
+(require 'm-buffer)
 
 
-;; A linked buffer is one that is a view of another, with exactly the same
-;; text but that may be in a different major mode, and have different
-;; properties.
-;;
-
-;;
-;; Initial implementation was all fine, but all the changing mode stuff is
-;; really scary. So markII:
-;;
-;; Two buffers which are permanently linked to each other with a transform
-;; function between. The two are identical *except* that linked can be killed
-;; indepentdly.
-;;
-;; Two file-local variables -- linked-buffer-mode, linked-buffer-file. mode is
-;; the default mode to make a linked buffer in -- linked buffer file is the
-;; default file to use (with normal-mode).
-;;
-
-;; Need to have a data structure which stores transforms for various modes.
-;; Something an alist keyed on pairs from-mode to-mode, valued on
-;; buffer-transform, point-transform. To be fully functional will require two
-;; entries for each pair.
-
-;; Astonishingly, it all appears to be working, at least for latex and
-;; clojure. So, need to pull the block-comment in (or perhaps
-;; linked-buffer-block), generalize for the delimiter and the comment. Then I
-;; can change the comment to ";; " so that we keep a space. And we have it.
-;;
-;; After that, try it with a really really big file.
-
-;; Need to put some hooks in, perhaps!
 
 (defvar linked-buffer-transforms
-  '(((clojure-mode latex-mode)
-     (block-comment-clone-contents-with-comments
-      block-comment-convert-location))
+  '(
+    ((clojure-mode latex-mode)
+     :convert linked-buffer-blk-clone-uncomment
+     :location linked-buffer-blk-convert-location
+     :comment ";;"
+     :comment-block-start "\\end{code}"
+     :comment-block-stop "\\begin{code}")
     ((latex-mode clojure-mode)
-     (block-comment-clone-contents-without-comments
-      block-comment-convert-location))))
+     :convert linked-buffer-blk-clone-comment
+     :location linked-buffer-blk-convert-location
+     :comment ";;"
+     :comment-block-start "\\end{code}"
+     :comment-block-stop "\\begin{code}")))
 
 (defvar linked-buffer-linked-buffer nil
   "The linked-buffer for this buffer")
@@ -96,7 +122,6 @@ file-local variable.")
   (add-hook 'before-change-functions
             'linked-buffer-before-change-function))
 
-
 (defvar linked-buffer-log t)
 (defmacro linked-buffer-log (&rest rest)
   `(when linked-buffer-log
@@ -109,8 +134,6 @@ file-local variable.")
             (get-buffer-create "*linked-buffer-log*")
           (goto-char (point-max))
           (insert msg))))))
-
-
 
 (defvar linked-buffer-emergency nil)
 
@@ -166,16 +189,16 @@ file-local variable.")
   (interactive)
   (set-window-buffer
    (split-window-below)
-   (linked-buffer-make (current-buffer))))
+   (linked-buffer-create (current-buffer))))
 
 (defun linked-buffer-split-window-right ()
   "Create a linked buffer in a new window right"
   (interactive)
   (set-window-buffer
    (split-window-right)
-   (linked-buffer-make (current-buffer))))
+   (linked-buffer-create (current-buffer))))
 
-(defun linked-buffer-make (buffer)
+(defun linked-buffer-create (buffer)
   "Create a linked buffer for BUFFER."
   ;; make sure the world is ready for linked buffers
   (linked-buffer-ensure-hooks)
@@ -198,29 +221,32 @@ file-local variable.")
                   buffer-file-name)
               nil
             sec-file-maybe)))
-    ;; lmake sure that the contents are linked!
-    (linked-buffer-update-contents
-     buffer lb)
     (with-current-buffer lb
       (when sec-mode
         (funcall sec-mode))
       (when sec-file
         (set-visited-file-name sec-file))
-      ;; read-only, knows where it is linked from, and in the support mode.
+      ;; Now we have set up the linked-buffer with mode or file, we can update
+      ;; the contents. Run update here, *before* we set the linked-buffer so
+      ;; that we do not run the linked-buffer-after-change-functions
+      (linked-buffer-update-contents
+       buffer lb)
       (setq linked-buffer-linked-buffer buffer))
     (with-current-buffer buffer
       ;; knows where we point to!
       (setq linked-buffer-linked-buffer lb))
     lb))
 
+;;(defun test () (interactive)(let ((linked-buffer-emergency nil)) (linked-buffer-after-change-function)))
+
 (defun linked-buffer-after-change-function (&rest rest)
   (unless linked-buffer-emergency
     (condition-case err
         (progn
-          (linked-buffer-log
-           "Updating (current:linked:rest): %s,%s,%s"
-           (current-buffer) linked-buffer-linked-buffer rest)
           (linked-buffer-when-linked
+           (linked-buffer-log
+            "Updating after-change (current:linked:rest): %s,%s,%s"
+            (current-buffer) linked-buffer-linked-buffer rest)
            (linked-buffer-update-contents
             (current-buffer) linked-buffer-linked-buffer)))
       (error
@@ -238,11 +264,15 @@ file-local variable.")
    (with-current-buffer from major-mode)
    (with-current-buffer to major-mode)))
 
+(defun linked-buffer-config-for-modes (from-to-tuple)
+  (cdr
+   (assoc from-to-tuple linked-buffer-transforms)))
 
 (defun linked-buffer-content-function-for-modes
   (from-to-tuple)
-  (caadr
-   (assoc from-to-tuple linked-buffer-transforms)))
+  (plist-get
+   (linked-buffer-config-for-modes from-to-tuple)
+   :convert))
 
 (defun linked-buffer-update-contents-function (from to)
   (linked-buffer-content-function-for-modes
@@ -250,37 +280,41 @@ file-local variable.")
 
 (defun linked-buffer-convert-location-for-modes
   (from-to-tuple)
-  (cadadr
-   (assoc from-to-tuple linked-buffer-transforms)))
+  (plist-get
+   (linked-buffer-config-for-modes from-to-tuple)
+   :location))
 
 (defun linked-buffer-convert-location-function (from to)
   (linked-buffer-convert-location-for-modes
    (linked-buffer-mode-tuple from to)))
 
 (defun linked-buffer-update-contents (from to)
-  "Update the buffer using the appropriate transformation function"
+  "Update the contents of buffer TO to reflect the buffer FROM.
+The update is performed based on the :convert value in
+`linked-buffer-transforms' or
+`linked-buffer-default-clone-contents' if that is nil."
   (unwind-protect
       (progn
         (setq inhibit-read-only t)
+        (linked-buffer-log
+         "Update function: %s"
+         (or
+          (linked-buffer-update-contents-function from to)
+          'linked-buffer-default-clone-contents))
         (funcall
          (or
           (linked-buffer-update-contents-function from to)
-          'linked-buffer-clone-contents)
+          'linked-buffer-default-clone-contents)
          from to))
     (setq inhibit-read-only nil)))
 
-(defun linked-buffer-clone-contents (from to)
-  (with-current-buffer to
-    (erase-buffer)
-    (insert
-     (save-restriction
-       (with-current-buffer from
-         (widen)
-         (buffer-substring-no-properties
-          (point-min)
-          (point-max)))))))
-
 (defun linked-buffer-update-point (from to)
+  "Update the location of point in buffer TO to reflect the buffer FROM.
+This also attempts to update any windows so that they show the
+same top-left location. The update is performed based on
+the :location value in `linked-buffer-transforms' or
+`linked-buffer-default-convert-location' if that is nil.
+"
   (let* ((convert-function
           (or (linked-buffer-convert-location-function from to)
               'linked-buffer-default-convert-location ))
@@ -302,20 +336,166 @@ file-local variable.")
            (set-window-start window from-window-start))))
      (get-buffer-window-list to))))
 
+
+;;
+;; Dumb linked buffer
+;;
+(defun linked-buffer-default-clone-contents (from to)
+  "Updates to buffer TO to reflect the contents in FROM.
+This uses a dump algorithm and just copies everything in memory
+from one to the other."
+  (with-current-buffer to
+    (erase-buffer)
+    (insert
+     (save-restriction
+       (with-current-buffer from
+         (widen)
+         (buffer-substring-no-properties
+          (point-min)
+          (point-max)))))))
+
+
 (defun linked-buffer-default-convert-location (location from to)
+  "Converts a point LOCATION in buffer FROM to one in TO.
+In practice, this just returns LOCATION."
   location)
 
-(defun linked-buffer-test ()
-  (interactive)
-  (linked-buffer-when-linked
-   (linked-buffer-update-contents
-    (current-buffer) linked-buffer-linked-buffer)))
+;;
+;; Block comment linked buffer
+;;
+;; Links two buffers which are split into regions "comments" and "code" with
+;; delimiters, or code markers, between them. In one buffer, the comment
+;; regions are shown with a start-of-line comment character, while in the
+;; other this is removed.
+;;
+(defun linked-buffer-blk-comment ()
+  ";; ")
 
-(defun test2 ()
-  (interactive)
-  (message "%s"
-           (linked-buffer-update-contents-function
-            (current-buffer) linked-buffer-linked-buffer)))
+(defun linked-buffer-blk-line-start-comment ()
+  (concat "^" (linked-buffer-blk-comment)))
+
+(defun linked-buffer-blk-comment-start ()
+  "\\end{code}")
+
+(defun linked-buffer-blk-comment-stop ()
+  "\\begin{code}")
+
+(defun linked-buffer-blk-comment-start-regexp ()
+  (format "^\\(%s\\)*%s"
+          (linked-buffer-blk-comment)
+          (regexp-quote (linked-buffer-blk-comment-start))))
+
+(defun linked-buffer-blk-comment-stop-regexp ()
+  (format "^\\(%s\\)*%s"
+           (linked-buffer-blk-comment)
+           (regexp-quote (linked-buffer-blk-comment-stop))))
+
+(defun linked-buffer-blk-uncomment-region (begin end buffer)
+  "Between BEGIN and END in BUFFER, remove all start of line comment characters."
+  (m-buffer-replace-matches
+   (m-buffer-matches-data
+    buffer
+    (linked-buffer-blk-line-start-comment)
+    begin end) ""))
+
+(defun linked-buffer-blk-uncomment-buffer (begin end buffer)
+  "Between BEGIN and END in BUFFER remove uncomment characters in
+delimiter regions."
+  (-map
+   (lambda (pairs)
+     (linked-buffer-blk-uncomment-region
+      (car pairs) (cdr pairs) buffer))
+   (linked-buffer-blk-marker-boundaries begin end buffer)))
+
+(defun linked-buffer-blk-comment-region (begin end buffer)
+  "Between BEGIN and END in BUFFER add comment characters"
+  (m-buffer-replace-matches
+   (m-buffer-matches-data
+    buffer
+    ;; perhaps we should ignore lines which are already commented,
+    "\\(^\\).+"
+    begin end)
+   (linked-buffer-blk-comment) 1))
+
+(defun linked-buffer-blk-comment-buffer (begin end buffer)
+  "Between BEGIN and END in BUFFER comment regions between delimiters."
+  (-map
+   ;; comment each of these regions
+   (lambda (pairs)
+     (linked-buffer-blk-comment-region
+      (car pairs) (cdr pairs) buffer))
+   (linked-buffer-blk-marker-boundaries begin end buffer)))
 
 
-(require 'block-comment)
+(defun linked-buffer-blk-marker-boundaries (begin end buffer)
+  "Find demarcation markers between BEGIN and END in BUFFER.
+Returns a list of start end cons pairs. BEGIN is considered to
+be an implicit start and END an implicit stop."
+  (-zip
+   ;; start comment markers
+   ;; plus the start of the region
+   (cons
+    (set-marker (make-marker) begin buffer)
+    (m-buffer-matches-beginning
+     buffer
+     (linked-buffer-blk-comment-start-regexp)))
+   ;; end comment markers
+   ;; plus the end of the buffer
+   (append
+    (m-buffer-matches-end
+     buffer
+     (linked-buffer-blk-comment-stop-regexp))
+    (list (set-marker (make-marker) end buffer)))))
+
+(defun linked-buffer-blk-clone-uncomment (from to)
+  "Update the contents in buffer TO to match FROM and remove comments."
+  (linked-buffer-log "blk-clone-uncomment (from,to):(%s,%s)" from to)
+  (linked-buffer-default-clone-contents from to)
+  ;; remove the line comments in the to buffer
+  ;; TODO -- this assumes from is current-buffer
+  (linked-buffer-blk-uncomment-buffer (point-min) (point-max) to))
+
+(defun linked-buffer-blk-clone-comment (from to)
+  "Update the contents in buffer TO to match FROM and add comments."
+  (linked-buffer-log "blk-clone-comment (from,to):(%s,%s)" from to)
+  (linked-buffer-default-clone-contents from to)
+  (linked-buffer-blk-comment-buffer (point-min) (point-max) to))
+
+(defun linked-buffer-pabbrev-expansion-length ()
+  "Returns the length of any text that pabbrev has currently added to the buffer."
+  (if (and (boundp 'pabbrev-expansion)
+           pabbrev-expansion)
+      ;; pabbrev sorts the expansion but also adds "[]" either side"
+      (+ 2 (length pabbrev-expansion))
+    0))
+
+(defun linked-buffer-blk-convert-location (location from to)
+  "Converts a LOCATION in buffer FROM into one from TO.
+This uses a simple algorithm; we pick the same line and then
+count from the end, until we get to location, always staying on
+the same line. This works since the buffers are identical except
+for changes to the beginning of the line.
+"
+  (let ((line-plus
+         (with-current-buffer from
+           (list
+            (line-number-at-pos location)
+            (- (line-end-position)
+               ;; pabbrev adds text to the buffer, but doesn't signal a
+               ;; modification (if it does, it causes the linked buffer to
+               ;; show modification when it adds overlays), so it doesn't get
+               ;; copied to the TO buffer. This expansion adds to the
+               ;; line-end-position in the FROM buffer. So, we need to take
+               ;; this length of, or the point will be too far forward in the
+               ;; TO buffer.
+               (linked-buffer-pabbrev-expansion-length)
+               location)))))
+    (with-current-buffer
+        to
+      (save-excursion
+        (goto-line (car line-plus))
+        (max (line-beginning-position)
+             (- (line-end-position)
+                (cadr line-plus)))))))
+
+(provide 'linked-buffer)

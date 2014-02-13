@@ -5,11 +5,11 @@
   (should
    (eq
     'block-comment-clone-contents-with-comments
-    (linked-buffer-extract-contents
+    (linked-buffer-content-function-for-modes
      '(clojure-mode latex-mode))))
 
   (should
    (eq
     'block-comment-convert-location
-    (linked-buffer-extract-point
+    (linked-buffer-convert-location-for-modes
      '(clojure-mode latex-mode)))))
