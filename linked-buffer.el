@@ -392,8 +392,8 @@ In practice, this just returns LOCATION."
 
 (defun linked-buffer-blk-uncomment-region (begin end buffer)
   "Between BEGIN and END in BUFFER, remove all start of line comment characters."
-  (m-buffer-replace-matches
-   (m-buffer-matches-data
+  (m-buffer-replace-match
+   (m-buffer-match-data
     buffer
     (linked-buffer-blk-line-start-comment)
     begin end) ""))
@@ -409,8 +409,8 @@ delimiter regions."
 
 (defun linked-buffer-blk-comment-region (begin end buffer)
   "Between BEGIN and END in BUFFER add comment characters"
-  (m-buffer-replace-matches
-   (m-buffer-matches-data
+  (m-buffer-replace-match
+   (m-buffer-match-data
     buffer
     ;; perhaps we should ignore lines which are already commented,
     "\\(^\\).+"
@@ -426,40 +426,61 @@ delimiter regions."
       (car pairs) (cdr pairs) buffer))
    (linked-buffer-blk-marker-boundaries begin end buffer)))
 
+(put 'unmatched-delimiter-error
+     'error-conditions
+     '(error unmatched-delimiter-error))
+
+(put 'unmatched-delimiter-error
+     'error-message "Unmatched Delimiter in Buffer")
 
 (defun linked-buffer-blk-marker-boundaries (begin end buffer)
   "Find demarcation markers between BEGIN and END in BUFFER.
 Returns a list of start end cons pairs. BEGIN is considered to
 be an implicit start and END an implicit stop."
-  (-zip
-   ;; start comment markers
-   ;; plus the start of the region
-   (cons
-    (set-marker (make-marker) begin buffer)
-    (m-buffer-matches-beginning
-     buffer
-     (linked-buffer-blk-comment-start-regexp)))
-   ;; end comment markers
-   ;; plus the end of the buffer
-   (append
-    (m-buffer-matches-end
-     buffer
-     (linked-buffer-blk-comment-stop-regexp))
-    (list (set-marker (make-marker) end buffer)))))
+  (let ((match-start
+         (m-buffer-match-beginning
+          buffer
+          (linked-buffer-blk-comment-start-regexp)))
+        (match-end
+         (m-buffer-match-end
+          buffer
+          (linked-buffer-blk-comment-stop-regexp))))
+    (unless
+        (= (length match-start)
+           (length match-end))
+      (linked-buffer-log "delimiters do not match")
+      (signal 'unmatched-delimiter-error
+              (list begin end buffer)))
+    (-zip
+     ;; start comment markers
+     ;; plus the start of the region
+     (cons
+      (set-marker (make-marker) begin buffer)
+      match-start)
+     ;; end comment markers
+     ;; plus the end of the buffer
+     (append
+      match-end
+      (list (set-marker (make-marker) end buffer))))))
 
 (defun linked-buffer-blk-clone-uncomment (from to)
   "Update the contents in buffer TO to match FROM and remove comments."
   (linked-buffer-log "blk-clone-uncomment (from,to):(%s,%s)" from to)
   (linked-buffer-default-clone-contents from to)
   ;; remove the line comments in the to buffer
-  ;; TODO -- this assumes from is current-buffer
-  (linked-buffer-blk-uncomment-buffer (point-min) (point-max) to))
+  ;; if the delimitors are unmatched, then we can do nothing other than clone.
+  (condition-case e
+      (linked-buffer-blk-uncomment-buffer (point-min) (point-max) to)
+    (unmatched-delimiter-error
+     nil)))
 
 (defun linked-buffer-blk-clone-comment (from to)
   "Update the contents in buffer TO to match FROM and add comments."
   (linked-buffer-log "blk-clone-comment (from,to):(%s,%s)" from to)
   (linked-buffer-default-clone-contents from to)
-  (linked-buffer-blk-comment-buffer (point-min) (point-max) to))
+  (condition-case e
+      (linked-buffer-blk-comment-buffer (point-min) (point-max) to)
+    (unmatched-delimiter-error nil)))
 
 (defun linked-buffer-pabbrev-expansion-length ()
   "Returns the length of any text that pabbrev has currently added to the buffer."
