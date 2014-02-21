@@ -410,7 +410,7 @@ In practice, this just returns LOCATION."
    (m-buffer-match-data
     buffer
     (linked-buffer-blk-line-start-comment)
-    begin end) ""))
+    :beginning begin :end end) ""))
 
 (defun linked-buffer-blk-uncomment-buffer (begin end buffer)
   "Between BEGIN and END in BUFFER remove uncomment characters in
@@ -428,7 +428,7 @@ delimiter regions."
     buffer
     ;; perhaps we should ignore lines which are already commented,
     "\\(^\\).+"
-    begin end)
+    :beginning begin :end end)
    (linked-buffer-blk-comment) 1))
 
 (defun linked-buffer-blk-comment-buffer (begin end buffer)
