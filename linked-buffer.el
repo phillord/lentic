@@ -142,16 +142,18 @@ file-local variable.")
   (interactive)
   (setq linked-buffer-emergency t))
 
-
 (defun linked-buffer-post-command-hook ()
   (unless linked-buffer-emergency
     (condition-case err
-        (progn
-          (linked-buffer-when-linked
-           (linked-buffer-update-point
-            (current-buffer) linked-buffer-linked-buffer)))
+        (linked-buffer-post-command-hook-1)
       (error
        (linked-buffer-hook-fail err "post-command-hook")))))
+
+(defun linked-buffer-post-command-hook-1 ()
+  (progn
+    (linked-buffer-when-linked
+     (linked-buffer-update-point
+      (current-buffer) linked-buffer-linked-buffer))))
 
 (defun linked-buffer-hook-fail (err hook)
   "Give an informative message when we have to fail."
@@ -237,20 +239,20 @@ file-local variable.")
       (setq linked-buffer-linked-buffer lb))
     lb))
 
-;;(defun test () (interactive)(let ((linked-buffer-emergency nil)) (linked-buffer-after-change-function)))
-
 (defun linked-buffer-after-change-function (&rest rest)
   (unless linked-buffer-emergency
-    (condition-case err
-        (progn
-          (linked-buffer-when-linked
-           (linked-buffer-log
-            "Updating after-change (current:linked:rest): %s,%s,%s"
-            (current-buffer) linked-buffer-linked-buffer rest)
-           (linked-buffer-update-contents
-            (current-buffer) linked-buffer-linked-buffer)))
-      (error
-       (linked-buffer-hook-fail err "after change")))))
+    (condition-case err)
+    (linked-buffer-after-change-function-1 rest)
+    (error
+     (linked-buffer-hook-fail err "after change"))))
+
+(defun linked-buffer-after-change-function-1 (rest)
+  (linked-buffer-when-linked
+   (linked-buffer-log
+    "Updating after-change (current:linked:rest): %s,%s,%s"
+    (current-buffer) linked-buffer-linked-buffer rest)
+   (linked-buffer-update-contents
+    (current-buffer) linked-buffer-linked-buffer)))
 
 (defun linked-buffer-before-change-function (&rest rest)
   (unless linked-buffer-emergency
@@ -359,6 +361,18 @@ from one to the other."
   "Converts a point LOCATION in buffer FROM to one in TO.
 In practice, this just returns LOCATION."
   location)
+
+;;
+;; Test functions useful for testing new convertors
+;;
+(defun linked-buffer-test-after-change-function ()
+  (interactive)
+  (linked-buffer-after-change-function-1 nil))
+
+(defun linked-buffer-test-post-command-hook ()
+  (interactive)
+  (linked-buffer-post-command-hook-1))
+
 
 ;;
 ;; Block comment linked buffer
