@@ -498,11 +498,13 @@ be an implicit start and END an implicit stop."
 
 (defun linked-buffer-pabbrev-expansion-length ()
   "Returns the length of any text that pabbrev has currently added to the buffer."
-  (if (and (boundp 'pabbrev-expansion)
-           pabbrev-expansion)
-      ;; pabbrev sorts the expansion but also adds "[]" either side"
-      (+ 2 (length pabbrev-expansion))
-    0))
+  ;; this *exact* form suppresses byte compiler warnings.
+  ;; when or if and does not!
+  (if (boundp 'pabbrev-expansion)
+      (if pabbrev-expansion
+          ;; pabbrev sorts the expansion but also adds "[]" either side"
+          (+ 2 (length pabbrev-expansion))
+        0)))
 
 (defun linked-buffer-blk-convert-location (location from to)
   "Converts a LOCATION in buffer FROM into one from TO.
