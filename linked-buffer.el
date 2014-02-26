@@ -68,10 +68,20 @@
 (require 'dash)
 (require 'm-buffer)
 
-
-
 (defvar linked-buffer-transforms
   '(
+    ((python-mode org-mode)
+     :convert linked-buffer-blk-clone-uncomment
+     :location linked-buffer-blk-convert-location
+     :comment "## "
+     :comment-block-start "#+end_src"
+     :comment-block-stop "#+begin_src python :session")
+    ((org-mode python-mode)
+     :convert  linked-buffer-blk-clone-comment
+     :location linked-buffer-blk-convert-location
+     :comment "## "
+     :comment-block-start "#[+]end_src"
+     :comment-block-stop "#[+]begin_src python :session")
     ((clojure-mode latex-mode)
      :convert linked-buffer-blk-clone-uncomment
      :location linked-buffer-blk-convert-location
