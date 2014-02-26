@@ -340,6 +340,13 @@ the :location value in `linked-buffer-transforms' or
                    (window-start
                     (get-buffer-window from))
                    from to)))
+    ;; clone point in buffer important when the buffer is NOT visible in a
+    ;; window at all
+    (with-current-buffer
+        to (goto-char from-point))
+    ;; now clone point in all the windows that are showing the buffer
+    ;; and set the start of the window which is a reasonable attempt to show
+    ;; the same thing.
     (mapc
      (lambda (window)
        (with-selected-window window
