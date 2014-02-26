@@ -251,10 +251,10 @@ file-local variable.")
 
 (defun linked-buffer-after-change-function (&rest rest)
   (unless linked-buffer-emergency
-    (condition-case err)
-    (linked-buffer-after-change-function-1 rest)
-    (error
-     (linked-buffer-hook-fail err "after change"))))
+    (condition-case err
+        (linked-buffer-after-change-function-1 rest)
+      (error
+       (linked-buffer-hook-fail err "after change")))))
 
 (defun linked-buffer-after-change-function-1 (rest)
   (linked-buffer-when-linked
