@@ -410,7 +410,7 @@ In practice, this just returns LOCATION."
    (m-buffer-match-data
     buffer
     (linked-buffer-blk-line-start-comment)
-    :beginning begin :end end) ""))
+    :begin begin :end end) ""))
 
 (defun linked-buffer-blk-uncomment-buffer (begin end buffer)
   "Between BEGIN and END in BUFFER remove uncomment characters in
@@ -428,7 +428,7 @@ delimiter regions."
     buffer
     ;; perhaps we should ignore lines which are already commented,
     "\\(^\\).+"
-    :beginning begin :end end)
+    :begin begin :end end)
    (linked-buffer-blk-comment) 1))
 
 (defun linked-buffer-blk-comment-buffer (begin end buffer)
@@ -452,7 +452,7 @@ delimiter regions."
 Returns a list of start end cons pairs. BEGIN is considered to
 be an implicit start and END an implicit stop."
   (let ((match-start
-         (m-buffer-match-beginning
+         (m-buffer-match-begin
           buffer
           (linked-buffer-blk-comment-start-regexp)))
         (match-end
