@@ -1,0 +1,103 @@
+#    -*- mode: org -*-
+
+
+Archived entries from file /home/phillord/emacs/linked-buffer/plan.org
+
+
+* Window bug
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2014-02-28 Fri 19:40
+  :ARCHIVE_FILE: ~/emacs/linked-buffer/plan.org
+  :ARCHIVE_CATEGORY: plan
+  :END:
+
+When we edit not side-by-side but with only one buffer in the foreground,
+point gets lost very easily. The invisible window does not update point and
+when we move to it it's almost always at the end.
+
+Many solutions. Check for windows coming up and so forth. After a clone, we
+could update point to the location just changed. Not sure yet.
+
+* Block-comment
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2014-02-28 Fri 19:40
+  :ARCHIVE_FILE: ~/emacs/linked-buffer/plan.org
+  :ARCHIVE_CATEGORY: plan
+  :END:
+
+
+** Specifics for markers
+
+These are all relatively deep. So, how to pass this configuration around?
+Put them into third place configuration
+
+-- matches
+-- start and end of block
+"^;?;?\\\\begin{code}"
+"^;?;?\\\\end{code}"
+
+-- start of line
+"\\(^\\).+" 
+"^;;"
+
+-- insert
+";;" 
+""
+
+*** So....
+
+comment                ";;"
+comment-block-start    "\end{code}"
+comment-block-stop     "\begin{code}"
+
+start-of-line-with-group  "\\(^\\).+" 
+start-of-line (concat "^" comment)
+
+start of block
+
+(concat "^" comment 
+   (regexp-quote comment-block-start)))
+
+
+(re-search-forward "^;;\\\\begin{code}" nil t)
+;;\begin{code}
+
+
+
+
+*** block-comment-marker-boundaries
+
+Both comment and demarcation.
+
+
+;; \begin{code}
+;; \end{code}
+
+
+*** block-comment-block-to-line-region
+
+\\(^\\).+ -- new line
+;; -- put in comment
+
+newline is generic, but this should probably ignore stuff with ";"
+
+
+*** block-comment-line-to-block-region
+
+"^;;" (comment starter)
+"" empty -- probably generic
+
+
+
+* Move "block-comment" into linked-buffer-block.el
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2014-02-28 Fri 19:41
+  :ARCHIVE_FILE: ~/emacs/linked-buffer/plan.org
+  :ARCHIVE_CATEGORY: plan
+  :END:
+
+Change all the regexp to go through a single function
+passing a symbol and getting the regexp back. Then I can rethread this into
+the configuration later.
+
+

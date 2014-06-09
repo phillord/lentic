@@ -1,15 +1,10 @@
 (require 'linked-buffer)
 
 
-(ert-deftest function-for-modes ()
-  (should
-   (eq
-    'block-comment-clone-contents-with-comments
-    (linked-buffer-content-function-for-modes
-     '(clojure-mode latex-mode))))
+(defvar conf-default
+  (linked-buffer-default-configuration "bob"))
 
+(ert-deftest linked-buffer-conf ()
   (should
-   (eq
-    'block-comment-convert-location
-    (linked-buffer-convert-location-for-modes
-     '(clojure-mode latex-mode)))))
+   (equal 'fundamental-mode
+          (oref conf-default :linked-mode))))

@@ -1,0 +1,80 @@
+
+
+* Python Org
+Currently these are all hard coded:
+
+(defun linked-buffer-blk-comment ()
+  ";; ")
+
+(defun linked-buffer-blk-line-start-comment ()
+  (concat "^" (linked-buffer-blk-comment)))
+
+(defun linked-buffer-blk-comment-start ()
+  "\\end{code}")
+
+(defun linked-buffer-blk-comment-stop ()
+  "\\begin{code}")
+
+(defun linked-buffer-blk-comment-start-regexp ()
+  (format "^\\(%s\\)*%s"
+          (linked-buffer-blk-comment)
+          (regexp-quote (linked-buffer-blk-comment-start))))
+
+(defun linked-buffer-blk-comment-stop-regexp ()
+  (format "^\\(%s\\)*%s"
+           (linked-buffer-blk-comment)
+           (regexp-quote (linked-buffer-blk-comment-stop))))
+
+
+
+* Some more Tweaks
+
+There are some more bits that need tweaking. 
+
+linked-buffer-create now hard codes the buffer name, which we need to fix, 
+and clojure-latex needs to give a good file name.
+
+Emacs lisp is going to be a pain in the ass -- the start of the file looks
+like this
+
+;; linked-buffer.el --- One buffer as a view of another -*- lexical-binding: t -*-
+
+;; This file is not part of Emacs
+
+;; Author: Phillip Lord <phillip.lord@newcastle.ac.uk>
+;; Maintainer: Phillip Lord <phillip.lord@newcastle.ac.uk>
+;; Version: 0.1
+
+;; The contents of this file are subject to the GPL License, Version 3.0.
+;;
+;; Copyright (C) 2014, Phillip Lord, Newcastle University
+;;
+;; This program is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+And I don't think that we can sensibly change this. Now, in latex this is
+going to get uncommented which isn't really what we want. The problem is that
+this stuff needs to be at the start. 
+
+If we can change it to ";; %% This file is not part of Emacs"
+
+then the problem goes away. But I suspect that we cannot. So, we have the
+problem of stuff coming before the preamble in latex. We could use a driver
+file, but this is a bit heavy weight as a general solution. 
+
+So, I guess what we need is a "recomment in the preamble". So it would all
+work as normal, but then in the uncommented block, we would put back everything.
+
+
+
