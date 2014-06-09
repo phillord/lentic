@@ -4,7 +4,7 @@
 
 ;; Author: Phillip Lord <phillip.lord@newcastle.ac.uk>
 ;; Maintainer: Phillip Lord <phillip.lord@newcastle.ac.uk>
-;; Version: 0.1
+;; Version: 0.2
 
 ;; The contents of this file are subject to the GPL License, Version 3.0.
 ;;
