@@ -50,6 +50,9 @@
          :comment-start "\\\\end{code}"
          :comment-stop "\\\\begin{code}")))
 
+(defun linked-buffer-clojure-latex-delayed-init ()
+  (linked-buffer-delayed-init 'linked-buffer-clojure-latex-init))
+
 (provide 'linked-buffer-latex-code)
 
 ;;; linked-buffer-latex-code ends here

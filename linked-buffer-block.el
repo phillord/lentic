@@ -124,7 +124,7 @@ demarcation markers between BEGIN and END in BUFFER. Returns a
 list of start end cons pairs. BEGIN is considered to be an
 implicit start and END an implicit stop."
   (let ((match-start
-         (m-buffer-match-
+         (m-buffer-match-begin
           buffer
           (linked-buffer-block-comment-start-regexp conf)))
         (match-end
@@ -265,4 +265,5 @@ between the two buffers; we don't care which one has comments."
   (oref conf :comment-stop))
 
 (provide 'linked-buffer-block)
+
 ;;; linked-buffer-block.el ends here
