@@ -96,8 +96,8 @@
 (require 'eieio)
 
 (defvar linked-buffer-init 'linked-buffer-default-init
-  "Function that initializes a linked-buffer. This should set up
-`linked-buffer-config' appropriately and do")
+  "Function that initializes a linked-buffer.
+This should set up `linked-buffer-config' appropriately.")
 
 ;; In future versions, this may get turned into a list so that we can have
 ;; multiple linked buffers, but it is not clear how the user interface
@@ -105,15 +105,16 @@
 (defvar linked-buffer-config nil
   "Configuration for linked-buffer.
 
-This is a `linked-buffer-configuration' object, which defines the
-way in which the text in the different buffers is kept
-synchronized. This configuration is resiliant to changes of mode
-in the current buffer.")
+This is object created by function linked-buffer-configuration',
+which defines the way in which the text in the different buffers
+is kept synchronized. This configuration is resiliant to changes
+of mode in the current buffer.")
 
 (make-variable-buffer-local 'linked-buffer-config)
 (put 'linked-buffer-config 'permanent-local t)
 
 (defun linked-buffer-config-name (buffer)
+  "Given BUFFER, return a name for the configuration object."
   (format "linked: %s" buffer))
 
 ;;
@@ -217,6 +218,8 @@ Currently, this is just a clone all method but may use regions in future."
           (point-max)))))))
 
 (defun linked-buffer-default-init ()
+  "Default init function.
+See `linked-buffer-init' for details."
   (setq linked-buffer-config
         (linked-buffer-default-configuration
          (linked-buffer-config-name (current-buffer))
@@ -228,7 +231,7 @@ Currently, this is just a clone all method but may use regions in future."
 
 
 (defmacro linked-buffer-when-linked (&rest body)
-  "Evaluates body when in a linked-buffer."
+  "Evaluate BODY when in a linked-buffer."
   `(when (and
           linked-buffer-config
           (linked-buffer-that
@@ -239,7 +242,7 @@ Currently, this is just a clone all method but may use regions in future."
      ,@body))
 
 (defun linked-buffer-ensure-hooks ()
-  "Ensures that the hooks that this mode requires are in place"
+  "Ensures that the hooks that this mode requires are in place."
   (add-hook 'post-command-hook
             'linked-buffer-post-command-hook)
   ;; after and before-change functions are hooks (with args) even if they are
@@ -251,6 +254,7 @@ Currently, this is just a clone all method but may use regions in future."
 
 (defvar linked-buffer-log t)
 (defmacro linked-buffer-log (&rest rest)
+  "Log REST."
   `(when linked-buffer-log
      (linked-buffer-when-linked
       (let ((msg
@@ -265,11 +269,12 @@ Currently, this is just a clone all method but may use regions in future."
 (defvar linked-buffer-emergency nil)
 
 (defun linked-buffer-emergency ()
-  "Ensures that the hooks that this mode requires are in place"
+  "Ensures that the hooks that this mode requires are in place."
   (interactive)
   (setq linked-buffer-emergency t))
 
 (defun linked-buffer-post-command-hook ()
+  "Update point according to config, with error handling."
   (unless linked-buffer-emergency
     (condition-case-unless-debug err
         (linked-buffer-post-command-hook-1)
@@ -277,12 +282,14 @@ Currently, this is just a clone all method but may use regions in future."
        (linked-buffer-hook-fail err "post-command-hook")))))
 
 (defun linked-buffer-post-command-hook-1 ()
+  "Update point according to config."
   (progn
     (linked-buffer-when-linked
      (linked-buffer-update-point linked-buffer-config))))
 
 (defun linked-buffer-hook-fail (err hook)
-  "Give an informative message when we have to fail."
+  "Give an informative message when we have to fail.
+ERR is the error. HOOK is the hook type."
   (message "linked-buffer mode has failed on %s hook: %s "
            hook (error-message-string err))
   (linked-buffer-emergency)
@@ -293,8 +300,7 @@ Currently, this is just a clone all method but may use regions in future."
   (select-window (get-buffer-window "*linked-buffer-fail*")))
 
 (defun linked-buffer-swap-windows ()
-  "Swaps the window that of the current buffer with that of the
-first active linked-buffer."
+  "Swaps buffer with linked-buffer in current window."
   (interactive)
   (linked-buffer-swap-buffer-windows
    (current-buffer)
@@ -302,7 +308,8 @@ first active linked-buffer."
   (select-window (get-buffer-window (current-buffer))))
 
 (defun linked-buffer-swap-buffer-windows (a b)
-  "Swaps the window that two buffers are displayed in."
+  "Swaps the window that two buffers are displayed in.
+A and B are the buffers."
   (let ((window-a (get-buffer-window a))
         (window-b (get-buffer-window b)))
     (set-window-buffer
@@ -311,6 +318,7 @@ first active linked-buffer."
      window-b a)))
 
 (defun linked-buffer-ensure-init ()
+  "Ensure that the `linked-buffer-init' has been run."
   (unless (and linked-buffer-config
                (slot-boundp
                 linked-buffer-config :that-buffer)
@@ -327,7 +335,7 @@ first active linked-buffer."
    (linked-buffer-create linked-buffer-config)))
 
 (defun linked-buffer-split-window-right ()
-  "Create a linked buffer in a new window right"
+  "Create a linked buffer in a new window right."
   (interactive)
   (linked-buffer-ensure-init)
   (set-window-buffer
@@ -335,6 +343,8 @@ first active linked-buffer."
    (linked-buffer-create linked-buffer-config)))
 
 (defun linked-buffer-after-change-function (&rest rest)
+  "Run change update according to `linked-buffer-config'.
+Errors are handled. REST is currently just ignored."
   (unless linked-buffer-emergency
     (condition-case-unless-debug err
         (linked-buffer-after-change-function-1 rest)
@@ -342,6 +352,8 @@ first active linked-buffer."
        (linked-buffer-hook-fail err "after change")))))
 
 (defun linked-buffer-after-change-function-1 (rest)
+  "Run change update according to `linked-buffer-config'.
+REST is currently just ignored."
   (linked-buffer-when-linked
    (linked-buffer-log
     "Updating after-change (current:linked:rest): %s,%s,%s"
@@ -350,6 +362,8 @@ first active linked-buffer."
    (linked-buffer-update-contents linked-buffer-config)))
 
 (defun linked-buffer-before-change-function (&rest rest)
+  "Run before change update.
+REST is currently ignored. Currently this does nothing."
   (unless linked-buffer-emergency
     (condition-case err
         (lambda ())
@@ -357,8 +371,8 @@ first active linked-buffer."
        (linked-buffer-hook-fail err "before change")))))
 
 (defun linked-buffer-update-contents (conf)
-  "Update the contents of that-buffer with the contents of this-buffer,
-using conf."
+  "Update the contents of that-buffer with the contents of this-buffer.
+Update mechanism depends on CONF."
   (unwind-protect
       (progn
         (setq inhibit-read-only t)
@@ -370,7 +384,7 @@ using conf."
 (defun linked-buffer-update-point (conf)
   "Update the location of point in that-buffer to reflect this-buffer.
 This also attempts to update any windows so that they show the
-same top-left location. "
+same top-left location. Update details depend on CONF."
   (let* ((from-point
           (linked-buffer-convert
            conf
@@ -402,19 +416,35 @@ same top-left location. "
 ;;
 ;; Test functions!
 ;;
-
+(defun linked-buffer-batch-clone (file)
+  "Open FILE, clone and save."
+  )
 
 (defun linked-buffer-test-after-change-function ()
+  "Run the change functions out of the command loop.
+Using this function is the easiest way to test an new
+`linked-buffer-clone' method, as doing so in the command loop is
+painful for debugging. Set variable `linked-buffer-emergency' to
+true to disable command loop functionality."
   (interactive)
   (linked-buffer-after-change-function-1 nil))
 
 (defun linked-buffer-test-post-command-hook ()
+  "Run the post-command functions out of the command loop.
+Using this function is the easiest way to test an new
+`linked-buffer-convert' method, as doing so in the command loop is
+painful for debugging. Set variable `linked-buffer-emergency' to
+true to disable command loop functionality."
   (interactive)
   (linked-buffer-post-command-hook-1))
 
 (defun linked-buffer-test-reinit ()
+  "Recall the init function regardless of current status.
+This can help if you have change the config object and need
+to make sure there is a new one."
   (interactive)
   (funcall linked-buffer-init))
 
-
 (provide 'linked-buffer)
+
+;;; linked-buffer.el ends here
