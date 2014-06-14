@@ -1,0 +1,23 @@
+Here is the title
+=================
+
+This is a document that talks about lots of stuff.
+
+[source,lisp]
+----
+(println "Hello")
+----
+
+Got to admit that was unexpected
+[source,lisp]
+----
+(println "hello")
+----
+Well strangely this
+
+
+//
+// Local Variables:
+// linked-buffer-init: linked-buffer-asciidoc-clojure-init
+// End: 
+//

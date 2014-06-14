@@ -1,6 +1,7 @@
 ;; I bet this is going to work really well.  We just type away like a crazy
 ;; thing. And while this is happening, nothing else will.
 
+
 ;; And the other way around also seems to be slowed. The pabbrev thing is really,
 ;; really odd?
 

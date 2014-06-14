@@ -10,6 +10,8 @@
 
 ;; And now it is back again!
 
+;; Let us type some stuff in here. 
+
 ;; Looks pretty good to me!
 ;; sfds more
 ;; \begin{code}
@@ -26,8 +28,9 @@
 ;; \end{code}
 
 ;; Hello
+;;
 ;; Bummer
-
+;;
 ;; \begin{code}
 (println "hello") 
 ;; \end{code}
