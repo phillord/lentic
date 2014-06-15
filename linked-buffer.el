@@ -1,4 +1,4 @@
-;; linked-buffer.el --- One buffer as a view of another -*- lexical-binding: t -*-
+;;; linked-buffer.el --- One buffer as a view of another -*- lexical-binding: t -*-
 
 ;; This file is not part of Emacs
 
