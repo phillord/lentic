@@ -37,18 +37,24 @@
 (require 'linked-buffer-block)
 
 (defun linked-buffer-clojure-latex-init ()
-  (setq linked-buffer-config
-        (linked-buffer-commented-block-configuration
-         "lb-commented"
-         :this-buffer (current-buffer)
-         :linked-mode 'tex-mode
-         :linked-file
-         (concat
-          (file-name-sans-extension
-           (buffer-file-name)) ".tex")
-         :comment ";; "
-         :comment-start "\\\\end{code}"
-         :comment-stop "\\\\begin{code}")))
+  (if
+      (equal
+       "clj"
+       (file-name-extension
+        (buffer-file-name)))
+      (setq linked-buffer-config
+            (linked-buffer-commented-block-configuration
+             "lb-commented clojure latex"
+             :this-buffer (current-buffer)
+             :linked-mode 'tex-mode
+             :linked-file
+             (concat
+              (file-name-sans-extension
+               (buffer-file-name)) ".tex")
+             :comment ";; "
+             :comment-start "\\\\end{code}"
+             :comment-stop "\\\\begin{code}"))
+    (error "Can only use linked-buffer-clojure-latex-init in a .clj buffer")))
 
 (defun linked-buffer-clojure-latex-delayed-init ()
   (linked-buffer-delayed-init 'linked-buffer-clojure-latex-init))

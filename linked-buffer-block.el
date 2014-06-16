@@ -28,7 +28,6 @@
 ;; line comment characters that the other one lacks. Commented regions may be
 ;; in blocks with block-delimiters between then.
 
-(require 'dash)
 (require 'm-buffer)
 (require 'linked-buffer)
 
@@ -67,14 +66,15 @@ start of line block comment in one buffer but not the other."
 
 (defmethod linked-buffer-blk-line-start-comment
   ((conf linked-buffer-block-configuration))
-  (concat "^" (oref conf :comment)))
+  (concat "^" 
+          (oref conf :comment)))
 
 (defun linked-buffer-blk-uncomment-region (conf begin end buffer)
   "Given CONF,  remove start-of-line characters in region.
 Region is between BEGIN and END in BUFFER. CONF is a
 function `linked-buffer-configuration' object."
   (m-buffer-replace-match
-   (m-buffer-match-data
+    (m-buffer-match
     buffer
     (linked-buffer-blk-line-start-comment conf)
     :begin begin :end end) ""))
@@ -93,7 +93,7 @@ BEGIN and END in BUFFER."
   "Given CONF, a `linked-buffer-configuration' object, add
 start of line comment characters beween BEGIN and END in BUFFER."
   (m-buffer-replace-match
-   (m-buffer-match-data
+   (m-buffer-match
     buffer
     ;; perhaps we should ignore lines which are already commented,
     "\\(^\\).+"
@@ -123,14 +123,13 @@ BEGIN and END in BUFFER."
 demarcation markers between BEGIN and END in BUFFER. Returns a
 list of start end cons pairs. BEGIN is considered to be an
 implicit start and END an implicit stop."
-  (let ((match-start
-         (m-buffer-match-begin
-          buffer
-          (linked-buffer-block-comment-start-regexp conf)))
-        (match-end
-         (m-buffer-match-end
-          buffer
-          (linked-buffer-block-comment-stop-regexp conf))))
+  (let* ((match-block
+          (linked-buffer-block-match
+           conf buffer))
+         (match-start
+          (car match-block))
+         (match-end
+          (cadr match-block)))
     (unless
         (= (length match-start)
            (length match-end))
@@ -148,6 +147,16 @@ implicit start and END an implicit stop."
      (append
       match-end
       (list (set-marker (make-marker) end buffer))))))
+
+(defmethod linked-buffer-block-match ((conf linked-buffer-block-configuration)
+                                      buffer)
+  (list
+   (m-buffer-match-begin
+    buffer
+    (linked-buffer-block-comment-start-regexp conf))
+   (m-buffer-match-end
+    buffer
+    (linked-buffer-block-comment-stop-regexp conf))))
 
 (defun linked-buffer-pabbrev-expansion-length ()
   "Returns the length of any text that pabbrev has currently added to the buffer."
