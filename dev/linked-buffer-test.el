@@ -1,10 +1,9 @@
 (require 'linked-buffer)
 
-
 (defvar linked-buffer-test-dir
   (concat
    (file-name-directory
-    (locate-library "linked-buffer.el"))
+    (find-lisp-object-file-name 'linked-buffer-init 'defvar))
    "test/"))
 
 (defun linked-buffer-test-file (filename)

@@ -27,7 +27,6 @@
 ;; Provides configuration for linked-buffers where one buffer has beginning of
 ;; line comment characters that the other one lacks. Commented regions may be
 ;; in blocks with block-delimiters between then.
-
 (require 'm-buffer)
 (require 'linked-buffer)
 
