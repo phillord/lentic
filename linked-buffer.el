@@ -326,6 +326,11 @@ A and B are the buffers."
                                linked-buffer-config)))
     (funcall linked-buffer-init)))
 
+(defun linked-buffer-init-create ()
+  "Create the linked-buffer for current-buffer."
+  (linked-buffer-ensure-init)
+  (linked-buffer-create linked-buffer-config))
+
 (defun linked-buffer-split-window-below ()
   "Create a linked buffer in a new window below."
   (interactive)
@@ -416,9 +421,38 @@ same top-left location. Update details depend on CONF."
 ;;
 ;; Test functions!
 ;;
-(defun linked-buffer-batch-clone (file)
+(defun linked-buffer-batch-clone (filename)
   "Open FILE, clone and save."
-  )
+  (with-current-buffer
+      (find-file-noselect filename)
+    (with-current-buffer
+        (linked-buffer-init-create)
+      (save-buffer)
+      (kill-buffer))
+    (kill-buffer)))
+
+(defun linked-buffer-batch-clone-with-config
+  (filename init)
+  "Open FILENAME, set INIT function, then clone and save.
+This function does potentially evil things if the file or the
+linked-buffer is open already.
+
+Return the linked-buffer contents without properties."
+  (let ((retn nil))
+    (with-current-buffer
+        (find-file-noselect filename)
+      (setq linked-buffer-init init)
+      (with-current-buffer
+          (linked-buffer-init-create)
+        (setq retn
+              (buffer-substring-no-properties
+               (point-min)
+               (point-max)))
+        (set-buffer-modified-p nil)
+        (kill-buffer))
+      (set-buffer-modified-p nil)
+      (kill-buffer))
+    retn))
 
 (defun linked-buffer-test-after-change-function ()
   "Run the change functions out of the command loop.
