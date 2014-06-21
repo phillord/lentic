@@ -1,4 +1,6 @@
 (require 'linked-buffer)
+(require 'f)
+
 
 (defvar linked-buffer-test-dir
   (concat
@@ -7,7 +9,11 @@
    "test/"))
 
 (defun linked-buffer-test-file (filename)
-  (concat linked-buffer-test-dir filename))
+  (let ((file
+         (concat linked-buffer-test-dir filename)))
+    (when (not (file-exists-p file))
+      (error "Test File does not exist: %s" file))
+    file))
 
 (defvar conf-default
   (linked-buffer-default-configuration "bob"))
@@ -23,3 +29,13 @@
           (linked-buffer-batch-clone-with-config
            (linked-buffer-test-file "simple-contents.txt")
            'linked-buffer-default-init))))
+
+(ert-deftest linked-buffer-clojure-latex ()
+  (should
+   (equal
+    (f-read
+     (linked-buffer-test-file
+      "block-comment-out.tex"))
+    (linked-buffer-batch-clone-with-config
+     (linked-buffer-test-file "block-comment.clj")
+     'linked-buffer-clojure-latex-init))))

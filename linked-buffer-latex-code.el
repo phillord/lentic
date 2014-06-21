@@ -1,4 +1,4 @@
-;; linked-buffer-latex-code.el -- Latex literate programming -*- lexical-binding: t -*-
+;;; linked-buffer-latex-code.el -- Latex literate programming -*- lexical-binding: t -*-
 ;; This file is not part of Emacs
 
 ;; Author: Phillip Lord <phillip.lord@newcastle.ac.uk>
