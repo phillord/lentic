@@ -15,4 +15,4 @@
 
 (ensure-elpa 'dash)
 (ensure-elpa 'm-buffer)
-
+(ensure-elpa 'f)
