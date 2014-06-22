@@ -7,7 +7,6 @@
   (linked-buffer-commented-asciidoc-configuration
    "lb-commented-clojure asciidoc"
    :this-buffer (current-buffer)
-   :linked-mode 'adoc-mode
    :linked-file
    (concat
     (file-name-sans-extension
@@ -23,7 +22,6 @@
   (linked-buffer-uncommented-asciidoc-configuration
    "lb-uncommented-clojure-asciidoc"
    :this-buffer (current-buffer)
-   :linked-mode 'adoc-mode
    :linked-file
    (concat
     (file-name-sans-extension

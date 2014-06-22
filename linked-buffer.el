@@ -155,7 +155,7 @@ or create it if it does not exist."
     :initform nil
     :initarg :linked-file)
    (linked-mode
-    :initform 'fundamental-mode
+    :initform 'normal-mode
     :initarg :linked-mode))
   "Configuration which maintains two linked-buffers with the same contents.")
 

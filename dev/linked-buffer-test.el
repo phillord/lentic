@@ -22,7 +22,7 @@
 
 (ert-deftest linked-buffer-conf ()
   (should
-   (equal 'fundamental-mode
+   (equal 'normal-mode
           (oref conf-default :linked-mode))))
 
 (ert-deftest linked-buffer-simple ()

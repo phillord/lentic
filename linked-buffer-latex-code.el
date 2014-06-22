@@ -46,7 +46,6 @@
             (linked-buffer-commented-block-configuration
              "lb-commented clojure latex"
              :this-buffer (current-buffer)
-             :linked-mode 'tex-mode
              :linked-file
              (concat
               (file-name-sans-extension

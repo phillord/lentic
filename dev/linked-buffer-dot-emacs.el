@@ -15,7 +15,5 @@
     (package-install package)))
 
 (ensure-elpa 'dash)
-;; this is a pain because it causes elpa loading of m-buffer
-;; locally
 (ensure-elpa 'm-buffer)
 (ensure-elpa 'f)
