@@ -1,4 +1,6 @@
 (require 'linked-buffer)
+(require 'linked-buffer-latex-code)
+(require 'linked-buffer-asciidoc)
 (require 'f)
 
 
@@ -39,3 +41,12 @@
     (linked-buffer-batch-clone-with-config
      (linked-buffer-test-file "block-comment.clj")
      'linked-buffer-clojure-latex-init))))
+
+(ert-deftest linked-buffer-asciidoc-clojure ()
+  (should
+   (equal
+    (f-read
+     (linked-buffer-test-file "asciidoc-clj-out.clj"))
+    (linked-buffer-batch-clone-with-config
+     (linked-buffer-test-file "asciidoc-clj.txt")
+     'linked-buffer-asciidoc-clojure-init))))
