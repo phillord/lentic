@@ -3,6 +3,10 @@ Please see linked-buffer.el for a richer description.
 
 ## ChangeLog
 
+### 0.4
+
+Some bug fixes and asciidoc->clojure support added.
+
 ### 0.3
 
 This release is mainly a bug fix of 0.2, but also includes support for delayed
