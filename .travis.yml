@@ -16,4 +16,4 @@ env:
   - EMACS=emacs24
   - EMACS=emacs-snapshot
 script:
-  ./run-tests.sh
+  make test

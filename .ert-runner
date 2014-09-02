@@ -1,0 +1,1 @@
+--load linked-buffer.el linked-buffer-block.el linked-buffer-latex-code linked-buffer-asciidoc test/linked-buffer-test.el
