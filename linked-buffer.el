@@ -4,8 +4,8 @@
 
 ;; Author: Phillip Lord <phillip.lord@newcastle.ac.uk>
 ;; Maintainer: Phillip Lord <phillip.lord@newcastle.ac.uk>
-;; Version: 0.4
-;; Package-Requires: ((emacs "24")(m-buffer "0.4-alpha")(dash "2.5.0"))
+;; Version: 0.5
+;; Package-Requires: ((emacs "24")(m-buffer "0.4")(dash "2.5.0"))
 
 ;; The contents of this file are subject to the GPL License, Version 3.0.
 ;;
