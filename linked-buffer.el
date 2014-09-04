@@ -421,10 +421,14 @@ same top-left location. Update details depend on CONF."
 ;;
 ;; Test functions!
 ;;
-(defun linked-buffer-batch-clone (filename)
-  "Open FILE, clone and save."
+(defun linked-buffer-batch-clone-and-save-with-config (filename init)
+  "Open FILENAME, set INIT function, then clone and save.
+
+This function does potentially evil things if the file or the
+linked-buffer is open already."
   (with-current-buffer
       (find-file-noselect filename)
+    (setq linked-buffer-init init)
     (with-current-buffer
         (linked-buffer-init-create)
       (save-buffer)
@@ -433,9 +437,7 @@ same top-left location. Update details depend on CONF."
 
 (defun linked-buffer-batch-clone-with-config
   (filename init)
-  "Open FILENAME, set INIT function, then clone and save.
-This function does potentially evil things if the file or the
-linked-buffer is open already.
+  "Open FILENAME, set INIT function, then clone.
 
 Return the linked-buffer contents without properties."
   (let ((retn nil))
