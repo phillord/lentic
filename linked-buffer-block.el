@@ -161,11 +161,11 @@ implicit start and END an implicit stop."
   "Returns the length of any text that pabbrev has currently added to the buffer."
   ;; this *exact* form suppresses byte compiler warnings.
   ;; when or if and does not!
-  (if (boundp 'pabbrev-expansion)
-      (if pabbrev-expansion
-          ;; pabbrev sorts the expansion but also adds "[]" either side"
-          (+ 2 (length pabbrev-expansion))
-        0)))
+  (if (and (boundp 'pabbrev-expansion)
+           pabbrev-expansion)
+      ;; pabbrev sorts the expansion but also adds "[]" either side"
+      (+ 2 (length pabbrev-expansion))
+      0))
 
 (defmethod linked-buffer-convert ((conf linked-buffer-block-configuration)
                                   location)
