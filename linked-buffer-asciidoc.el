@@ -83,20 +83,26 @@ second element and so on."
 
 (defun linked-buffer-partition-after-source (l-source l-dots)
   "Given a set of markers l-source, partition the markers in
-l-dots."
+l-dots.
+
+The source markers represent [source] markers, so we take the
+next matches to \"....\" immediately after a [source] marker.
+This should remove other \"....\" matches.
+"
   (-partition-by
    (linked-buffer-splitter l-source)
    (-drop-while
     (lambda (x)
-      (< x (car l-source)))
+      (and l-source
+           (< x (car l-source))))
     l-dots)))
-
 
 (defun linked-buffer-block-match-asciidoc
   (conf buffer)
   (let* ((source
           (m-buffer-match-begin buffer
                                 ";* *\\[source,\\\(clojure\\|lisp\\\)\\]"))
+         ;; this could also be a start of title
          (dots
           (m-buffer-match buffer
                           "^;* *----"))
@@ -108,9 +114,10 @@ l-dots."
          (source-end
           (linked-buffer-partition-after-source
            source (m-buffer-match-end dots))))
-    (list
-     (-map 'cadr source-start)
-     (-map 'car source-end))))
+    (when source
+      (list
+       (-map 'cadr source-start)
+       (-map 'car source-end)))))
 
 (defmethod linked-buffer-block-match
   ((conf linked-buffer-commented-asciidoc-configuration) buffer)
