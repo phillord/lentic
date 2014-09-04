@@ -273,10 +273,15 @@ See `linked-buffer-init' for details."
   (interactive)
   (setq linked-buffer-emergency t))
 
+(defun linked-buffer-unemergency ()
+  (interactive)
+  (setq linked-buffer-emergency nil))
+
 (defun linked-buffer-post-command-hook ()
   "Update point according to config, with error handling."
+  ;;(message "Entering post-command-hook")
   (unless linked-buffer-emergency
-    (condition-case-unless-debug err
+    (condition-case err
         (linked-buffer-post-command-hook-1)
       (error
        (linked-buffer-hook-fail err "post-command-hook")))))
@@ -351,7 +356,7 @@ A and B are the buffers."
   "Run change update according to `linked-buffer-config'.
 Errors are handled. REST is currently just ignored."
   (unless linked-buffer-emergency
-    (condition-case-unless-debug err
+    (condition-case err
         (linked-buffer-after-change-function-1 rest)
       (error
        (linked-buffer-hook-fail err "after change")))))
