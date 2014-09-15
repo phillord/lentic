@@ -3,3 +3,5 @@ auto
 /test/markdown-el.html
 /test/owl.tex
 *elc
+/.cask/
+\#*\#
