@@ -63,3 +63,9 @@
    (linked-buffer-test-clone-equal
     'linked-buffer-org-el-init
     "org-el.org" "org-el.el")))
+
+(ert-deftest linked-buffer-el-org ()
+  (should
+   (linked-buffer-test-clone-equal
+    'linked-buffer-el-org-init
+    "el-org.el" "el-org.org")))

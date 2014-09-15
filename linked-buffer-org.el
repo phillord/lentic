@@ -55,5 +55,22 @@
   (setq linked-buffer-config
         (linked-buffer-org-to-el-new)))
 
+(defun linked-buffer-el-to-org-new ()
+  (linked-buffer-commented-block-configuration
+   "lb-el-to-org"
+   :this-buffer (current-buffer)
+   :linked-file
+   (concat
+    (file-name-sans-extension
+     (buffer-file-name))
+    ".org")
+   :comment ";; "
+   :comment-stop "#\\\+BEGIN_SRC emacs-lisp"
+   :comment-start "#\\\+END_SRC"))
+
+(defun linked-buffer-el-org-init ()
+  (setq linked-buffer-config
+        (linked-buffer-el-to-org-new)))
+
 (provide 'linked-buffer-org)
 ;;; linked-buffer-org.el ends here
