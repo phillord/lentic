@@ -280,7 +280,7 @@ See `linked-buffer-init' for details."
 (defvar linked-buffer-emergency nil)
 
 (defun linked-buffer-emergency ()
-  "Ensures that the hooks that this mode requires are in place."
+  "Stop linked-buffer from working due to code problem"
   (interactive)
   (setq linked-buffer-emergency t))
 

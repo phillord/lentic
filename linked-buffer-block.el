@@ -65,7 +65,7 @@ start of line block comment in one buffer but not the other."
 
 (defmethod linked-buffer-blk-line-start-comment
   ((conf linked-buffer-block-configuration))
-  (concat "^" 
+  (concat "^"
           (oref conf :comment)))
 
 (defun linked-buffer-blk-uncomment-region (conf begin end buffer)
