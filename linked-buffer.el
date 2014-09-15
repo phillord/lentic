@@ -179,7 +179,11 @@ created."
          (sec-file (oref conf :linked-file)))
     ;; make sure this-buffer knows about that-buffer
     (oset conf :that-buffer that-buffer)
+    ;; insert the contents
+    (linked-buffer-update-contents conf)
     ;; init that-buffer with mode, file and config
+    ;; the mode must be init'd after adding content in case there are any
+    ;; file-local variables need to be evaled
     (with-current-buffer that-buffer
       (when sec-mode
         (funcall sec-mode))
@@ -187,8 +191,6 @@ created."
         (set-visited-file-name sec-file))
       (setq linked-buffer-config
             (linked-buffer-invert conf)))
-    ;; and fix the contents
-    (linked-buffer-update-contents conf)
     that-buffer))
 
 (defmethod linked-buffer-invert ((conf linked-buffer-default-configuration))
