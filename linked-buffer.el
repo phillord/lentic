@@ -259,7 +259,9 @@ See `linked-buffer-init' for details."
   (add-hook 'after-change-functions
             'linked-buffer-after-change-function)
   (add-hook 'before-change-functions
-            'linked-buffer-before-change-function))
+            'linked-buffer-before-change-function)
+  (add-hook 'after-save-hook
+            'linked-buffer-after-save-hook))
 
 (defvar linked-buffer-log t)
 (defmacro linked-buffer-log (&rest rest)
@@ -285,6 +287,18 @@ See `linked-buffer-init' for details."
 (defun linked-buffer-unemergency ()
   (interactive)
   (setq linked-buffer-emergency nil))
+
+(defvar linked-buffer-saving-p nil)
+
+(defun linked-buffer-after-save-hook ()
+  (linked-buffer-when-linked
+   ;; don't want to recurse!
+   (when (not linked-buffer-saving-p)
+     (let ((linked-buffer-saving-p t))
+       (with-current-buffer
+           (linked-buffer-that linked-buffer-config)
+         (when (buffer-file-name)
+           (save-buffer)))))))
 
 (defun linked-buffer-post-command-hook ()
   "Update point according to config, with error handling."
