@@ -55,8 +55,14 @@
              :comment-stop "\\\\begin{code}"))
     (error "Can only use linked-buffer-clojure-latex-init in a .clj buffer")))
 
+(add-to-list 'linked-buffer-init-functions
+             'linked-buffer-clojure-latex-init)
+
 (defun linked-buffer-clojure-latex-delayed-init ()
   (linked-buffer-delayed-init 'linked-buffer-clojure-latex-init))
+
+(add-to-list 'linked-buffer-init-functions
+             'linked-buffer-clojure-latex-delayed-init)
 
 (provide 'linked-buffer-latex-code)
 

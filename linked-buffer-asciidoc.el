@@ -44,6 +44,9 @@
   (setq linked-buffer-config
         (linked-buffer-asciidoc-commented-new)))
 
+(add-to-list 'linked-buffer-init-functions
+             'linked-buffer-clojure-asciidoc-init)
+
 (defun linked-buffer-asciidoc-uncommented-new ()
   (linked-buffer-uncommented-asciidoc-configuration
    "lb-uncommented-clojure-asciidoc"
@@ -58,14 +61,21 @@
   (setq linked-buffer-config
         (linked-buffer-asciidoc-uncommented-new)))
 
+(add-to-list 'linked-buffer-init-functions
+             'linked-buffer-asciidoc-clojure-init)
+
 (defclass linked-buffer-commented-asciidoc-configuration
   (linked-buffer-commented-block-configuration)
-  ()
+  ((srctags :initarg :srctags
+            :documentation "Language tags in source block"
+            :initform '("clojure" "lisp")))
   "Linked buffer config for asciidoc and other code.")
 
 (defclass linked-buffer-uncommented-asciidoc-configuration
   (linked-buffer-uncommented-block-configuration)
-  ()
+  ((srctags :initarg :srctags
+            :documentation "Language tags in source block"
+            :initform '("clojure" "lisp")))
   "Linked buffer config for asciidoc and other code")
 
 

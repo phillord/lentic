@@ -113,6 +113,10 @@ of mode in the current buffer.")
 (make-variable-buffer-local 'linked-buffer-config)
 (put 'linked-buffer-config 'permanent-local t)
 
+(defvar linked-buffer-init-functions nil
+  "A list of all functions that can be used as linked-buffer-init
+  functions.")
+
 (defun linked-buffer-config-name (buffer)
   "Given BUFFER, return a name for the configuration object."
   (format "linked: %s" buffer))
@@ -227,6 +231,9 @@ See `linked-buffer-init' for details."
          (linked-buffer-config-name (current-buffer))
          :this-buffer (current-buffer))))
 
+(add-to-list 'linked-buffer-init-functions
+             'linked-buffer-default-init)
+
 ;;
 ;; End the configuration section.
 ;;
@@ -306,23 +313,51 @@ ERR is the error. HOOK is the hook type."
     (princ (error-message-string err)))
   (select-window (get-buffer-window "*linked-buffer-fail*")))
 
-(defun linked-buffer-swap-windows ()
-  "Swaps buffer with linked-buffer in current window."
+(defun linked-buffer-move-linked-window ()
+  "Move the linked-buffer into the current window.
+If the linked-buffer is currently being displayed in another
+window, then the current-buffer will be moved into that window.
+See also `linked-buffer-swap-buffer-windows'."
+  (interactive)
+  (let ((before-window-start
+         (window-start (get-buffer-window)))
+        (before-window-point
+         (point)))
+    (linked-buffer-swap-buffer-windows
+     (current-buffer)
+     (linked-buffer-that linked-buffer-config))
+    (set-window-start
+     (selected-window)
+     before-window-start)
+    (goto-char before-window-point)))
+
+(defun linked-buffer-swap-linked-window ()
+  "Swap the window of the buffer and linked-buffer.
+If both are current displayed, swap the windows they
+are displayed in, which keeping current buffer.
+See also `linked-buffer-move-linked-window'."
   (interactive)
   (linked-buffer-swap-buffer-windows
    (current-buffer)
    (linked-buffer-that linked-buffer-config))
-  (select-window (get-buffer-window (current-buffer))))
+  (when (window-live-p
+         (get-buffer-window
+          (current-buffer)))
+    (select-window
+     (get-buffer-window
+      (current-buffer)))))
 
 (defun linked-buffer-swap-buffer-windows (a b)
   "Swaps the window that two buffers are displayed in.
 A and B are the buffers."
   (let ((window-a (get-buffer-window a))
         (window-b (get-buffer-window b)))
-    (set-window-buffer
-     window-a b)
-    (set-window-buffer
-     window-b a)))
+    (when window-a
+      (set-window-buffer
+       window-a b))
+    (when window-b
+      (set-window-buffer
+       window-b a))))
 
 (defun linked-buffer-ensure-init ()
   "Ensure that the `linked-buffer-init' has been run."
@@ -337,6 +372,22 @@ A and B are the buffers."
   "Create the linked-buffer for current-buffer."
   (linked-buffer-ensure-init)
   (linked-buffer-create linked-buffer-config))
+
+(defun linked-buffer-create-in-selected-window ()
+  "Create a linked buffer and move it to the current window."
+  (interactive)
+  (let ((before-window-start
+         (window-start (get-buffer-window)))
+        (before-window-point
+         (point)))
+    (linked-buffer-ensure-init)
+    (set-window-buffer
+     (selected-window)
+     (linked-buffer-create linked-buffer-config))
+    (set-window-start
+     (selected-window)
+     before-window-start)
+    (goto-char before-window-point)))
 
 (defun linked-buffer-split-window-below ()
   "Create a linked buffer in a new window below."
@@ -424,6 +475,74 @@ same top-left location. Update details depend on CONF."
            (goto-char from-point)
            (set-window-start window from-window-start))))
      (get-buffer-window-list (linked-buffer-that conf)))))
+
+;;
+;; Minor mode
+;;
+
+(defvar linked-buffer-mode-map (make-sparse-keymap)
+  "Keymap for linked-buffer-minor-mode")
+
+(define-key linked-buffer-mode-map
+  (kbd "C-c ,s") 'linked-buffer-swap-linked-window)
+
+(define-key linked-buffer-mode-map
+  (kbd "C-c ,h") 'linked-buffer-move-linked-window)
+
+(define-minor-mode linked-buffer-mode
+  :lighter "lb"
+  :keymap linked-buffer-mode-map)
+
+(easy-menu-change
+ '("Edit")
+ "Linked"
+ '(["Create Here" linked-buffer-create-in-selected-window]
+   ["Split Below" linked-buffer-split-window-below]
+   ["Split Right" linked-buffer-split-window-right]
+   ["Move Here" linked-buffer-move-linked-window :active linked-buffer-config]
+   ["Swap" linked-buffer-swap-buffer-windows :active linked-buffer-config]))
+
+(defun linked-buffer-insert-file-local (init-function)
+  (interactive
+   (list (completing-read
+          "Linked-Buffer init function: "
+          (mapcar
+           'symbol-name
+           linked-buffer-init-functions)
+          'identity 'confirm)))
+  (save-excursion
+    (goto-char (point-max))
+    (let ((start (point)))
+      (insert
+       (format
+        "\nLocal Variables:\nlinked-buffer-init: %s\nEnd:\n" init-function))
+      (comment-region start (point)))))
+
+(defvar linked-buffer-start-mode-map (make-sparse-keymap))
+
+(define-key linked-buffer-start-mode-map
+  (kbd "C-c ,b") 'linked-buffer-split-window-below)
+
+(define-key linked-buffer-start-mode-map
+  (kbd "C-c ,r") 'linked-buffer-split-window-right)
+
+(define-key linked-buffer-start-mode-map
+  (kbd "C-c ,f") 'linked-buffer-insert-file-local)
+
+(define-key linked-buffer-start-mode-map
+  (kbd "C-c ,c") 'linked-buffer-create-in-selected-window)
+
+
+(define-minor-mode linked-buffer-start-mode
+  :lighter ""
+  :keymap linked-buffer-start-mode-map)
+
+(define-globalized-minor-mode global-linked-buffer-start-mode
+  linked-buffer-start-mode
+  linked-buffer-start-on)
+
+(defun linked-buffer-start-on ()
+  (linked-buffer-start-mode 1))
 
 ;;
 ;; Test functions!
