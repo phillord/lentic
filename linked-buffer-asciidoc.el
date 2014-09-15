@@ -24,7 +24,7 @@
 
 ;;; Commentary:
 ;;
-;; Links buffers with asciidoc [source] blocks.
+;; Linked buffers with asciidoc [source] blocks.
 
 ;;; Code:
 (require 'linked-buffer-block)
@@ -110,8 +110,11 @@ This should remove other \"....\" matches.
 (defun linked-buffer-block-match-asciidoc
   (conf buffer)
   (let* ((source
-          (m-buffer-match-begin buffer
-                                ";* *\\[source,\\\(clojure\\|lisp\\\)\\]"))
+          (m-buffer-match-begin
+           buffer
+           (format ";* *\\[source,%s\\]"
+                   (regexp-opt
+                    (oref conf :srctags)))))
          ;; this could also be a start of title
          (dots
           (m-buffer-match buffer
