@@ -260,9 +260,9 @@ between the two buffers; we don't care which one has comments."
    "uncommented-inverted"
    :this-buffer (oref conf :that-buffer)
    :that-buffer (oref conf :this-buffer)
-   :comment (oref :comment conf)
-   :comment-start (oref :comment-start conf)
-   :comment-stop (oref :comment-stop conf)))
+   :comment (oref conf :comment)
+   :comment-start (oref  conf :comment-start)
+   :comment-stop (oref conf :comment-stop)))
 
 (defmethod linked-buffer-block-comment-start-regexp
   ((conf linked-buffer-uncommented-block-configuration))
