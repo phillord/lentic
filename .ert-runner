@@ -1,1 +1,1 @@
---load linked-buffer.el linked-buffer-block.el linked-buffer-latex-code linked-buffer-asciidoc test/linked-buffer-test.el
+--load linked-buffer.el linked-buffer-block.el linked-buffer-latex-code linked-buffer-asciidoc linked-buffer-org test/linked-buffer-test.el
