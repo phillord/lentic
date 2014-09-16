@@ -188,3 +188,7 @@
 
 (provide 'linked-buffer-org)
 ;;; linked-buffer-org.el ends here
+
+;; Local Variables:
+;; linked-buffer-init: linked-buffer-orgel-org-init
+;; End:
