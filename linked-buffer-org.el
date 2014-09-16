@@ -56,6 +56,9 @@
   (setq linked-buffer-config
         (linked-buffer-org-to-el-new)))
 
+(add-to-list 'linked-buffer-init-functions
+             'linked-buffer-org-el-init)
+
 (defun linked-buffer-el-to-org-new ()
   (linked-buffer-commented-block-configuration
    "lb-el-to-org"
@@ -73,6 +76,8 @@
   (setq linked-buffer-config
         (linked-buffer-el-to-org-new)))
 
+(add-to-list 'linked-buffer-init-functions
+             'linked-buffer-el-org-init)
 
 ;; this is the more complex stuff for orgel
 ;; which treats ;;; comments specially
@@ -125,6 +130,9 @@
   (setq linked-buffer-config
         (linked-buffer-org-to-orgel-new)))
 
+(add-to-list 'linked-buffer-init-functions
+             'linked-buffer-org-orgel-init)
+
 (defclass linked-buffer-orgel-to-org-configuration
   (linked-buffer-commented-block-configuration)
   ())
@@ -174,6 +182,9 @@
 (defun linked-buffer-orgel-org-init ()
   (setq linked-buffer-config
         (linked-buffer-orgel-to-org-new)))
+
+(add-to-list 'linked-buffer-init-functions
+             'linked-buffer-orgel-org-init)
 
 (provide 'linked-buffer-org)
 ;;; linked-buffer-org.el ends here
