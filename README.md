@@ -3,6 +3,18 @@ Please see linked-buffer.el for a richer description.
 
 ## ChangeLog
 
+### 0.5
+
+#### Features
+- org to emacs-lisp support
+- Asciidoc support for lisp
+- More Tests added
+- Full testing framework implemented
+
+#### Bug Fix
+
+- pabbrev handling was broken
+
 ### 0.4
 
 Some bug fixes and asciidoc->clojure support added.
