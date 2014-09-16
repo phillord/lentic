@@ -38,6 +38,7 @@
 
 ;;; Code:
 
+;; Simple org to el with nothing special
 (defun linked-buffer-org-to-el-new ()
   (linked-buffer-uncommented-block-configuration
    "lb-org-to-el"
@@ -71,6 +72,108 @@
 (defun linked-buffer-el-org-init ()
   (setq linked-buffer-config
         (linked-buffer-el-to-org-new)))
+
+
+;; this is the more complex stuff for orgel
+;; which treats ;;; comments specially
+(defclass linked-buffer-org-to-orgel-configuration
+  (linked-buffer-uncommented-block-configuration)
+  ())
+
+(defmethod linked-buffer-clone
+  ((conf linked-buffer-org-to-orgel-configuration))
+  ;; do everything else to the buffer
+  (call-next-method conf)
+  (m-buffer-replace-match
+   (m-buffer-match
+    (linked-buffer-that conf)
+    ";; # # "
+    :end
+    (cadr
+     (car
+      (m-buffer-match-line
+       (linked-buffer-that conf)))))
+   ";;; ")
+  ;; replace big headers
+  (m-buffer-replace-match
+   (m-buffer-match (linked-buffer-that conf)
+                   "^;; [*] \\(\\\w*\\)")
+   ";;; \\1:"))
+
+(defmethod linked-buffer-invert
+  ((conf linked-buffer-org-to-orgel-configuration))
+  (let ((rtn
+         (linked-buffer-orgel-to-org-new)))
+    (oset rtn :that-buffer
+          (linked-buffer-this conf))
+    rtn))
+
+(defun linked-buffer-org-to-orgel-new ()
+  (linked-buffer-org-to-orgel-configuration
+   "lb-orgel-to-el"
+   :this-buffer (current-buffer)
+   :linked-file
+   (concat
+    (file-name-sans-extension
+     (buffer-file-name))
+    ".el")
+   :comment ";; "
+   :comment-stop "#\\\+BEGIN_SRC emacs-lisp"
+   :comment-start "#\\\+END_SRC"))
+
+(defun linked-buffer-org-orgel-init ()
+  (setq linked-buffer-config
+        (linked-buffer-org-to-orgel-new)))
+
+(defclass linked-buffer-orgel-to-org-configuration
+  (linked-buffer-commented-block-configuration)
+  ())
+
+(defmethod linked-buffer-clone
+  ((conf linked-buffer-orgel-to-org-configuration))
+  ;; do everything else to the buffer
+  (call-next-method conf)
+  (m-buffer-replace-match
+   (m-buffer-match
+    (linked-buffer-that conf)
+    ";;; "
+    :end
+    (cadr
+     (car
+      (m-buffer-match-line
+       (linked-buffer-that conf)))))
+   "# # ")
+  (m-buffer-replace-match
+   (m-buffer-match (linked-buffer-that conf) 
+                   "^;;; \\(\\\w*\\):")
+   "* \\1"))
+
+(defmethod linked-buffer-invert
+  ((conf linked-buffer-orgel-to-org-configuration))
+  (let ((rtn
+         (linked-buffer-org-to-orgel-new)))
+    (oset rtn :that-buffer (linked-buffer-this conf))
+    rtn))
+
+(defun linked-buffer-orgel-to-org-new ()
+  (linked-buffer-orgel-to-org-configuration
+   "lb-orgel-to-org"
+   :this-buffer (current-buffer)
+   ;; we don't really need a file and could cope without, but org mode assumes
+   ;; that the buffer is file name bound when it exports. As it happens, this
+   ;; also means that file saving is possible which in turn saves the el file
+   :linked-file
+   (concat
+    (file-name-sans-extension
+     (buffer-file-name))
+    ".org")
+   :comment ";; "
+   :comment-stop "#\\\+BEGIN_SRC emacs-lisp"
+   :comment-start "#\\\+END_SRC"))
+
+(defun linked-buffer-orgel-org-init ()
+  (setq linked-buffer-config
+        (linked-buffer-orgel-to-org-new)))
 
 (provide 'linked-buffer-org)
 ;;; linked-buffer-org.el ends here

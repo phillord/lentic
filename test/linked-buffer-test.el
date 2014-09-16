@@ -1,4 +1,3 @@
-
 (require 'linked-buffer)
 (require 'linked-buffer-latex-code)
 (require 'linked-buffer-asciidoc)
@@ -25,7 +24,6 @@
     (linked-buffer-test-file cloned-file))
    (linked-buffer-batch-clone-with-config
     (linked-buffer-test-file file) init)))
-
 
 (defvar conf-default
   (linked-buffer-default-configuration "bob"))
@@ -69,3 +67,16 @@
    (linked-buffer-test-clone-equal
     'linked-buffer-el-org-init
     "el-org.el" "el-org.org")))
+
+(ert-deftest linked-buffer-orgel-org ()
+  (should
+   (linked-buffer-test-clone-equal
+    'linked-buffer-orgel-org-init
+    "orgel-org.el" "orgel-org.org")))
+
+;; Use this to generate a new test file
+
+;; (linked-buffer-batch-clone-and-save-with-config
+;;    "../dev-resources/orgel-org.el"
+;;    'linked-buffer-orgel-org-init
+;;  )
