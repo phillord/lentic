@@ -68,11 +68,17 @@
     'linked-buffer-el-org-init
     "el-org.el" "el-org.org")))
 
-(ert-deftest linked-buffer-orgel-org ()
+(ert-deftest linked-buffer-orgel-org()
   (should
    (linked-buffer-test-clone-equal
     'linked-buffer-orgel-org-init
     "orgel-org.el" "orgel-org.org")))
+
+(ert-deftest linked-buffer-org-orgel()
+  (should
+   (linked-buffer-test-clone-equal
+    'linked-buffer-org-orgel-init
+    "org-orgel.org" "org-orgel.el")))
 
 ;; Use this to generate a new test file
 
