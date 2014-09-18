@@ -1,4 +1,7 @@
-Please see linked-buffer.el for a richer description.
+Linked-buffer allows two buffers to share the same or similar content but
+otherwise operate independently. This allows multi-modal editing.
+
+For more details see linked-buffer.el
 
 
 ## ChangeLog
