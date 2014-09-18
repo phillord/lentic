@@ -97,7 +97,7 @@ start of line comment characters beween BEGIN and END in BUFFER."
     ;; perhaps we should ignore lines which are already commented,
     "\\(^\\).+"
     :begin begin :end end)
-   (oref conf :comment) 1))
+   (oref conf :comment) nil nil 1))
 
 (defun linked-buffer-blk-comment-buffer (conf begin end buffer)
   "Given CONF, a `linked-buffer-configuration' object, add
