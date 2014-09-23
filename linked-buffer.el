@@ -4,7 +4,7 @@
 
 ;; Author: Phillip Lord <phillip.lord@newcastle.ac.uk>
 ;; Maintainer: Phillip Lord <phillip.lord@newcastle.ac.uk>
-;; Version: 0.5
+;; Version: 0.6
 ;; Package-Requires: ((emacs "24")(m-buffer "0.5")(dash "2.5.0"))
 
 ;; The contents of this file are subject to the GPL License, Version 3.0.
@@ -129,7 +129,10 @@ of mode in the current buffer.")
   ((this-buffer
     :initarg :this-buffer)
    (that-buffer
-    :initarg :that-buffer))
+    :initarg :that-buffer)
+   (sync-point
+    :initarg :sync-point
+    :initform t))
   "Configuration object for linked-buffer, which defines the mechanism
 by which linking happens.")
 
@@ -237,8 +240,6 @@ See `linked-buffer-init' for details."
 ;;
 ;; End the configuration section.
 ;;
-
-
 (defmacro linked-buffer-when-linked (&rest body)
   "Evaluate BODY when in a linked-buffer."
   `(when (and
@@ -462,37 +463,45 @@ Update mechanism depends on CONF."
   "Update the location of point in that-buffer to reflect this-buffer.
 This also attempts to update any windows so that they show the
 same top-left location. Update details depend on CONF."
-  (let* ((from-point
-          (linked-buffer-convert
-           conf
-           (with-current-buffer
-               (linked-buffer-this conf)
-             (point))))
-         (from-window-start
-          (linked-buffer-convert
-           conf
-           (window-start
-            (get-buffer-window
-             (linked-buffer-this conf))))))
-    ;; clone point in buffer important when the buffer is NOT visible in a
-    ;; window at all
-    (with-current-buffer
-        (linked-buffer-that conf)
-      (goto-char from-point))
-    ;; now clone point in all the windows that are showing the buffer
-    ;; and set the start of the window which is a reasonable attempt to show
-    ;; the same thing.
-    (mapc
-     (lambda (window)
-       (with-selected-window window
-         (progn
-           (goto-char from-point)
-           (set-window-start window from-window-start))))
-     (get-buffer-window-list (linked-buffer-that conf)))))
+  ;; only sync when we are told to!
+  (when (oref conf :sync-point)
+    (let* ((from-point
+            (linked-buffer-convert
+             conf
+             (with-current-buffer
+                 (linked-buffer-this conf)
+               (point))))
+           (from-window-start
+            (linked-buffer-convert
+             conf
+             (window-start
+              (get-buffer-window
+               (linked-buffer-this conf))))))
+      ;; clone point in buffer important when the buffer is NOT visible in a
+      ;; window at all
+      (with-current-buffer
+          (linked-buffer-that conf)
+        (goto-char from-point))
+      ;; now clone point in all the windows that are showing the buffer
+
+      ;; and set the start of the window which is a reasonable attempt to show
+      ;; the same thing.
+      (mapc
+       (lambda (window)
+         (with-selected-window window
+           (progn
+             (goto-char from-point)
+             (set-window-start window from-window-start))))
+       (get-buffer-window-list (linked-buffer-that conf))))))
 
 ;;
 ;; Minor mode
 ;;
+(defun linked-buffer-toggle-auto-sync-point ()
+  (interactive)
+  (linked-buffer-when-linked
+   (oset linked-buffer-config :sync-point
+         (not (oref linked-buffer-config :sync-point)))))
 
 (defvar linked-buffer-mode-map (make-sparse-keymap)
   "Keymap for linked-buffer-minor-mode")
