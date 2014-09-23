@@ -80,9 +80,16 @@
     'linked-buffer-org-orgel-init
     "org-orgel.org" "org-orgel.el")))
 
+
+(ert-deftest linked-buffer-org-clojure ()
+  (should
+   (linked-buffer-test-clone-equal
+    'linked-buffer-org-clojure-init
+    "org-clojure.org" "org-clojure.clj"
+    )))
+
 ;; Use this to generate a new test file
 
 ;; (linked-buffer-batch-clone-and-save-with-config
-;;    "../dev-resources/orgel-org.el"
-;;    'linked-buffer-orgel-org-init
-;;  )
+;;    "../dev-resources/org-clojure.org"
+;;    'linked-buffer-org-clojure-init)

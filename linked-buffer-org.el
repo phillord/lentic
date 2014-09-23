@@ -59,7 +59,7 @@
 ;; embedded lisp, but it will *not* appear in first line of an emacs-lisp
 ;; linked-buffer, so the file will be interpreted with dynamic binding.
 
-;; *** Implementation
+;;; Implementation:
 
 ;; The implementation is a straight-forward use of `linked-buffer-block' with
 ;; regexps for org source blocks. It currently takes no account of
@@ -135,6 +135,13 @@
 ;;  - the first line summary is transformed into a comment in org
 ;;  - all single word ";;;" headers are transformed into level 1 org headings.
 ;;  - ";;" comments are removed except inside emacs-lisp source blocks.
+
+;; *** Converting an Existing file
+
+;; It is relatively simple to convert an existing emacs-lisp file, so that it
+;; will work with the orgel transformation.
+
+
 
 ;; *** Limitations
 
@@ -260,7 +267,7 @@
        (linked-buffer-that conf)))))
    "# # ")
   (m-buffer-replace-match
-   (m-buffer-match (linked-buffer-that conf) 
+   (m-buffer-match (linked-buffer-that conf)
                    "^;;; \\(\\\w*\\):")
    "* \\1"))
 
@@ -296,6 +303,51 @@
 
 ;; #+END_SRC
 
+
+
+;; ** org->clojure
+
+;; #+BEGIN_SRC emacs-lisp
+(defun linked-buffer-org-to-clojure-new ()
+  (linked-buffer-uncommented-block-configuration
+   "lb-org-to-clojure"
+   :this-buffer (current-buffer)
+   :linked-file
+   (concat
+    (file-name-sans-extension
+     (buffer-file-name))
+    ".clj")
+   :comment ";; "
+   :comment-stop "#\\\+BEGIN_SRC clojure"
+   :comment-start "#\\\+END_SRC"))
+
+(defun linked-buffer-org-clojure-init ()
+  (setq linked-buffer-config
+        (linked-buffer-org-to-clojure-new)))
+
+(add-to-list 'linked-buffer-init-functions
+             'linked-buffer-org-clojure-init)
+
+(defun linked-buffer-clojure-to-org-new ()
+  (linked-buffer-commented-block-configuration
+   "lb-clojure-to-org"
+   :this-buffer (current-buffer)
+   :linked-file
+   (concat
+    (file-name-sans-extension
+     (buffer-file-name))
+    ".org")
+   :comment ";; "
+   :comment-stop "#\\\+BEGIN_SRC clojure"
+   :comment-start "#\\\+END_SRC"))
+
+(defun linked-buffer-clojure-org-init ()
+  (setq linked-buffer-config
+        (linked-buffer-clojure-to-org-new)))
+
+(add-to-list 'linked-buffer-init-functions
+             'linked-buffer-clojure-org-init)
+;; #+END_SRC
 
 ;;; Footer:
 
