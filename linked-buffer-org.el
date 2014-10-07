@@ -319,7 +319,10 @@
     ".clj")
    :comment ";; "
    :comment-stop "#\\\+BEGIN_SRC clojure"
-   :comment-start "#\\\+END_SRC"))
+   :comment-start "#\\\+END_SRC"
+   ;; don't ignore case -- so using lower case begin_src
+   ;; will be ignored. Probably we should count instead!
+   :case-fold-search nil))
 
 (defun linked-buffer-org-clojure-init ()
   (setq linked-buffer-config
@@ -349,11 +352,12 @@
              'linked-buffer-clojure-org-init)
 ;; #+END_SRC
 
+
 ;;; Footer:
 
 ;; Declare the end of the file, and add file-local support for orgel->org
-;; transformation. Do not use linked-buffers on this file while changing the lisp
-;; in the file without backing up first!
+;; transformation. Do not use linked-buffers on this file while changing the
+;; lisp in the file without backing up first!
 
 ;; #+BEGIN_SRC emacs-lisp
 (provide 'linked-buffer-org)
