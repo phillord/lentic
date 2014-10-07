@@ -40,12 +40,15 @@
                   "Demarcation for the start of the commenting region")
    (comment-stop :initarg :comment-stop
                 :documentation
-                "Demarcaction for the end of the commenting region."))
+                "Demarcaction for the end of the commenting region.")
+   (case-fold-search :initarg :case-fold-search
+                      :documentation
+                      "Should match be case sensitive"
+                      :initform :default))
   :documentation "Base configuration for blocked linked-buffers.
 A blocked linked-buffer is one where blocks of the buffer have a
 start of line block comment in one buffer but not the other."
-  :abstract t
-  )
+  :abstract t)
 
 
 (defmethod linked-buffer-blk-comment-start-regexp
@@ -152,10 +155,12 @@ implicit start and END an implicit stop."
   (list
    (m-buffer-match-begin
     buffer
-    (linked-buffer-block-comment-start-regexp conf))
+    (linked-buffer-block-comment-start-regexp conf)
+    :case-fold-search (oref conf :case-fold-search))
    (m-buffer-match-end
     buffer
-    (linked-buffer-block-comment-stop-regexp conf))))
+    (linked-buffer-block-comment-stop-regexp conf)
+    :case-fold-search (oref conf :case-fold-search))))
 
 (defun linked-buffer-pabbrev-expansion-length ()
   "Returns the length of any text that pabbrev has currently added to the buffer."
