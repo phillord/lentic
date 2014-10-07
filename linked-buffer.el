@@ -538,7 +538,10 @@ same top-left location. Update details depend on CONF."
     (let ((start (point)))
       (insert
        (format
-        "\nLocal Variables:\nlinked-buffer-init: %s\nEnd:\n" init-function))
+        ;; split this string or we get local variable not terminated properly
+        ;; errors.
+        (concat "\nLocal"
+                " Variables:\nlinked-buffer-init: %s\nEnd:\n") init-function))
       (comment-region start (point)))))
 
 (defvar linked-buffer-start-mode-map (make-sparse-keymap))
