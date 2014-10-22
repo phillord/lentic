@@ -1,5 +1,7 @@
 ;;; linked-buffer.el --- One buffer as a view of another -*- lexical-binding: t -*-
 
+;;; Header:
+
 ;; This file is not part of Emacs
 
 ;; Author: Phillip Lord <phillip.lord@newcastle.ac.uk>
@@ -8,90 +10,122 @@
 ;; Package-Requires: ((emacs "24")(m-buffer "0.5")(dash "2.5.0"))
 
 ;; The contents of this file are subject to the GPL License, Version 3.0.
-;;
+
 ;; Copyright (C) 2014, Phillip Lord, Newcastle University
-;;
+
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or
 ;; (at your option) any later version.
-;;
+
 ;; This program is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
-;;
+
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-;;
-;; Sometimes, it would be nice to edit a file in two ways at once. For
-;; instance, you might have a source file in a computational language with
-;; richly marked documentation. As Emacs is a modal editor, you can edit one
-;; in a mode for the computational language or for the marked up
-;; documentation.
-;;
-;; One solution to this is to use one of the multiple-mode tools which are
-;; available. The problem with this is that generally need some support from
-;; the modes in question. In addition, they also require tools that work with
-;; the mixed content; for example, Haskells literate mode.
-;;
+
+;; Linked-buffers enables simultaneous editing and viewing of the same (or
+;; closely related) text in two or more buffers, potentially in different modes.
+
+;; Sometimes, it would be nice to edit a file in two ways at once. For instance,
+;; you might have a source file in a computational language with richly marked
+;; documentation. As Emacs is a modal editor, it would be nice to edit this file
+;; both in a mode for the computational language and for the marked up
+;; documentation. 
+
+;; One solution to this is to use a single-mode which supports both types of
+;; editing. The problem with this is that it is fundamentally difficult to
+;; support two types of editing at the same time; more over, you need a new mode
+;; for environment.
+
+;; Another solution is to use one of the multiple-mode tools which are available.
+;; The problem with this is that they generally need some support from the modes
+;; in question. And, again, the difficulty is supporting both forms of editing in
+;; the same environment.
+
 ;; Linked buffers provide an alternative solution. Two linked buffers, by
 ;; default, the two share content but are otherwise independent. Therefore,
 ;; you can have two buffers open, each showing the content in different modes;
 ;; to switch modes, you simply switch buffers. The content, location of point,
 ;; and view are shared.
-;;
-;; However, linked-buffers also a bi-directional transformation between the
-;; two. If this is done, then the two can have different but related text. It
-;; is possible to configure the transformation for any two pairs of modes.
-;;
-;; Main entry points are `linked-buffer-split-window-right' and
-;; `linked-buffer-split-window-below' both of which create a linked buffer in
-;; the new window. Programmatically `linked-buffer-create', well, creates a
-;; linked-buffer.
-;;
+
+;; However, linked-buffers can also perform a bi-directional transformation
+;; between the two. If this is done, then the two can have different but related
+;; text. It is possible to configure the transformation for any two buffers in a
+;; extensible way, although mostly we have concentrated on mode-specific
+;; configuration.
+
+;; The main user entry point is through `global-linked-buffer-start-mode' which
+;; provides tools to create new a new linked-buffer.
+
 ;;; Configuration:
-;;
+
 ;; linked-buffers are configurable in a large number of ways. It is possible
 ;; to control the nature of the transformation, the default buffer name that a
 ;; linked-buffer takes, and the file location (or not) of the linked-buffer.
 ;; For this release of linked-buffer currently, each buffer can only be linked
 ;; to a single buffer, although this restriction will be removed in later
 ;; versions.
-;;
+
 ;; Configuration of a buffer happens in one of two places. First,
 ;; `linked-buffer-init' is run when a linked-buffer is first created. This
 ;; function should set the actual configuration `linked-buffer-config', and is
-;; mostly designed for use as a file-local variable. All subsequent
-;; configuration happens through `linked-buffer-config' which is an EIEIO
-;; object and associated methods.
-;;
-;; Currently, I have only two concrete and one abstract configurations -- one
-;; which copies all text exactly, but does not transfer text-properties (which
-;; indirect-buffers do). There is a block-comment configuration which is
-;; designed for syntaxes where beginning on line comments are required in
-;; blocks of one buffer but not in the other. Finally, there is a concrete
-;; extension of the block-comment configuration which is allows transformation
-;; between Clojure code and latex.
-;;
-;; More configurations will be forth-coming -- next on the list will be
-;; Emacs-Lisp to either asciidoc or markdown, so that this source can be made
-;; literate.
-;;
-;; I think that the current configuration scheme is good enough for the
-;; future, but only time will tell and it should still be considered
-;; preliminary.
-;;
+;; mostly designed for use as a file-local or dir-local variable. All subsequent
+;; configuration happens through `linked-buffer-config' which is an EIEIO object
+;; and associated methods.
+
+;; There are now a number of different configurations, which can be used for
+;; general-purpose use as well as an extension points for subclass
+;; configurations. The two most general configurations are:
+
+;;  - default: this copies all text exactly, but does not transfer
+;;    text-properties (which is the behaviour of indirect buffers). It is
+;;    possible to configure the default file or mode on a per-object basis.
+;;  - block: this is designed for programmatic syntaxes where blocks of code are
+;;    demarcated by start and end tags, and everything else is commented by
+;;    line-start comments. Comments are added or removed between the two buffers.
+
+;; The second of these is extended in linked-buffer-org.el to provide the
+;; configuration for this file: there is a normal emacs-lisp file in one buffer
+;; and an org-mode version in another. Other programmatic and documentation modes
+;; are supported in other files.
+
 ;;; Status:
-;;
+
 ;; This is an early release partly because I am interested in comments.
-;; Hopefully, it will crash rather than hang Emacs. It currently performs
-;; badly on large buffers, especially changes which make many small changes.
-;; There are some outstanding bugs.
+;; There are still bugs and it can perform badly and destructively, particularly
+;; on buffers which are ill-formed with respect to their expected syntax.
+
+;; Although it is still too early to guarantee, I hope that the current
+;; configuration scheme will remain fixed, and subclass extensions should require
+;; little change for the future, except as a result of changes to address the
+;; issues described in the next paragraph.
+
+;; The current implementation is crude -- currently, the entire buffer is copied
+;; on every change event. For large buffer, this comes with a significant
+;; performance penalty, although for modern computers "large" means "pretty big".
+;; One solution to this is offered by `linked-buffer-delayed-configuration'; this
+;; performs the copying in the idle cycle and, as a side-effect, amalgamates
+;; multiple changes into a single copy. As a second problem when switching
+;; buffers rapidly, it can effectively break the undo mechanism -- or at least, I
+;; think it is this that is causing the problem. Currently, there is no
+;; workaround for this. We hope to address this in later releases with a more
+;; fine-grained cloning mechanism.
 
 ;;; Code:
+
+;; ** State
+
+;; This section defines all of the variables that the basic state for
+;; linked-buffer is stored in. We deliberately have as few of these as possible,
+;; as this makes re-initializing the state during development as straight-forward
+;; as possible.
+
+;; #+BEGIN_SRC emacs-lisp
 
 (require 'eieio)
 
@@ -121,9 +155,18 @@ of mode in the current buffer.")
   "Given BUFFER, return a name for the configuration object."
   (format "linked: %s" buffer))
 
+
+;; #+end_src
+
+;; ** Base Configuration
+
+;; This section defines the base class and generic methods for all
+;; linked-buffer-configuration objects.
+
+
+;; #+begin_src emacs-lisp
 ;;
 ;; Base Configuration:
-
 ;;
 (defclass linked-buffer-configuration ()
   ((this-buffer
@@ -152,11 +195,16 @@ or create it if it does not exist."
   (or (linked-buffer-that conf)
       (linked-buffer-create conf)))
 
-;;
-;; Default Configuration:
-;;
-;; Two buffers with exactly the same contents, like an indirect buffer
-;;
+;; #+end_src
+
+;; ** Default Configuration
+
+;; Two buffers with exactly the same contents, like an indirect buffer but
+;; without the equivalent transfer of text properties.
+
+
+;; #+begin_src emacs-lisp
+
 (defclass linked-buffer-default-configuration (linked-buffer-configuration)
   ((linked-file
     :initform nil
@@ -237,9 +285,14 @@ See `linked-buffer-init' for details."
 (add-to-list 'linked-buffer-init-functions
              'linked-buffer-default-init)
 
-;;
-;; End the configuration section.
-;;
+
+;; #+end_src
+
+;; ** Basic Operation
+
+;; Hooks into Emacs change system, some basic window management tools and so on.
+
+;; #+begin_src emacs-lisp
 (defmacro linked-buffer-when-linked (&rest body)
   "Evaluate BODY when in a linked-buffer."
   `(when (and
@@ -483,7 +536,6 @@ same top-left location. Update details depend on CONF."
           (linked-buffer-that conf)
         (goto-char from-point))
       ;; now clone point in all the windows that are showing the buffer
-
       ;; and set the start of the window which is a reasonable attempt to show
       ;; the same thing.
       (mapc
@@ -494,9 +546,12 @@ same top-left location. Update details depend on CONF."
              (set-window-start window from-window-start))))
        (get-buffer-window-list (linked-buffer-that conf))))))
 
-;;
-;; Minor mode
-;;
+
+;; #+end_src
+
+;; ** Minor Mode
+
+;; #+begin_src emacs-lisp
 (defun linked-buffer-toggle-auto-sync-point ()
   (interactive)
   (linked-buffer-when-linked
@@ -570,9 +625,17 @@ same top-left location. Update details depend on CONF."
 (defun linked-buffer-start-on ()
   (linked-buffer-start-mode 1))
 
-;;
-;; Test functions!
-;;
+
+;; #+end_src
+
+;; ** Test Functions
+
+;; Functions which are used for testing new linked-buffer-configurations; as such
+;; they are either batch operation functionality, or interactive commands to run
+;; the various hook commands rather than from the post-command or after-change
+;; hook functionality.
+
+;; #+begin_src emacs-lisp
 (defun linked-buffer-batch-clone-and-save-with-config (filename init)
   "Open FILENAME, set INIT function, then clone and save.
 
@@ -635,4 +698,6 @@ to make sure there is a new one."
 
 (provide 'linked-buffer)
 
-;;; linked-buffer.el ends here
+;; #+END_SRC
+
+;; ;;; linked-buffer.el ends here
