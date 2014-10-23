@@ -39,6 +39,7 @@
 (require 'linked-buffer-block)
 ;; #+END_SRC
 
+
 ;;; Code:
 
 ;; ** Simple org->el
@@ -59,7 +60,8 @@
 ;; embedded lisp, but it will *not* appear in first line of an emacs-lisp
 ;; linked-buffer, so the file will be interpreted with dynamic binding.
 
-;;; Implementation:
+
+;; *** Implementation
 
 ;; The implementation is a straight-forward use of `linked-buffer-block' with
 ;; regexps for org source blocks. It currently takes no account of
@@ -109,7 +111,7 @@
 ;; #+END_SRC
 
 
-;; ** orgel->org
+;; *** orgel->org
 
 ;; In this section, we define a different transformation from what we call an
 ;; orgel file. This is a completely valid emacs-lisp file which transforms
@@ -139,9 +141,25 @@
 ;; *** Converting an Existing file
 
 ;; It is relatively simple to convert an existing emacs-lisp file, so that it
-;; will work with the orgel transformation.
+;; will work with the orgel transformation. orgel files work with (nearly) all
+;; existing Emacs-Lisp documentaton standards but have a few extra bits added
+;; in to work with org.
 
+;; Current ";;;" section demarcation headers in emacs-lisp are used directly
+;; and are transformed into Section 1 headings in org-mode. Unfortunately, in
+;; emacs-lisp the header is *not* explicitly marked -- it's just the start
+;; to the ";;; Commentary:" header. To enable folding of the header,
+;; therefore, you need to introduce a ";;; Header:" line *after* the first line.
+;; You may also wish to add a ";;; Footer:" heading as well.
 
+;; Secondly, mark *all* of the code with org-mode source demarks. Finally, set
+;; `linked-buffer-init' to `linked-buffer-orgel-org-init' (normally with a
+;; file-local or dir-local variable). Now linked-buffer can be started. The
+;; header will appear as normal text in the org-mode buffer, with all other
+;; comments inside a source block. You can now move through the buffer splitting
+;; the source block (with `org-babel-demarcate-block' which has to win a prize
+;; for the most obscurely named command), and move comments out of the source
+;; block into the newly created text block.
 
 ;; *** Limitations
 
@@ -159,6 +177,7 @@
 ;; start of file semantics of both =.org= and =.el= so this will probably remain.
 ;; The content can always be duplicated which is painful, but the summary line is
 ;; unlikely to get updated regularly.
+
 
 ;; *** Implementation
 
@@ -305,7 +324,8 @@
 
 
 
-;; ** org->clojure
+
+;; *** org->clojure
 
 ;; #+BEGIN_SRC emacs-lisp
 (defun linked-buffer-org-to-clojure-new ()
