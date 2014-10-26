@@ -34,7 +34,6 @@
 ;; first which we call org-el (or el-org) is a relatively simple translation
 ;; between the two modes.
 
-
 ;; #+BEGIN_SRC emacs-lisp
 (require 'linked-buffer-block)
 ;; #+END_SRC
@@ -111,7 +110,7 @@
 ;; #+END_SRC
 
 
-;; *** orgel->org
+;; ** orgel->org
 
 ;; In this section, we define a different transformation from what we call an
 ;; orgel file. This is a completely valid emacs-lisp file which transforms
