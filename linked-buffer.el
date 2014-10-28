@@ -291,7 +291,7 @@ the linked-buffer."
 
 Currently, this is just a clone all method but may use regions in future."
  (let ((this-b (oref conf :this-buffer))
-        (that-b (oref conf :that-buffer)))
+       (that-b (oref conf :that-buffer)))
 
     (linked-buffer-log
      "(start, stop, length-before):(%s,%s,%s)" start stop length-before)
@@ -301,18 +301,22 @@ Currently, this is just a clone all method but may use regions in future."
             (length-before (or length-before (buffer-size that-b))))
         (with-current-buffer that-b
           (delete-region (max (point-min) (linked-buffer-convert conf start))
-                         (min (point-max) 
+                         (min (point-max)
                               (+ length-before
                                  (linked-buffer-convert conf start))))
-          (insert
-           (save-restriction
-             (with-current-buffer this-b
-               (widen)
-               ;; want to see where it goes
-               (propertize
-                (buffer-substring-no-properties
-                 start stop)
-                'face 'error)))))))))
+          (save-excursion
+            ;; used this three times now!
+            (goto-char (linked-buffer-convert conf start))
+            (insert
+             (save-restriction
+               (with-current-buffer this-b
+                 (widen)
+                 ;; want to see where it goes
+                 ;; hence the property
+                 (propertize
+                  (buffer-substring-no-properties
+                   start stop)
+                  'face 'error))))))))))
 
 (defun linked-buffer-default-init ()
   "Default init function.
