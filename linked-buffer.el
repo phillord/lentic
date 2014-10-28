@@ -260,19 +260,59 @@ created."
 the linked-buffer."
   location)
 
-(defmethod linked-buffer-clone ((conf linked-buffer-configuration))
+;; before-change-functions (beginning-of-region-b4 end-of-region-b4)
+;; after-change-functions (beginning-of-region-af end-of-region-af length-of-text-before-change)
+
+
+;; Addition *2 
+;; Before-change:(192 192)
+;; Updating after-change (current:linked:rest): *linked: *scratch**,*scratch*,(192 193 0)
+
+;; Before-change:(193 193)
+;; Updating after-change (current:linked:rest): *linked: *scratch**,*scratch*,(193 194 0)
+
+;; Deletion
+
+;; Before-change:(192 194)
+;; Updating after-change (current:linked:rest): *linked: *scratch**,*scratch*,(192 192 2)
+
+;; Do we have enough data from the after change? I think so -- we go to the
+;; point at the start of the region (whcih can surely never change?), then we
+;; delete the size before (2 or 0 in this case), then we put the new text in place.
+
+;;
+;; Before-change:(192 192)
+;; Updating after-change (current:linked:rest): *linked: *scratch**,*scratch*,(192 193 0)
+
+
+(defmethod linked-buffer-clone ((conf linked-buffer-configuration)
+                                &optional start stop length-before)
   "Updates that-buffer to reflect the contents in this-buffer.
 
 Currently, this is just a clone all method but may use regions in future."
-  (with-current-buffer (oref conf :that-buffer)
-    (erase-buffer)
-    (insert
-     (save-restriction
-       (with-current-buffer (oref conf :this-buffer)
-         (widen)
-         (buffer-substring-no-properties
-          (point-min)
-          (point-max)))))))
+ (let ((this-b (oref conf :this-buffer))
+        (that-b (oref conf :that-buffer)))
+
+    (linked-buffer-log
+     "(start, stop, length-before):(%s,%s,%s)" start stop length-before)
+    (with-current-buffer this-b
+      (let ((start (or start (point-min)))
+            (stop (or stop (point-max)))
+            (length-before (or length-before (buffer-size that-b))))
+        (with-current-buffer that-b
+          (delete-region (max (point-min) (linked-buffer-convert conf start))
+                         (min (point-max) 
+                              (+ length-before
+                                 (linked-buffer-convert conf start))))
+          (insert
+           (save-restriction
+             (with-current-buffer this-b
+               (widen)
+               ;; want to see where it goes
+               (propertize
+                (buffer-substring-no-properties
+                 start stop)
+                'face 'error)))))))))
 
 (defun linked-buffer-default-init ()
   "Default init function.
@@ -473,35 +513,39 @@ A and B are the buffers."
    (split-window-right)
    (linked-buffer-create linked-buffer-config)))
 
-(defun linked-buffer-after-change-function (&rest rest)
+(defun linked-buffer-after-change-function (start stop length-before)
   "Run change update according to `linked-buffer-config'.
 Errors are handled. REST is currently just ignored."
   (unless linked-buffer-emergency
     (condition-case err
-        (linked-buffer-after-change-function-1 rest)
+        (linked-buffer-after-change-function-1 start stop length-before)
       (error
        (linked-buffer-hook-fail err "after change")))))
 
-(defun linked-buffer-after-change-function-1 (rest)
+(defun linked-buffer-after-change-function-1 (start stop length-before)
   "Run change update according to `linked-buffer-config'.
 REST is currently just ignored."
   (linked-buffer-when-linked
    (linked-buffer-log
     "Updating after-change (current:linked:rest): %s,%s,%s"
     (current-buffer)
-    (linked-buffer-that linked-buffer-config) rest)
-   (linked-buffer-update-contents linked-buffer-config)))
+    (linked-buffer-that linked-buffer-config)
+    (list start stop length-before))
+   (linked-buffer-update-contents linked-buffer-config
+                                  start stop length-before)))
 
 (defun linked-buffer-before-change-function (&rest rest)
   "Run before change update.
 REST is currently ignored. Currently this does nothing."
   (unless linked-buffer-emergency
     (condition-case err
+        (linked-buffer-log
+         "Before-change:%s" rest)
         (lambda ())
       (error
        (linked-buffer-hook-fail err "before change")))))
 
-(defun linked-buffer-update-contents (conf)
+(defun linked-buffer-update-contents (conf &optional start stop length-before)
   "Update the contents of that-buffer with the contents of this-buffer.
 Update mechanism depends on CONF."
   (unwind-protect
@@ -509,7 +553,7 @@ Update mechanism depends on CONF."
         (setq inhibit-read-only t)
         (linked-buffer-log
          "Update config: %s" linked-buffer-config)
-        (linked-buffer-clone conf))
+        (linked-buffer-clone conf start stop length-before))
     (setq inhibit-read-only nil)))
 
 (defun linked-buffer-update-point (conf)
@@ -700,4 +744,4 @@ to make sure there is a new one."
 
 ;; #+END_SRC
 
-;; ;;; linked-buffer.el ends here
+;;; linked-buffer.el ends here
