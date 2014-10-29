@@ -40,11 +40,11 @@
            (linked-buffer-test-file "simple-contents.txt")
            'linked-buffer-default-init))))
 
-;; (ert-deftest linked-buffer-clojure-latex ()
-;;   (should
-;;    (linked-buffer-test-clone-equal
-;;     'linked-buffer-clojure-latex-init
-;;     "block-comment.clj" "block-comment-out.tex")))
+(ert-deftest linked-buffer-clojure-latex ()
+  (should
+   (linked-buffer-test-clone-equal
+    'linked-buffer-clojure-latex-init
+    "block-comment.clj" "block-comment-out.tex")))
 
 
 ;; (ert-deftest linked-buffer-asciidoc-clojure ()

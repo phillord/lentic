@@ -216,11 +216,12 @@ between the two buffers; we don't care which one has comments."
   "Configuration for blocked linked-buffer without comments.")
 
 (defmethod linked-buffer-clone
-  ((conf linked-buffer-commented-block-configuration))
+  ((conf linked-buffer-commented-block-configuration)
+   &optional start stop length-before)
   "Update the contents in the linked-buffer without comments"
   (linked-buffer-log "blk-clone-uncomment (from):(%s)" conf)
   ;; clone the buffer first
-  (call-next-method conf)
+  (call-next-method conf start stop length-before)
   ;; remove the line comments in the to buffer
   ;; if the delimitors are unmatched, then we can do nothing other than clone.
   (condition-case e
@@ -250,10 +251,11 @@ between the two buffers; we don't care which one has comments."
           (oref conf :comment-stop)))
 
 (defmethod linked-buffer-clone
-  ((conf linked-buffer-uncommented-block-configuration))
+  ((conf linked-buffer-uncommented-block-configuration)
+   &optional start stop length-before)
   "Update the contents in the linked-buffer with comments."
   (linked-buffer-log "blk-clone-comment conf):(%s)" conf)
-  (call-next-method conf)
+  (call-next-method conf start stop length-before)
   (condition-case e
       (linked-buffer-blk-comment-buffer
        conf (point-min) (point-max) (linked-buffer-that conf))
