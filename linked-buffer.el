@@ -178,6 +178,9 @@ of mode in the current buffer.")
     :initform t)
    (last-change-start-converted
     :initarg :last-change-start-converted
+    :initform nil)
+   (last-change-stop-converted
+    :initarg :last-change-stop-converted
     :initform nil))
   "Configuration object for linked-buffer, which defines the mechanism
 by which linking happens.")
@@ -306,24 +309,17 @@ Currently, this is just a clone all method but may use regions in future."
              ;; buffers do not share state until we have percolated it
              (converted-start
               (or (oref conf :last-change-start-converted)
-                  (point-min))))
+                  (point-min)))
+             (converted-stop
+              (or (oref conf :last-change-stop-converted)
+                  (point-max))))
         ;; used this, so dump it
         (oset conf :last-change-start-converted nil)
+        (oset conf :last-change-stop-converted nil)
         (with-current-buffer that-b
           (delete-region (max (point-min) converted-start)
-                         (min (point-max)
-                              (+ length-before
-                                 converted-start)))
-          (linked-buffer-log
-           "delete (from,to):(%s,%s)"
-           (max (point-min) converted-start)
-           (min (point-max)
-                (+ length-before
-                   converted-start)))
-
+                         (min (point-max) converted-stop))
           (save-excursion
-            (linked-buffer-log "(point,start,converted):(%s,%s,%s)"
-                               (point) start converted-start)
             (goto-char converted-start)
             ;; so this insertion is happening at the wrong place in block
             ;; comment -- in fact, it's happening one too early
@@ -336,7 +332,7 @@ Currently, this is just a clone all method but may use regions in future."
                  (propertize
                   (buffer-substring-no-properties
                    start stop)
-                  'font-lock-face 'error))))))))))
+                  'font-lock-face 'font-lock-type-face))))))))))
 
 (defun linked-buffer-default-init ()
   "Default init function.
@@ -574,7 +570,12 @@ REST is currently ignored. Currently this does nothing."
                :last-change-start-converted
                (linked-buffer-convert
                 linked-buffer-config
-                start)))
+                start))
+         (oset linked-buffer-config
+               :last-change-stop-converted
+               (linked-buffer-convert
+                linked-buffer-config
+                stop)))
         (linked-buffer-log
          "Before-change:%s" rest)
         (lambda ())
