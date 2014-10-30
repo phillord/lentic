@@ -175,7 +175,10 @@ of mode in the current buffer.")
     :initarg :that-buffer)
    (sync-point
     :initarg :sync-point
-    :initform t))
+    :initform t)
+   (last-change-start-converted
+    :initarg :last-change-start-converted
+    :initform nil))
   "Configuration object for linked-buffer, which defines the mechanism
 by which linking happens.")
 
@@ -264,7 +267,7 @@ the linked-buffer."
 ;; after-change-functions (beginning-of-region-af end-of-region-af length-of-text-before-change)
 
 
-;; Addition *2 
+;; Addition *2
 ;; Before-change:(192 192)
 ;; Updating after-change (current:linked:rest): *linked: *scratch**,*scratch*,(192 193 0)
 
@@ -285,28 +288,45 @@ the linked-buffer."
 ;; Updating after-change (current:linked:rest): *linked: *scratch**,*scratch*,(192 193 0)
 
 
+
 (defmethod linked-buffer-clone ((conf linked-buffer-configuration)
                                 &optional start stop length-before)
   "Updates that-buffer to reflect the contents in this-buffer.
 
 Currently, this is just a clone all method but may use regions in future."
- (let ((this-b (oref conf :this-buffer))
-       (that-b (oref conf :that-buffer)))
-
-    (linked-buffer-log
-     "(start, stop, length-before):(%s,%s,%s)" start stop length-before)
+  (let ((this-b (oref conf :this-buffer))
+        (that-b (oref conf :that-buffer)))
     (with-current-buffer this-b
-      (let ((start (or start (point-min)))
-            (stop (or stop (point-max)))
-            (length-before (or length-before (buffer-size that-b))))
+      (linked-buffer-log "this-b (point,start,stop)(%s,%s,%s)" (point) start stop)
+      (let* ((start (or start (point-min)))
+             (stop (or stop (point-max)))
+             (length-before (or length-before (buffer-size that-b)))
+             ;; get the start location that we converted before the change.
+             ;; linked-buffer-convert is not reliable now, because the two
+             ;; buffers do not share state until we have percolated it
+             (converted-start
+              (or (oref conf :last-change-start-converted)
+                  (point-min))))
+        ;; used this, so dump it
+        (oset conf :last-change-start-converted nil)
         (with-current-buffer that-b
-          (delete-region (max (point-min) (linked-buffer-convert conf start))
+          (delete-region (max (point-min) converted-start)
                          (min (point-max)
                               (+ length-before
-                                 (linked-buffer-convert conf start))))
+                                 converted-start)))
+          (linked-buffer-log
+           "delete (from,to):(%s,%s)"
+           (max (point-min) converted-start)
+           (min (point-max)
+                (+ length-before
+                   converted-start)))
+
           (save-excursion
-            ;; used this three times now!
-            (goto-char (linked-buffer-convert conf start))
+            (linked-buffer-log "(point,start,converted):(%s,%s,%s)"
+                               (point) start converted-start)
+            (goto-char converted-start)
+            ;; so this insertion is happening at the wrong place in block
+            ;; comment -- in fact, it's happening one too early
             (insert
              (save-restriction
                (with-current-buffer this-b
@@ -316,7 +336,7 @@ Currently, this is just a clone all method but may use regions in future."
                  (propertize
                   (buffer-substring-no-properties
                    start stop)
-                  'face 'error))))))))))
+                  'font-lock-face 'error))))))))))
 
 (defun linked-buffer-default-init ()
   "Default init function.
@@ -538,11 +558,23 @@ REST is currently just ignored."
    (linked-buffer-update-contents linked-buffer-config
                                   start stop length-before)))
 
-(defun linked-buffer-before-change-function (&rest rest)
+
+;; convert the start position and store it. we need to do this BEFORE
+;; the change so that we can use the value during clone. After the
+;; change, this-buffer and that-buffer will have different contents
+;; (until the change has been percolated). and the convert function
+;; may not work properly under these circumstances.
+(defun linked-buffer-before-change-function (start stop)
   "Run before change update.
 REST is currently ignored. Currently this does nothing."
   (unless linked-buffer-emergency
     (condition-case err
+        (linked-buffer-when-linked
+         (oset linked-buffer-config
+               :last-change-start-converted
+               (linked-buffer-convert
+                linked-buffer-config
+                start)))
         (linked-buffer-log
          "Before-change:%s" rest)
         (lambda ())
@@ -580,6 +612,7 @@ same top-left location. Update details depend on CONF."
                (linked-buffer-this conf))))))
       ;; clone point in buffer important when the buffer is NOT visible in a
       ;; window at all
+      (linked-buffer-log "sync(front-point)(%s)" from-point)
       (with-current-buffer
           (linked-buffer-that conf)
         (goto-char from-point))
