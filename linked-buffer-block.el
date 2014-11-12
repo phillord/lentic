@@ -162,16 +162,6 @@ implicit start and END an implicit stop."
     (linked-buffer-block-comment-stop-regexp conf)
     :case-fold-search (oref conf :case-fold-search))))
 
-(defun linked-buffer-pabbrev-expansion-length ()
-  "Returns the length of any text that pabbrev has currently added to the buffer."
-  ;; this *exact* form suppresses byte compiler warnings.
-  ;; when or if and does not!
-  (if (and (boundp 'pabbrev-expansion)
-           pabbrev-expansion)
-      ;; pabbrev sorts the expansion but also adds "[]" either side"
-      (+ 2 (length pabbrev-expansion))
-      0))
-
 (defmethod linked-buffer-convert ((conf linked-buffer-block-configuration)
                                   location)
   "Converts a LOCATION in buffer FROM into one from TO.
@@ -186,14 +176,6 @@ between the two buffers; we don't care which one has comments."
            (list
             (line-number-at-pos location)
             (- (line-end-position)
-               ;; pabbrev adds text to the buffer, but doesn't signal a
-               ;; modification (if it does, it causes the linked buffer to
-               ;; show modification when it adds overlays), so it doesn't get
-               ;; copied to the TO buffer. This expansion adds to the
-               ;; line-end-position in the FROM buffer. So, we need to take
-               ;; this length of, or the point will be too far forward in the
-               ;; TO buffer.
-               (linked-buffer-pabbrev-expansion-length)
                location)))))
     (with-current-buffer
         (linked-buffer-that conf)
