@@ -70,112 +70,111 @@
 ;; The semantics of this statement are quite interesting. If we had created
 ;; a new database, by default, the database would be considered to be empty
 ;; -- that is there would be no individuals in it. With an ontology, the
-;;                                         ;; opposite is true. By default, we assume that there could be any number
-;;                                         ;; of individuals. As of yet, we just have not said anything about these
-;;                                         ;; individuals.
+;; opposite is true. By default, we assume that there could be any number
+;; of individuals. As of yet, we just have not said anything about these
+;; individuals.
 
-;;                                         ;; Next, we declare two classes. A class is a set of individuals with
-;;                                         ;; shared characteristics. For now, we create two classes, |Pizza| and
-;;                                         ;; |PizzaComponent|. As with our |defontology| form, have a |def| form;
-;;                                         ;; however, in this case, we do not use any arguments. The semantics of
-;;                                         ;; these two statements are that, there is a class called |Pizza| and
-;;                                         ;; another called |PizzaComponent| which individuals may be members of.
-;;                                         ;; However, we know nothing at all about the relationship between an
-;;                                         ;; individual |Pizza| and an individual |PizzaComponent|.
+;; Next, we declare two classes. A class is a set of individuals with
+;; shared characteristics. For now, we create two classes, |Pizza| and
+;; |PizzaComponent|. As with our |defontology| form, have a |def| form;
+;; however, in this case, we do not use any arguments. The semantics of
+;; these two statements are that, there is a class called |Pizza| and
+;; another called |PizzaComponent| which individuals may be members of.
+;; However, we know nothing at all about the relationship between an
+;; individual |Pizza| and an individual |PizzaComponent|.
 
 
-;;                                         ;; \begin{code}
+;; \begin{code}
 (defclass Pizza)
 (defclass PizzaComponent)
 ;; \end{code}
 
-;;                                         ;; To build an accurate ontology, we may wish to describe this relationship
-;;                                         ;; further. We might ask the question, can an individual be both a |Pizza|
-;;                                         ;; and a |PizzaComponent| at the same time. The answer to this is no, but
-;;                                         ;; currently our ontology does not state this. In OWL terminology, we wish
-;;                                         ;; to say that these two classes are \emph{disjoint}. We can achieve this by
-;;                                         ;; adding an |as-disjoint| statement.
+;; To build an accurate ontology, we may wish to describe this relationship
+;; further. We might ask the question, can an individual be both a |Pizza|
+;; and a |PizzaComponent| at the same time. The answer to this is no, but
+;; currently our ontology does not state this. In OWL terminology, we wish
+;; to say that these two classes are \emph{disjoint}. We can achieve this by
+;; adding an |as-disjoint| statement.
 
-;;                                         ;; \begin{code}
+;; \begin{code}
 (as-disjoint Pizza PizzaComponent)
 ;; \end{code}
 
-;;                                         ;; This works well, but is a little duplicative. If we add a new class
-;;                                         ;; which we wish to also be disjoint, it must be added in two places.
-;;                                         ;; Instead, it is possible to do both at once \footnote{In the source code,
-;;                                         ;; generated from this book, we are now defining both classes twice, as we
-;;                                         ;; have two |defclass| statements for each. This will actually work okay,
-;;                                         ;; although it is not best practice as it is somewhat dependent on the
-;;                                         ;; implementation details of the OWL API.}. This has the advantage of
-;;                                         ;; grouping the two classes together in the file, as well as semantically,
-;;                                         ;; which should make the source more future-proof; should we need new
-;;                                         ;; classes, we will automatically make them disjoint as required.
+;; This works well, but is a little duplicative. If we add a new class
+;; which we wish to also be disjoint, it must be added in two places.
+;; Instead, it is possible to do both at once \footnote{In the source code,
+;; generated from this book, we are now defining both classes twice, as we
+;; have two |defclass| statements for each. This will actually work okay,
+;; although it is not best practice as it is somewhat dependent on the
+;; implementation details of the OWL API.}. This has the advantage of
+;; grouping the two classes together in the file, as well as semantically,
+;; which should make the source more future-proof; should we need new
+;; classes, we will automatically make them disjoint as required.
 
-;;                                         ;; \begin{code}
+;; \begin{code}
 (as-disjoint
  (defclass Pizza)
  (defclass PizzaComponent))
 ;; \end{code}
 
-;;                                         ;; The semantics of these statements are that our ontology may have any
-;;                                         ;; number of individuals, some of which may be |Pizza|, some of which may
-;;                                         ;; be |PizzaComponent|, but none of which can be both |Pizza| and
-;;                                         ;; |PizzaComponent| at the same time. Before we added the |as-disjoints|
-;;                                         ;; statement, we would have assumed that it was possible to be both.
+;; The semantics of these statements are that our ontology may have any
+;; number of individuals, some of which may be |Pizza|, some of which may
+;; be |PizzaComponent|, but none of which can be both |Pizza| and
+;; |PizzaComponent| at the same time. Before we added the |as-disjoints|
+;; statement, we would have assumed that it was possible to be both.
 
-;;                                         ;; As well as describing that two classes are different, we may also wish
-;;                                         ;; to describe that they are closely related, or that they are
-;;                                         ;; \emph{subclasses}. Where one class is a subclass of another, we are saying
-;;                                         ;; that everything that is true of the superclass is also true of the
-;;                                         ;; subclass. Or, in terms of individuals, that every individual of the
-;;                                         ;; subclass is also an individual of the superclass.
+;; As well as describing that two classes are different, we may also wish
+;; to describe that they are closely related, or that they are
+;; \emph{subclasses}. Where one class is a subclass of another, we are saying
+;; that everything that is true of the superclass is also true of the
+;; subclass. Or, in terms of individuals, that every individual of the
+;; subclass is also an individual of the superclass.
 
-;;                                         ;; Next, we add two more classes and include the statement that they have
-;;                                         ;; |PizzaComponent| as a superclass. We do this by adding a |:super|
-;;                                         ;; argument or \emph{frame} to our |defclass| statement. In Tawny-OWL the frames
-;;                                         ;; can all be read in the same way. Read forwards, we can say |PizzaBase|
-;;                                         ;; has a superclass |PizzaComponent|, or backwards |PizzaComponent| is a
-;;                                         ;; superclass of |PizzaBase|. Earlier, we say the |:iri| frame for
-;;                                         ;; |defontology| which is read similarly -- |pizza| has the given IRI.
+;; Next, we add two more classes and include the statement that they have
+;; |PizzaComponent| as a superclass. We do this by adding a |:super|
+;; argument or \emph{frame} to our |defclass| statement. In Tawny-OWL the frames
+;; can all be read in the same way. Read forwards, we can say |PizzaBase|
+;; has a superclass |PizzaComponent|, or backwards |PizzaComponent| is a
+;; superclass of |PizzaBase|. Earlier, we say the |:iri| frame for
+;; |defontology| which is read similarly -- |pizza| has the given IRI.
 
-;;                                         ;; As every individual of, for example, |PizzaBase| is |PizzaComponent|, and no
-;;                                         ;; |PizzaComponent| individual can also be a |Pizza| this also implies that no
-;;                                         ;; |PizzaBase| is a |Pizza|. In otherwords, the disjointness is inherited
-;;                                         ;; \footnote{In this ontology, we use a naming scheme using CamelCase, upper case
-;;                                         ;; names for classes and, later, lower case properties. As with many parts of
-;;                                         ;; ontology development, opinions differ as to whether this is good. With
-;;                                         ;; Tawny-OWL it has the fortuitous advantage that it syntax-highlights nicely,
-;;                                         ;; because it looks like Java}
+;; As every individual of, for example, |PizzaBase| is |PizzaComponent|, and no
+;; |PizzaComponent| individual can also be a |Pizza| this also implies that no
+;; |PizzaBase| is a |Pizza|. In otherwords, the disjointness is inherited
+;; \footnote{In this ontology, we use a naming scheme using CamelCase, upper case
+;; names for classes and, later, lower case properties. As with many parts of
+;; ontology development, opinions differ as to whether this is good. With
+;; Tawny-OWL it has the fortuitous advantage that it syntax-highlights nicely,
+;; because it looks like Java}
 
-;;                                         ;; \begin{code}
+;; \begin{code}
 (defclass PizzaBase
   :super PizzaComponent)
 (defclass PizzaTopping
   :super PizzaComponent)
 ;; \end{code}
 
+;; As with the disjoint statement, this is little long winded; we have to name
+;; the |PizzaComponent| superclass twice. Tawny-OWL provides a short cut for
+;; this, with the |as-subclasses| function.
 
-;;                                         ;; As with the disjoint statement, this is little long winded; we have to name
-;;                                         ;; the |PizzaComponent| superclass twice. Tawny-OWL provides a short cut for
-;;                                         ;; this, with the |as-subclasses| function.
-
-;;                                         ;; \begin{code}
+;; \begin{code}
 (as-subclasses
  PizzaComponent
  (defclass PizzaBase)
  (defclass PizzaTopping))
 ;; \end{code}
 
-;;                                         ;; We are still not complete; we asked the question previously, can you be both a
-;;                                         ;; |Pizza| and a |PizzaComponent|, to which the answer is no. We can apply the
-;;                                         ;; same question, and get the same answer to a |PizzaBase| and |PizzaTopping|.
-;;                                         ;; These two, therefore, should also be disjoint. However, we can make a stronger
-;;                                         ;; statement still. The only kind of |PizzaComponent| that there are either a
-;;                                         ;; |PizzaBase| or a |PizzaTopping|. We say that the |PizzaComponent| class is
-;;                                         ;; \emph{covered} by its two subclasses. We can add both of these statements to the
-;;                                         ;; ontology also.
+;; We are still not complete; we asked the question previously, can you be both a
+;; |Pizza| and a |PizzaComponent|, to which the answer is no. We can apply the
+;; same question, and get the same answer to a |PizzaBase| and |PizzaTopping|.
+;; These two, therefore, should also be disjoint. However, we can make a stronger
+;; statement still. The only kind of |PizzaComponent| that there are either a
+;; |PizzaBase| or a |PizzaTopping|. We say that the |PizzaComponent| class is
+;; \emph{covered} by its two subclasses. We can add both of these statements to the
+;; ontology also.
 
-;;                                         ;; \begin{code}
+;; \begin{code}
 (as-subclasses
  PizzaComponent
  :disjoint :cover
@@ -183,61 +182,60 @@
  (defclass PizzaTopping))
 ;; \end{code}
 
-;;                                         ;; We now have the basic classes that we need to describe a pizza.
+;; We now have the basic classes that we need to describe a pizza.
 
 
-;;                                         ;; \section{Properties}
-;;                                         ;; \label{sec-5-3}
+;; \section{Properties}
+;; \label{sec-5-3}
 
-;;                                         ;; Now, we wish to describe more about |Pizza|; in particular, we want to say
-;;                                         ;; more about the relationship between |Pizza| and two |PizzaComponent| classes.
-;;                                         ;; OWL provides a rich mechanism for describing relationships between individuals
-;;                                         ;; and, in turn, how individuals of classes are related to each other. As well as
-;;                                         ;; there being many different types of individuals, there are can be many
-;;                                         ;; different types of relationships. It is the relationships to other classes or
-;;                                         ;; individuals that allow us to describe classes, and it is for this reason that
-;;                                         ;; the different types of relationships are called \emph{properties}.
+;; Now, we wish to describe more about |Pizza|; in particular, we want to say
+;; more about the relationship between |Pizza| and two |PizzaComponent| classes.
+;; OWL provides a rich mechanism for describing relationships between individuals
+;; and, in turn, how individuals of classes are related to each other. As well as
+;; there being many different types of individuals, there are can be many
+;; different types of relationships. It is the relationships to other classes or
+;; individuals that allow us to describe classes, and it is for this reason that
+;; the different types of relationships are called \emph{properties}.
 
-;;                                         ;; A |Pizza| is built from one or more |PizzaComponent| individuals; we first
-;;                                         ;; define two properties \footnote{Actually, two \emph{object} properties, hence
-;;                                         ;; |defoproperty|. We can also define \emph{data} properties, which we will see later}
-;;                                         ;; to relate these two together, which we call |hasComponent| and
-;;                                         ;; |isComponentOf|. The semantics of this statement is to say that we now have
-;;                                         ;; two properties that we can use between individuals.
+;; A |Pizza| is built from one or more |PizzaComponent| individuals; we first
+;; define two properties \footnote{Actually, two \emph{object} properties, hence
+;; |defoproperty|. We can also define \emph{data} properties, which we will see later}
+;; to relate these two together, which we call |hasComponent| and
+;; |isComponentOf|. The semantics of this statement is to say that we now have
+;; two properties that we can use between individuals.
 
-;;                                         ;; \begin{code}
+;; \begin{code}
 (defoproperty hasComponent)
 (defoproperty isComponentOf)
 ;; \end{code}
 
-;;                                         ;; As with classes, there is more that we can say about these properties. In this
-;;                                         ;; case, the properties are natual opposites or inverses of each other. The
-;;                                         ;; semantics of this statement is that for an individual |i| which |hasComponent|
-;;                                         ;; |j|, we can say that |j| |isComponentOf| |i| also. 
+;; As with classes, there is more that we can say about these properties. In this
+;; case, the properties are natual opposites or inverses of each other. The
+;; semantics of this statement is that for an individual |i| which |hasComponent|
+;; |j|, we can say that |j| |isComponentOf| |i| also. 
 
-;;                                         ;; \begin{code}
+;; \begin{code}
 (as-inverse
  (defoproperty hasComponent)
  (defoproperty isComponentOf))
 ;; \end{code}
 
-;;                                         ;; Again, the semantics here are actually between individuals, rather than
-;;                                         ;; classes. This has an important consequence with the inverses. We might make
-;;                                         ;; the statement that |Pizza| |hasComponent| |PizzaComponent|, but this does not
-;;                                         ;; allow us to infer that |PizzaComponent| |isComponentOf| |Pizza|. Using an
-;;                                         ;; every day analogy, just because all bicycles have wheels, we can not assume
-;;                                         ;; that all wheels are parts of a bike; we \textbf{can} assume that where a bike has a
-;;                                         ;; wheel, that wheel is part of a bike. This form of semantics is quite subtle,
-;;                                         ;; and is an example of where statements made in OWL are saying less than most
-;;                                         ;; people would assume footnote:[We will see examples of the opposite also --
-;;                                         ;; statements which are stronger in OWL than the intuitive interpretation].
+;; Again, the semantics here are actually between individuals, rather than
+;; classes. This has an important consequence with the inverses. We might make
+;; the statement that |Pizza| |hasComponent| |PizzaComponent|, but this does not
+;; allow us to infer that |PizzaComponent| |isComponentOf| |Pizza|. Using an
+;; every day analogy, just because all bicycles have wheels, we can not assume
+;; that all wheels are parts of a bike; we \textbf{can} assume that where a bike has a
+;; wheel, that wheel is part of a bike. This form of semantics is quite subtle,
+;; and is an example of where statements made in OWL are saying less than most
+;; people would assume footnote:[We will see examples of the opposite also --
+;; statements which are stronger in OWL than the intuitive interpretation].
+;; We now move on to describe the relationships between |Pizza| and both of
+;; |PizzaBase| and |PizzaTopping|. For this, we will introduce three new parts of
+;; OWL: subproperties, domain and range constraints and property characteristics,
+;; which we define in Tawny-OWL as follows:
 
-;;                                         ;; We now move on to describe the relationships between |Pizza| and both of
-;;                                         ;; |PizzaBase| and |PizzaTopping|. For this, we will introduce three new parts of
-;;                                         ;; OWL: subproperties, domain and range constraints and property characteristics,
-;;                                         ;; which we define in Tawny-OWL as follows:
-
-;;                                         ;; \begin{code}
+;; \begin{code}
 (defoproperty hasTopping
   :super hasComponent
   :range PizzaTopping
@@ -251,34 +249,34 @@
 ;; \end{code}
 
 
-;;                                         ;; First, we consider sub-properties, which are fairly analogous to sub-classes.
-;;                                         ;; For example, if two individuals |i| and |j| are related so that
-;;                                         ;; |i hasTopping j|, then it is also true that |i hasComponent j|.
+;; First, we consider sub-properties, which are fairly analogous to sub-classes.
+;; For example, if two individuals |i| and |j| are related so that
+;; |i hasTopping j|, then it is also true that |i hasComponent j|.
 
-;;                                         ;; Domain and range constraints describe the kind of entity that be at either end
-;;                                         ;; of the property. So, for example, considering |hasTopping|, we say that the
-;;                                         ;; domain is |Pizza|, so only instances of |Pizza| can have a topping, while the
-;;                                         ;; range is |PizzaTopping| so only instances of |PizzaTopping| can be a topping. 
+;; Domain and range constraints describe the kind of entity that be at either end
+;; of the property. So, for example, considering |hasTopping|, we say that the
+;; domain is |Pizza|, so only instances of |Pizza| can have a topping, while the
+;; range is |PizzaTopping| so only instances of |PizzaTopping| can be a topping. 
 
-;;                                         ;; Finally, we introduce a \emph{characteristic}. OWL has quite a few different
-;;                                         ;; characteristics which will introduce over time; in this case \emph{functional}
-;;                                         ;; means means that there can be only one of these, so an individual has only a
-;;                                         ;; single base.
+;; Finally, we introduce a \emph{characteristic}. OWL has quite a few different
+;; characteristics which will introduce over time; in this case \emph{functional}
+;; means means that there can be only one of these, so an individual has only a
+;; single base.
 
 
-;;                                         ;; \section{Populating the Ontology}
-;;                                         ;; \label{sec-5-4}
+;; \section{Populating the Ontology}
+;; \label{sec-5-4}
 
-;;                                         ;; We now have enough expressivity to describe quite a lot about pizzas. So, we
-;;                                         ;; can now set about creating a larger set of toppings for our pizzas. First, we
-;;                                         ;; describe some top level categories of types of topping. As before, we use
-;;                                         ;; |as-subclasses| function and state further that all of these classes are
-;;                                         ;; disjoint. Here, we have not used the |:cover| option. This is deliberate,
-;;                                         ;; because we cannot be sure that these classes describe all of the different
-;;                                         ;; toppings we might have; there might be toppings which fall into none of these
-;;                                         ;; categories. 
+;; We now have enough expressivity to describe quite a lot about pizzas. So, we
+;; can now set about creating a larger set of toppings for our pizzas. First, we
+;; describe some top level categories of types of topping. As before, we use
+;; |as-subclasses| function and state further that all of these classes are
+;; disjoint. Here, we have not used the |:cover| option. This is deliberate,
+;; because we cannot be sure that these classes describe all of the different
+;; toppings we might have; there might be toppings which fall into none of these
+;; categories. 
 
-;;                                         ;; \begin{code}
+;; \begin{code}
 (as-subclasses
  PizzaTopping
  :disjoint
@@ -292,18 +290,18 @@
  (defclass VegetableTopping))
 ;; \end{code}
 
-;;                                         ;; When defining a large number of classes at once, Tawny-OWL also offers a
-;;                                         ;; shortcut, which we now use to define a large number of classes at once, which
-;;                                         ;; is |declare-classes|. While this can be useful in a few specific
-;;                                         ;; circumstances, these are quite limited because it does not allow addition of
-;;                                         ;; any other attributes at the same time, and in particular labels which most
-;;                                         ;; classes will need. In this case, we can generate a lot of classes in a short
-;;                                         ;; space, which is useful in a tutorial document.
+;; When defining a large number of classes at once, Tawny-OWL also offers a
+;; shortcut, which we now use to define a large number of classes at once, which
+;; is |declare-classes|. While this can be useful in a few specific
+;; circumstances, these are quite limited because it does not allow addition of
+;; any other attributes at the same time, and in particular labels which most
+;; classes will need. In this case, we can generate a lot of classes in a short
+;; space, which is useful in a tutorial document.
 
-;;                                         ;; Neither |MeatTopping| nor |FruitTopping| are declared as |:disjoint| because
-;;                                         ;; we have only put a single example.
+;; Neither |MeatTopping| nor |FruitTopping| are declared as |:disjoint| because
+;; we have only put a single example.
 
-;;                                         ;; \begin{code}
+;; \begin{code}
 (as-subclasses
  CheeseTopping
  :disjoint
