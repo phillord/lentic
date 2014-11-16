@@ -272,32 +272,6 @@ created."
 the linked-buffer."
   location)
 
-;; before-change-functions (beginning-of-region-b4 end-of-region-b4)
-;; after-change-functions (beginning-of-region-af end-of-region-af length-of-text-before-change)
-
-
-;; Addition *2
-;; Before-change:(192 192)
-;; Updating after-change (current:linked:rest): *linked: *scratch**,*scratch*,(192 193 0)
-
-;; Before-change:(193 193)
-;; Updating after-change (current:linked:rest): *linked: *scratch**,*scratch*,(193 194 0)
-
-;; Deletion
-
-;; Before-change:(192 194)
-;; Updating after-change (current:linked:rest): *linked: *scratch**,*scratch*,(192 192 2)
-
-;; Do we have enough data from the after change? I think so -- we go to the
-;; point at the start of the region (whcih can surely never change?), then we
-;; delete the size before (2 or 0 in this case), then we put the new text in place.
-
-;;
-;; Before-change:(192 192)
-;; Updating after-change (current:linked:rest): *linked: *scratch**,*scratch*,(192 193 0)
-
-
-
 (defmethod linked-buffer-clone ((conf linked-buffer-configuration)
                                 &optional start stop length-before)
   "Updates that-buffer to reflect the contents in this-buffer.
@@ -306,7 +280,7 @@ Currently, this is just a clone all method but may use regions in future."
   (let ((this-b (oref conf :this-buffer))
         (that-b (oref conf :that-buffer)))
     (with-current-buffer this-b
-      (linked-buffer-log "this-b (point,start,stop)(%s,%s,%s)" (point) start stop)
+      ;;(linked-buffer-log "this-b (point,start,stop)(%s,%s,%s)" (point) start stop)
       (let* ((start (or start (point-min)))
              (stop (or stop (point-max)))
              (length-before (or length-before (buffer-size that-b)))
@@ -335,10 +309,9 @@ Currently, this is just a clone all method but may use regions in future."
                  (widen)
                  ;; want to see where it goes
                  ;; hence the property
-                 (propertize
+                 (linked-buffer-insertion-string-transform
                   (buffer-substring-no-properties
-                   start stop)
-                  'font-lock-face 'font-lock-type-face))))))))))
+                   start stop)))))))))))
 
 (defun linked-buffer-default-init ()
   "Default init function.
@@ -553,10 +526,8 @@ Errors are handled. REST is currently just ignored."
 REST is currently just ignored."
   (linked-buffer-when-linked
    (linked-buffer-log
-    "Updating after-change (current:linked:rest): %s,%s,%s"
-    (current-buffer)
-    (linked-buffer-that linked-buffer-config)
-    (list start stop length-before))
+    "After-change (start, stop, length-before): %s,%s,%s"
+    start stop length-before)
    (linked-buffer-update-contents linked-buffer-config
                                   start stop length-before)))
 
@@ -567,24 +538,28 @@ REST is currently just ignored."
 ;; (until the change has been percolated). and the convert function
 ;; may not work properly under these circumstances.
 (defun linked-buffer-before-change-function (start stop)
-  "Run before change update.
-REST is currently ignored. Currently this does nothing."
+  "Run before change update."
   (unless linked-buffer-emergency
     (condition-case err
-        (linked-buffer-when-linked
-         (oset linked-buffer-config
-               :last-change-start-converted
-               (linked-buffer-convert
-                linked-buffer-config
-                start))
-         (oset linked-buffer-config
-               :last-change-stop-converted
-               (linked-buffer-convert
-                linked-buffer-config
-                stop)))
-        (linked-buffer-log
-         "Before-change:%s" rest)
-        (lambda ())
+        (progn
+          (linked-buffer-when-linked
+           (oset linked-buffer-config
+                 :last-change-start-converted
+                 (linked-buffer-convert
+                  linked-buffer-config
+                  start))
+           (oset linked-buffer-config
+                 :last-change-stop-converted
+                 (linked-buffer-convert
+                  linked-buffer-config
+                  stop)))
+          (linked-buffer-log
+           "Before change:(%s,%s,%s,%s)"
+           start stop
+           (oref linked-buffer-config
+                 :last-change-start-converted)
+           (oref linked-buffer-config
+                 :last-change-stop-converted)))
       (error
        (linked-buffer-hook-fail err "before change")))))
 
@@ -594,8 +569,8 @@ Update mechanism depends on CONF."
   (unwind-protect
       (progn
         (setq inhibit-read-only t)
-        (linked-buffer-log
-         "Update config: %s" linked-buffer-config)
+        ;;(linked-buffer-log
+        ;;"Update config: %s" linked-buffer-config)
         (linked-buffer-clone conf start stop length-before))
     (setq inhibit-read-only nil)))
 
@@ -619,7 +594,7 @@ same top-left location. Update details depend on CONF."
                (linked-buffer-this conf))))))
       ;; clone point in buffer important when the buffer is NOT visible in a
       ;; window at all
-      (linked-buffer-log "sync(front-point)(%s)" from-point)
+      ;;(linked-buffer-log "sync(front-point)(%s)" from-point)
       (with-current-buffer
           (linked-buffer-that conf)
         (goto-char from-point))
