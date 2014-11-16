@@ -120,7 +120,7 @@ start of line comment characters beween BEGIN and END in BUFFER."
           :begin begin :end end)))
     (prog1
         (m-buffer-replace-match
-         (m-buffer-match-subtract line-match comment-match)
+         (m-buffer-match-exact-subtract line-match comment-match)
          (oref conf :comment) nil nil 1)
       (m-buffer-nil-marker line-match)
       (m-buffer-nil-marker comment-match))))
