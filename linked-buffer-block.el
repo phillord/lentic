@@ -79,7 +79,8 @@ function `linked-buffer-configuration' object."
     (m-buffer-match
     buffer
     (linked-buffer-blk-line-start-comment conf)
-    :begin begin :end end) ""))
+    :begin begin :end end) ""
+    :numeric t))
 
 (defun linked-buffer-blk-uncomment-buffer (conf begin end buffer)
   "Given CONF, a `linked-buffer-configuration' object, remove all
@@ -94,12 +95,21 @@ BEGIN and END in BUFFER."
 (defun linked-buffer-blk-comment-region (conf begin end buffer)
   "Given CONF, a `linked-buffer-configuration' object, add
 start of line comment characters beween BEGIN and END in BUFFER."
+  (linked-buffer-log "comment-region (%s,%s)" begin end)
   (m-buffer-replace-match
-   (m-buffer-match
-    buffer
-    ;; perhaps we should ignore lines which are already commented,
-    "\\(^\\).+"
-    :begin begin :end end)
+   (m-buffer-match-subtract
+    (m-buffer-match
+     buffer
+     ;; perhaps we should ignore lines which are already commented,
+     "\\(^\\).+$"
+     :begin begin :end end)
+    (m-buffer-match
+     buffer
+     ;; start to end of line which is what this regexp above matches
+     (concat
+      (linked-buffer-blk-line-start-comment conf)
+      ".*")
+     :begin begin :end end))
    (oref conf :comment) nil nil 1))
 
 (defun linked-buffer-blk-comment-buffer (conf begin end buffer)
@@ -156,21 +166,13 @@ implicit start and END an implicit stop."
    (m-buffer-match-begin
     buffer
     (linked-buffer-block-comment-start-regexp conf)
-    :case-fold-search (oref conf :case-fold-search))
+    :case-fold-search (oref conf :case-fold-search)
+    :numeric t)
    (m-buffer-match-end
     buffer
     (linked-buffer-block-comment-stop-regexp conf)
-    :case-fold-search (oref conf :case-fold-search))))
-
-(defun linked-buffer-pabbrev-expansion-length ()
-  "Returns the length of any text that pabbrev has currently added to the buffer."
-  ;; this *exact* form suppresses byte compiler warnings.
-  ;; when or if and does not!
-  (if (and (boundp 'pabbrev-expansion)
-           pabbrev-expansion)
-      ;; pabbrev sorts the expansion but also adds "[]" either side"
-      (+ 2 (length pabbrev-expansion))
-      0))
+    :case-fold-search (oref conf :case-fold-search)
+    :numeric t)))
 
 (defmethod linked-buffer-convert ((conf linked-buffer-block-configuration)
                                   location)
@@ -180,27 +182,29 @@ count from the end, until we get to location, always staying on
 the same line. This works since the buffers are identical except
 for changes to the beginning of the line. It is also symmetrical
 between the two buffers; we don't care which one has comments."
+  ;; current information comes inside a with-current-buffer. so, we capture
+  ;; data as a list rather than having two with-current-buffers.
   (let ((line-plus
          (with-current-buffer
              (linked-buffer-this conf)
-           (list
-            (line-number-at-pos location)
-            (- (line-end-position)
-               ;; pabbrev adds text to the buffer, but doesn't signal a
-               ;; modification (if it does, it causes the linked buffer to
-               ;; show modification when it adds overlays), so it doesn't get
-               ;; copied to the TO buffer. This expansion adds to the
-               ;; line-end-position in the FROM buffer. So, we need to take
-               ;; this length of, or the point will be too far forward in the
-               ;; TO buffer.
-               (linked-buffer-pabbrev-expansion-length)
-               location)))))
+           (save-excursion
+             ;; move to location or line-end-position may be wrong
+             (goto-char location)
+             (list
+              ;; we are converting the location, so we need the line-number
+              (line-number-at-pos location)
+              ;; and the distance from the end
+              (- (line-end-position)
+                 location))))))
     (with-current-buffer
         (linked-buffer-that conf)
       (save-excursion
         (goto-char (point-min))
+        ;; move forward to the line in question
         (forward-line (1- (car line-plus)))
+        ;; don't move from the line in question
         (max (line-beginning-position)
+             ;; but move in from the end
              (- (line-end-position)
                 (cadr line-plus)))))))
 
@@ -219,7 +223,7 @@ between the two buffers; we don't care which one has comments."
   ((conf linked-buffer-commented-block-configuration)
    &optional start stop length-before)
   "Update the contents in the linked-buffer without comments"
-  (linked-buffer-log "blk-clone-uncomment (from):(%s)" conf)
+  ;;(linked-buffer-log "blk-clone-uncomment (from):(%s)" conf)
   ;; clone the buffer first
   (call-next-method conf start stop length-before)
   ;; remove the line comments in the to buffer
@@ -254,7 +258,7 @@ between the two buffers; we don't care which one has comments."
   ((conf linked-buffer-uncommented-block-configuration)
    &optional start stop length-before)
   "Update the contents in the linked-buffer with comments."
-  (linked-buffer-log "blk-clone-comment conf):(%s)" conf)
+  ;;(linked-buffer-log "blk-clone-comment conf):(%s)" conf)
   (call-next-method conf start stop length-before)
   (condition-case e
       (linked-buffer-blk-comment-buffer
