@@ -75,12 +75,15 @@ start of line block comment in one buffer but not the other."
   "Given CONF,  remove start-of-line characters in region.
 Region is between BEGIN and END in BUFFER. CONF is a
 function `linked-buffer-configuration' object."
-  (linked-buffer-log "uncomment (%s,%s)" begin end)
-  (m-buffer-replace-match
-    (m-buffer-match
-    buffer
-    (linked-buffer-blk-line-start-comment conf)
-    :begin begin :end end) ""))
+  (let
+      ((comments
+        (m-buffer-match
+         buffer
+         (linked-buffer-blk-line-start-comment conf)
+         :begin begin :end end)))
+    (prog1
+        (m-buffer-replace-match comments "")
+      (m-buffer-nil-marker comments))))
 
 (defun linked-buffer-blk-uncomment-buffer (conf begin end buffer)
   "Given CONF, a `linked-buffer-configuration' object, remove all
@@ -88,29 +91,39 @@ start of line comment-characters in appropriate blocks between
 BEGIN and END in BUFFER."
   (-map
    (lambda (pairs)
-     (linked-buffer-blk-uncomment-region conf
-      (car pairs) (cdr pairs) buffer))
+     (prog1
+         (linked-buffer-blk-uncomment-region
+          conf
+          (car pairs) (cdr pairs) buffer)
+       ;; remove markers as we go
+       (set-marker (car pairs) nil)
+       (set-marker (cdr pairs) nil)))
    (linked-buffer-blk-marker-boundaries conf begin end buffer)))
 
 (defun linked-buffer-blk-comment-region (conf begin end buffer)
   "Given CONF, a `linked-buffer-configuration' object, add
 start of line comment characters beween BEGIN and END in BUFFER."
-  (linked-buffer-log "comment-region (%s,%s)" begin end)
-  (m-buffer-replace-match
-   (m-buffer-match-subtract
-    (m-buffer-match
-     buffer
-     ;; perhaps we should ignore lines which are already commented,
-     "\\(^\\).+$"
-     :begin begin :end end)
-    (m-buffer-match
-     buffer
-     ;; start to end of line which is what this regexp above matches
-     (concat
-      (linked-buffer-blk-line-start-comment conf)
-      ".*")
-     :begin begin :end end))
-   (oref conf :comment) nil nil 1))
+  (let ((line-match
+         (m-buffer-match
+          buffer
+          ;; perhaps we should ignore lines which are already commented,
+          "\\(^\\).+$"
+          :begin begin :end end)
+         )
+        (comment-match
+         (m-buffer-match
+          buffer
+          ;; start to end of line which is what this regexp above matches
+          (concat
+           (linked-buffer-blk-line-start-comment conf)
+           ".*")
+          :begin begin :end end)))
+    (prog1
+        (m-buffer-replace-match
+         (m-buffer-match-subtract line-match comment-match)
+         (oref conf :comment) nil nil 1)
+      (m-buffer-nil-marker line-match)
+      (m-buffer-nil-marker comment-match))))
 
 (defun linked-buffer-blk-comment-buffer (conf begin end buffer)
   "Given CONF, a `linked-buffer-configuration' object, add
@@ -119,8 +132,11 @@ BEGIN and END in BUFFER."
   (-map
    ;; comment each of these regions
    (lambda (pairs)
-     (linked-buffer-blk-comment-region
-      conf (car pairs) (cdr pairs) buffer))
+     (prog1
+         (linked-buffer-blk-comment-region
+          conf (car pairs) (cdr pairs) buffer)
+       (set-marker (car pairs) nil)
+       (set-marker (cdr pairs) nil)))
    (linked-buffer-blk-marker-boundaries conf begin end buffer)))
 
 (put 'unmatched-delimiter-error
