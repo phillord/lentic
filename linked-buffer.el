@@ -220,6 +220,12 @@ or create it if it does not exist."
     :initarg :linked-mode))
   "Configuration which maintains two linked-buffers with the same contents.")
 
+(defun linked-buffer-insertion-string-transform (string)
+  "Transform the string that is about to be inserted.
+This function is not meant to do anything. It's useful to
+advice."
+  string)
+
 (defmethod linked-buffer-create ((conf linked-buffer-default-configuration))
   "Create the linked-buffer for this configuration.
 Given a `linked-buffer-configuration' object, create the linked-buffer
