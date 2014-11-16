@@ -18,12 +18,51 @@
       (error "Test File does not exist: %s" file))
     file))
 
+(defun linked-buffer-test-report-loudly (cloned-file cloned-results)
+  (message "Results:\n%s\n:Complete\nShouldbe:\n%s\nComplete:" cloned-results cloned-file)
+  (let* ((file-buffer
+          (generate-new-buffer "cloned-file"))
+         (results-buffer
+          (generate-new-buffer "cloned-results"))
+         (temp-file-buffer
+          (make-temp-file
+           (buffer-name file-buffer)))
+         (temp-results-buffer
+          (make-temp-file
+           (buffer-name results-buffer))))
+    (with-current-buffer
+        file-buffer
+      (insert cloned-file)
+      (write-file temp-file-buffer))
+    (with-current-buffer
+        results-buffer
+      (insert cloned-results)
+      (write-file temp-results-buffer))
+    (message "diff:%senddiff:"
+             (with-temp-buffer
+               (call-process
+                "diff"
+                nil
+                (current-buffer)
+                nil
+                "-c"
+                temp-file-buffer
+                temp-results-buffer)
+               (buffer-string)))))
+
 (defun linked-buffer-test-clone-equal (init file cloned-file)
-  (equal
-   (f-read
-    (linked-buffer-test-file cloned-file))
-   (linked-buffer-batch-clone-with-config
-    (linked-buffer-test-file file) init)))
+  (let ((cloned-file
+         (f-read
+          (linked-buffer-test-file cloned-file)))
+        (cloned-results
+         (linked-buffer-batch-clone-with-config
+          (linked-buffer-test-file file) init)))
+    (if
+        (string= cloned-file cloned-results)
+        t
+      ;; comment this out if you don't want it.
+      (linked-buffer-test-report-loudly cloned-file cloned-results)
+      nil)))
 
 (defvar conf-default
   (linked-buffer-default-configuration "bob"))
@@ -52,7 +91,6 @@
    (linked-buffer-test-clone-equal
     'linked-buffer-asciidoc-clojure-init
     "asciidoc-clj.txt" "asciidoc-clj-out.clj")))
-
 
 ;; org mode start up prints out "OVERVIEW" from the cycle. Can't see any way
 ;; to stop this
