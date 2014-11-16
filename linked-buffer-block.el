@@ -75,12 +75,12 @@ start of line block comment in one buffer but not the other."
   "Given CONF,  remove start-of-line characters in region.
 Region is between BEGIN and END in BUFFER. CONF is a
 function `linked-buffer-configuration' object."
+  (linked-buffer-log "uncomment (%s,%s)" begin end)
   (m-buffer-replace-match
     (m-buffer-match
     buffer
     (linked-buffer-blk-line-start-comment conf)
-    :begin begin :end end) ""
-    :numeric t))
+    :begin begin :end end) ""))
 
 (defun linked-buffer-blk-uncomment-buffer (conf begin end buffer)
   "Given CONF, a `linked-buffer-configuration' object, remove all
@@ -166,13 +166,11 @@ implicit start and END an implicit stop."
    (m-buffer-match-begin
     buffer
     (linked-buffer-block-comment-start-regexp conf)
-    :case-fold-search (oref conf :case-fold-search)
-    :numeric t)
+    :case-fold-search (oref conf :case-fold-search))
    (m-buffer-match-end
     buffer
     (linked-buffer-block-comment-stop-regexp conf)
-    :case-fold-search (oref conf :case-fold-search)
-    :numeric t)))
+    :case-fold-search (oref conf :case-fold-search))))
 
 (defmethod linked-buffer-convert ((conf linked-buffer-block-configuration)
                                   location)
