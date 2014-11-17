@@ -64,6 +64,15 @@
       (linked-buffer-test-report-loudly cloned-file cloned-results)
       nil)))
 
+(defun linked-buffer-test-clone-equal-generate
+  (init file cloned-file)
+  "Generates the test file for `linked-buffer-batch-clone-equal'."
+  (f-write
+   (linked-buffer-batch-clone-with-config
+    (linked-buffer-test-file file) init)
+   'utf-8
+   (concat  "../dev-resources/" cloned-file)))
+
 (defvar conf-default
   (linked-buffer-default-configuration "bob"))
 
@@ -126,8 +135,104 @@
     "org-clojure.org" "org-clojure.clj"
     )))
 
-;; Use this to generate a new test file
 
-;; (linked-buffer-batch-clone-and-save-with-config
-;;    "../dev-resources/orgel-org.el"
-;;    'linked-buffer-org-orgel-init)
+;; incremental testing
+;; these test that buffers which are created and then changed are correct.
+;; At the moment, this does not check that the changes are actually
+;; incremental, cause that's harder.
+(defun linked-buffer-test-clone-and-change-with-config
+  (filename init f)
+  "Clone file and make changes to check incremental updates.
+Using INIT clone FILE, then apply F in the buffer, and return the
+results."
+  ;; most of this is the same as batch-clone..
+  (let ((retn nil))
+    (with-current-buffer
+        (find-file-noselect filename)
+      (setq linked-buffer-init init)
+      (let ((linked
+             (linked-buffer-init-create)))
+        (funcall f)
+        (with-current-buffer
+            linked
+          (setq retn
+                (buffer-substring-no-properties
+                 (point-min)
+                 (point-max)))
+          (set-buffer-modified-p nil)
+          (kill-buffer)))
+      (set-buffer-modified-p nil)
+      (kill-buffer))
+    retn))
+
+(defun linked-buffer-test-clone-and-change-equal (init file cloned-file f)
+  (let ((cloned-file
+         (f-read
+          (linked-buffer-test-file cloned-file)))
+        (cloned-results
+         (linked-buffer-test-clone-and-change-with-config
+          (linked-buffer-test-file file) init f)))
+    (if
+        (string= cloned-file cloned-results)
+        t
+      ;; comment this out if you don't want it.
+      (linked-buffer-test-report-loudly cloned-file cloned-results)
+      nil)))
+
+(defun linked-buffer-test-clone-and-change-equal-generate
+  (init file cloned-file f)
+  "Generates the test file for `linked-buffer-test-clone-and-change-with-config'."
+  (f-write
+   (linked-buffer-test-clone-and-change-with-config
+    (linked-buffer-test-file file) init
+    f)
+   'utf-8
+   (concat  "../dev-resources/" cloned-file)))
+
+
+(defvar linked-buffer-test-last-transform "")
+
+(defadvice linked-buffer-insertion-string-transform
+  (before store-transform
+         (string)
+         activate)
+  (setq linked-buffer-test-last-transform string))
+
+(ert-deftest linked-buffer-simple-with-change ()
+  "Test simple-contents with a change, mostly to check my test machinary."
+  (should
+   (and
+    (equal "simple\nnot simple"
+           (linked-buffer-test-clone-and-change-with-config
+            (linked-buffer-test-file "simple-contents.txt")
+            'linked-buffer-default-init
+            (lambda ()
+              (goto-char (point-max))
+              (insert "not simple"))))
+    (equal linked-buffer-test-last-transform "not simple"))))
+
+
+(ert-deftest linked-buffer-simple-with-change-file()
+  "Test simple-contents with a change and compare to file.
+This mostly checks my test machinary."
+  (should
+   (and
+    (linked-buffer-test-clone-and-change-equal
+     'linked-buffer-default-init
+     "simple-contents.txt" "simple-contents-chg.txt"
+     (lambda ()
+       (goto-char (point-max))
+       (insert "simple")))
+    (equal linked-buffer-test-last-transform "simple"))))
+
+
+(ert-deftest linked-buffer-clojure-latex-incremental ()
+  (should
+   (and
+    (linked-buffer-test-clone-and-change-equal
+     'linked-buffer-clojure-latex-init
+     "block-comment.clj" "block-comment-changed-out.tex"
+     (lambda ()
+       (forward-line 1)
+       (insert ";; inserted\n")))
+    (equal linked-buffer-test-last-transform ";; inserted\n"))))
