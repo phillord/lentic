@@ -243,7 +243,25 @@ between the two buffers; we don't care which one has comments."
   ;; if the delimitors are unmatched, then we can do nothing other than clone.
   (condition-case e
       (linked-buffer-blk-uncomment-buffer
-       conf (point-min) (point-max) (linked-buffer-that conf))
+       conf
+       ;; the buffer at this point has been copied over, but is in an
+       ;; inconsistent state (because it may have comments that it should
+       ;; not). Still, the convertor should still work because it counts from
+       ;; the end
+       (linked-buffer-convert
+        conf
+        ;; point-min if we know nothing else
+        (or start (point-min)))
+       (linked-buffer-convert
+        conf
+        ;; if we have a stop
+        (if stop
+            ;; take stop (if we have got longer) or
+            ;; start length before (if we have got shorter)
+            (max stop
+                 (+ start length-before))
+          (point-max)))
+       (linked-buffer-that conf))
     (unmatched-delimiter-error
      nil)))
 
@@ -275,7 +293,25 @@ between the two buffers; we don't care which one has comments."
   (call-next-method conf start stop length-before)
   (condition-case e
       (linked-buffer-blk-comment-buffer
-       conf (point-min) (point-max) (linked-buffer-that conf))
+       conf
+       ;; the buffer at this point has been copied over, but is in an
+       ;; inconsistent state (because it may have comments that it should
+       ;; not). Still, the convertor should still work because it counts from
+       ;; the end
+       (linked-buffer-convert
+        conf
+        ;; point-min if we know nothing else
+        (or start (point-min)))
+       (linked-buffer-convert
+        conf
+        ;; if we have a stop
+        (if stop
+            ;; take stop (if we have got longer) or
+            ;; start length before (if we have got shorter)
+            (max stop
+                 (+ start length-before))
+          (point-max)))
+       (linked-buffer-that conf))
     (unmatched-delimiter-error nil)))
 
 (defmethod linked-buffer-invert
