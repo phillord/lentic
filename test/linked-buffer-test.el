@@ -107,14 +107,12 @@
     "el-org.el" "el-org.org")))
 
 (ert-deftest linked-buffer-orgel-org()
-  :expected-result :failed
   (should
    (linked-buffer-test-clone-equal
     'linked-buffer-orgel-org-init
     "orgel-org.el" "orgel-org.org")))
 
 (ert-deftest linked-buffer-org-orgel()
-  :expected-result :failed
   (should
    (linked-buffer-test-clone-equal
     'linked-buffer-org-orgel-init
@@ -131,5 +129,5 @@
 ;; Use this to generate a new test file
 
 ;; (linked-buffer-batch-clone-and-save-with-config
-;;    "../dev-resources/org-clojure.org"
-;;    'linked-buffer-org-clojure-init)
+;;    "../dev-resources/orgel-org.el"
+;;    'linked-buffer-org-orgel-init)

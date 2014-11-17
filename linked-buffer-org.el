@@ -210,7 +210,8 @@
   ())
 
 (defmethod linked-buffer-clone
-  ((conf linked-buffer-org-to-orgel-configuration))
+  ((conf linked-buffer-org-to-orgel-configuration)
+   &optional start stop length-before)
   ;; do everything else to the buffer
   (call-next-method conf)
   (m-buffer-replace-match
@@ -271,7 +272,8 @@
   ())
 
 (defmethod linked-buffer-clone
-  ((conf linked-buffer-orgel-to-org-configuration))
+  ((conf linked-buffer-orgel-to-org-configuration)
+   &optional start stop length-before)
   ;; do everything else to the buffer
   (call-next-method conf)
   (m-buffer-replace-match
