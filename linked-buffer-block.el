@@ -108,8 +108,7 @@ start of line comment characters beween BEGIN and END in BUFFER."
           buffer
           ;; perhaps we should ignore lines which are already commented,
           "\\(^\\).+$"
-          :begin begin :end end)
-         )
+          :begin begin :end end))
         (comment-match
          (m-buffer-match
           buffer
