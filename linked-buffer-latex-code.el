@@ -36,33 +36,55 @@
 ;;; Code:
 (require 'linked-buffer-block)
 
+(defun linked-buffer-clojure-to-latex-new ()
+  (linked-buffer-commented-block-configuration
+   "lb-commented clojure latex"
+   :this-buffer (current-buffer)
+   :linked-file
+   (concat
+    (file-name-sans-extension
+     (buffer-file-name)) ".tex")
+   :comment ";; "
+   :comment-start "\\\\end{code}"
+   :comment-stop "\\\\begin{code}"))
+
 (defun linked-buffer-clojure-latex-init ()
-  (if
-      (equal
-       "clj"
-       (file-name-extension
-        (buffer-file-name)))
-      (setq linked-buffer-config
-            (linked-buffer-commented-block-configuration
-             "lb-commented clojure latex"
-             :this-buffer (current-buffer)
-             :linked-file
-             (concat
-              (file-name-sans-extension
-               (buffer-file-name)) ".tex")
-             :comment ";; "
-             :comment-start "\\\\end{code}"
-             :comment-stop "\\\\begin{code}"))
-    (error "Can only use linked-buffer-clojure-latex-init in a .clj buffer")))
+  (setq linked-buffer-config
+        (linked-buffer-clojure-to-latex-new)))
 
 (add-to-list 'linked-buffer-init-functions
              'linked-buffer-clojure-latex-init)
+
+
+(defun linked-buffer-latex-to-clojure-new ()
+  (linked-buffer-uncommented-block-configuration
+   "lb-commented latex clojure"
+   :this-buffer (current-buffer)
+   :linked-file
+   (concat
+    (file-name-sans-extension
+     (buffer-file-name)) ".clj")
+   :comment ";; "
+   :comment-start "\\\\end{code}"
+   :comment-stop "\\\\begin{code}"))
+
+(defun linked-buffer-latex-clojure-init ()
+  (setq linked-buffer-config
+        (linked-buffer-latex-to-clojure-new)))
+
+(add-to-list 'linked-buffer-init-functions
+             'linked-buffer-clojure-latex-init)
+
 
 (defun linked-buffer-clojure-latex-delayed-init ()
   (linked-buffer-delayed-init 'linked-buffer-clojure-latex-init))
 
 (add-to-list 'linked-buffer-init-functions
              'linked-buffer-clojure-latex-delayed-init)
+
+
+
+
 
 (provide 'linked-buffer-latex-code)
 

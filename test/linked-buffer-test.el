@@ -71,7 +71,9 @@
    (linked-buffer-batch-clone-with-config
     (linked-buffer-test-file file) init)
    'utf-8
-   (concat  "../dev-resources/" cloned-file)))
+   (concat  "../dev-resources/" cloned-file))
+  ;; return nil, so if we use this in a test by mistake, it will crash out.
+  nil)
 
 (defvar conf-default
   (linked-buffer-default-configuration "bob"))
@@ -187,8 +189,10 @@ results."
     (linked-buffer-test-file file) init
     f)
    'utf-8
-   (concat  "../dev-resources/" cloned-file)))
-
+   (concat  "../dev-resources/" cloned-file))
+  ;; return nil, so that if we use this in a test by mistake, it returns
+  ;; false, so there is a good chance it will fail the test.
+  nil)
 
 (defvar linked-buffer-test-last-transform "")
 
@@ -211,7 +215,6 @@ results."
               (insert "not simple"))))
     (equal linked-buffer-test-last-transform "not simple"))))
 
-
 (ert-deftest linked-buffer-simple-with-change-file()
   "Test simple-contents with a change and compare to file.
 This mostly checks my test machinary."
@@ -225,7 +228,6 @@ This mostly checks my test machinary."
        (insert "simple")))
     (equal linked-buffer-test-last-transform "simple"))))
 
-
 (ert-deftest linked-buffer-clojure-latex-incremental ()
   (should
    (and
@@ -235,4 +237,24 @@ This mostly checks my test machinary."
      (lambda ()
        (forward-line 1)
        (insert ";; inserted\n")))
-    (equal linked-buffer-test-last-transform ";; inserted\n"))))
+    (equal linked-buffer-test-last-transform ";; inserted\n")))
+
+  (should
+   (and
+    (linked-buffer-test-clone-and-change-equal
+     'linked-buffer-latex-clojure-init
+     "block-comment.tex" "block-comment-changed-1.clj"
+     (lambda ()
+       (forward-line 1)
+       (insert ";; inserted\n")))
+    (equal linked-buffer-test-last-transform ";; inserted\n")))
+
+  (should
+   (and
+    (linked-buffer-test-clone-and-change-equal
+     'linked-buffer-latex-clojure-init
+     "block-comment.tex" "block-comment-changed-2.clj"
+     (lambda ()
+       (search-forward "\\begin{code}\n")
+       (insert "(form inserted)\n")))
+    (equal linked-buffer-test-last-transform "(form inserted)\n"))))
