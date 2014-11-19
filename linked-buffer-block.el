@@ -91,7 +91,7 @@ start of line comment-characters in appropriate blocks. Changes
 should only have occurred between BEGIN and END in BUFFER."
   (-map
    (lambda (pairs)
-     (let* 
+     (let*
          ((block-begin (car pairs))
           (block-end (cdr pairs))
           (rtn
@@ -105,7 +105,7 @@ should only have occurred between BEGIN and END in BUFFER."
        (set-marker (car pairs) nil)
        (set-marker (cdr pairs) nil)
        rtn))
-   (linked-buffer-blk-marker-boundaries 
+   (linked-buffer-blk-marker-boundaries
     conf buffer)))
 
 (defun linked-buffer-blk-comment-region (conf begin end buffer)
@@ -137,21 +137,30 @@ start of line comment characters beween BEGIN and END in BUFFER."
   "Given CONF, a `linked-buffer-configuration' object, add
 start of line comment-characters. Changes should only have occurred
 between BEGIN and END in BUFFER."
-  (-map
-   ;; comment each of these regions
-   (lambda (pairs)
-     (let* ((block-begin (car pairs))
-            (block-end (cdr pairs))
-            (rtn
-             (when
-                 (and (>= end block-begin)
-                      (>= block-end begin))
-               (linked-buffer-blk-comment-region
-                conf (car pairs) (cdr pairs) buffer))))
-       (set-marker (car pairs) nil)
-       (set-marker (cdr pairs) nil)
-       rtn))
-   (linked-buffer-blk-marker-boundaries conf buffer)))
+  ;; we need these as markers because the begin and end position need to
+  ;; move as we change the buffer, in the same way that the marker boundary
+  ;; markers do.
+  (let* ((begin (set-marker (make-marker) begin buffer))
+         (end (set-marker (make-marker) end buffer))
+         (rtn
+          (-map
+           ;; comment each of these regions
+           (lambda (pairs)
+             (let* ((block-begin (car pairs))
+                    (block-end (cdr pairs))
+                    (rtn
+                     (when
+                         (and (>= end block-begin)
+                              (>= block-end begin))
+                       (linked-buffer-blk-comment-region
+                        conf (car pairs) (cdr pairs) buffer))))
+               (set-marker block-begin nil)
+               (set-marker block-end nil)
+               rtn))
+           (linked-buffer-blk-marker-boundaries conf buffer))))
+    (set-marker begin nil)
+    (set-marker end nil)
+    rtn))
 
 (put 'unmatched-delimiter-error
      'error-conditions
