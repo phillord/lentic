@@ -51,7 +51,8 @@
                   "-c"
                   a-file
                   b-file)
-                 (buffer-string))))))
+                 (buffer-string))))
+    nil))
 
 (defun linked-buffer-test-clone-equal (init file cloned-file)
   (let ((cloned-file
@@ -259,7 +260,7 @@ This mostly checks my test machinary."
 
 (ert-deftest clojure-latex-first-line ()
   "Tests for a bug after introduction of incremental blocks."
-  :expected-result :fail
+  :expected-result :failed
   (should
    (linked-buffer-test-clone-and-change-equal
     'linked-buffer-clojure-latex-init

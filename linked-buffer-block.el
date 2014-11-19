@@ -87,22 +87,31 @@ function `linked-buffer-configuration' object."
 
 (defun linked-buffer-blk-uncomment-buffer (conf begin end buffer)
   "Given CONF, a `linked-buffer-configuration' object, remove all
-start of line comment-characters in appropriate blocks between
-BEGIN and END in BUFFER."
+start of line comment-characters in appropriate blocks. Changes
+should only have occurred between BEGIN and END in BUFFER."
   (-map
    (lambda (pairs)
-     (prog1
-         (linked-buffer-blk-uncomment-region
-          conf
-          (car pairs) (cdr pairs) buffer)
+     (let* 
+         ((block-begin (car pairs))
+          (block-end (cdr pairs))
+          (rtn
+           (when
+               (and (>= end block-begin)
+                    (>= block-end begin))
+             (linked-buffer-blk-uncomment-region
+              conf
+              block-begin block-end buffer))))
        ;; remove markers as we go
        (set-marker (car pairs) nil)
-       (set-marker (cdr pairs) nil)))
-   (linked-buffer-blk-marker-boundaries conf begin end buffer)))
+       (set-marker (cdr pairs) nil)
+       rtn))
+   (linked-buffer-blk-marker-boundaries 
+    conf buffer)))
 
 (defun linked-buffer-blk-comment-region (conf begin end buffer)
   "Given CONF, a `linked-buffer-configuration' object, add
 start of line comment characters beween BEGIN and END in BUFFER."
+  (linked-buffer-log "comment-region (%s,%s,%s)" begin end buffer)
   (let ((line-match
          (m-buffer-match
           buffer
@@ -126,17 +135,23 @@ start of line comment characters beween BEGIN and END in BUFFER."
 
 (defun linked-buffer-blk-comment-buffer (conf begin end buffer)
   "Given CONF, a `linked-buffer-configuration' object, add
-start of line comment-characters in appropriate blocks between
-BEGIN and END in BUFFER."
+start of line comment-characters. Changes should only have occurred
+between BEGIN and END in BUFFER."
   (-map
    ;; comment each of these regions
    (lambda (pairs)
-     (prog1
-         (linked-buffer-blk-comment-region
-          conf (car pairs) (cdr pairs) buffer)
+     (let* ((block-begin (car pairs))
+            (block-end (cdr pairs))
+            (rtn
+             (when
+                 (and (>= end block-begin)
+                      (>= block-end begin))
+               (linked-buffer-blk-comment-region
+                conf (car pairs) (cdr pairs) buffer))))
        (set-marker (car pairs) nil)
-       (set-marker (cdr pairs) nil)))
-   (linked-buffer-blk-marker-boundaries conf begin end buffer)))
+       (set-marker (cdr pairs) nil)
+       rtn))
+   (linked-buffer-blk-marker-boundaries conf buffer)))
 
 (put 'unmatched-delimiter-error
      'error-conditions
@@ -145,11 +160,11 @@ BEGIN and END in BUFFER."
 (put 'unmatched-delimiter-error
      'error-message "Unmatched Delimiter in Buffer")
 
-(defun linked-buffer-blk-marker-boundaries (conf begin end buffer)
+(defun linked-buffer-blk-marker-boundaries (conf buffer)
   "Given CONF, a `linked-buffer-configuration' object, find
-demarcation markers between BEGIN and END in BUFFER. Returns a
-list of start end cons pairs. BEGIN is considered to be an
-implicit start and END an implicit stop."
+demarcation markers. Returns a list of start end cons pairs.
+`point-min' is considered to be an implicit start and `point-max'
+an implicit stop."
   (let* ((match-block
           (linked-buffer-block-match
            conf buffer))
@@ -162,18 +177,19 @@ implicit start and END an implicit stop."
            (length match-end))
       (linked-buffer-log "delimiters do not match")
       (signal 'unmatched-delimiter-error
-              (list begin end buffer)))
-    (-zip
-     ;; start comment markers
-     ;; plus the start of the region
-     (cons
-      (set-marker (make-marker) begin buffer)
-      match-start)
-     ;; end comment markers
-     ;; plus the end of the buffer
-     (append
-      match-end
-      (list (set-marker (make-marker) end buffer))))))
+              (list buffer)))
+    (with-current-buffer buffer
+      (-zip
+       ;; start comment markers
+       ;; plus the start of the region
+       (cons
+        (set-marker (make-marker) (point-min) buffer)
+        match-start)
+       ;; end comment markers
+       ;; plus the end of the buffer
+       (append
+        match-end
+        (list (set-marker (make-marker) (point-max) buffer)))))))
 
 (defmethod linked-buffer-block-match ((conf linked-buffer-block-configuration)
                                       buffer)
@@ -277,13 +293,15 @@ between the two buffers; we don't care which one has comments."
 
 (defmethod linked-buffer-block-comment-start-regexp
   ((conf linked-buffer-commented-block-configuration))
-  (concat (regexp-quote (oref conf :comment))
-          (oref conf :comment-start)))
+  (concat
+   "\\(" (regexp-quote (oref conf :comment)) "\\)?"
+   (oref conf :comment-start)))
 
 (defmethod linked-buffer-block-comment-stop-regexp
   ((conf linked-buffer-commented-block-configuration))
-  (concat (regexp-quote (oref conf :comment))
-          (oref conf :comment-stop)))
+  (concat
+   "\\(" (regexp-quote (oref conf :comment)) "\\)?"
+   (oref conf :comment-stop)))
 
 (defmethod linked-buffer-clone
   ((conf linked-buffer-uncommented-block-configuration)
