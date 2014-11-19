@@ -18,37 +18,40 @@
       (error "Test File does not exist: %s" file))
     file))
 
-(defun linked-buffer-test-report-loudly (cloned-file cloned-results)
-  (message "Results:\n%s\n:Complete\nShouldbe:\n%s\nComplete:" cloned-results cloned-file)
-  (let* ((file-buffer
-          (generate-new-buffer "cloned-file"))
-         (results-buffer
-          (generate-new-buffer "cloned-results"))
-         (temp-file-buffer
-          (make-temp-file
-           (buffer-name file-buffer)))
-         (temp-results-buffer
-          (make-temp-file
-           (buffer-name results-buffer))))
-    (with-current-buffer
-        file-buffer
-      (insert cloned-file)
-      (write-file temp-file-buffer))
-    (with-current-buffer
-        results-buffer
-      (insert cloned-results)
-      (write-file temp-results-buffer))
-    (message "diff:%senddiff:"
-             (with-temp-buffer
-               (call-process
-                "diff"
-                nil
-                (current-buffer)
-                nil
-                "-c"
-                temp-file-buffer
-                temp-results-buffer)
-               (buffer-string)))))
+(defun linked-buffer-test-equal-loudly (a b)
+  "Actually, this just tests equality and shouts if not."
+  (if (string= a b)
+      t
+    (message "Results:\n%s\n:Complete\nShouldbe:\n%s\nComplete:" cloned-results cloned-file)
+    (let* ((a-buffer
+            (generate-new-buffer "a"))
+           (b-buffer
+            (generate-new-buffer "b"))
+           (a-file
+            (make-temp-file
+             (buffer-name a-buffer)))
+           (b-file
+            (make-temp-file
+             (buffer-name b-buffer))))
+      (with-current-buffer
+          a-buffer
+        (insert a)
+        (write-file a-file))
+      (with-current-buffer
+          b-buffer
+        (insert b)
+        (write-file b-file))
+      (message "diff:%senddiff:"
+               (with-temp-buffer
+                 (call-process
+                  "diff"
+                  nil
+                  (current-buffer)
+                  nil
+                  "-c"
+                  a-file
+                  b-file)
+                 (buffer-string))))))
 
 (defun linked-buffer-test-clone-equal (init file cloned-file)
   (let ((cloned-file
@@ -57,12 +60,7 @@
         (cloned-results
          (linked-buffer-batch-clone-with-config
           (linked-buffer-test-file file) init)))
-    (if
-        (string= cloned-file cloned-results)
-        t
-      ;; comment this out if you don't want it.
-      (linked-buffer-test-report-loudly cloned-file cloned-results)
-      nil)))
+    (linked-buffer-test-equal-loudly cloned-file cloned-results)))
 
 (defun linked-buffer-test-clone-equal-generate
   (init file cloned-file)
@@ -71,7 +69,7 @@
    (linked-buffer-batch-clone-with-config
     (linked-buffer-test-file file) init)
    'utf-8
-   (concat  "../dev-resources/" cloned-file))
+   (concat linked-buffer-test-dir cloned-file))
   ;; return nil, so if we use this in a test by mistake, it will crash out.
   nil)
 
@@ -178,7 +176,7 @@ results."
         (string= cloned-file cloned-results)
         t
       ;; comment this out if you don't want it.
-      (linked-buffer-test-report-loudly cloned-file cloned-results)
+      (linked-buffer-test-equal-loudly cloned-file cloned-results)
       nil)))
 
 (defun linked-buffer-test-clone-and-change-equal-generate
@@ -189,7 +187,7 @@ results."
     (linked-buffer-test-file file) init
     f)
    'utf-8
-   (concat  "../dev-resources/" cloned-file))
+   (concat linked-buffer-test-dir  cloned-file))
   ;; return nil, so that if we use this in a test by mistake, it returns
   ;; false, so there is a good chance it will fail the test.
   nil)
@@ -258,3 +256,16 @@ This mostly checks my test machinary."
        (search-forward "\\begin{code}\n")
        (insert "(form inserted)\n")))
     (equal linked-buffer-test-last-transform "(form inserted)\n"))))
+
+(ert-deftest clojure-latex-first-line ()
+  "Tests for a bug after introduction of incremental blocks."
+  :expected-result :fail
+  (should
+   (linked-buffer-test-clone-and-change-equal
+    'linked-buffer-clojure-latex-init
+    "block-comment.clj" "block-comment.tex"
+    (lambda ()
+      (delete-char 0)
+      (delete-char 0)
+      (insert ";")
+      (insert ";")))))
