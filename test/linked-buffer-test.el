@@ -20,39 +20,42 @@
 
 (defun linked-buffer-test-equal-loudly (a b)
   "Actually, this just tests equality and shouts if not."
-  (if (string= a b)
-      t
-    (message "Results:\n%s\n:Complete\nShouldbe:\n%s\nComplete:" cloned-results cloned-file)
-    (let* ((a-buffer
-            (generate-new-buffer "a"))
-           (b-buffer
-            (generate-new-buffer "b"))
-           (a-file
-            (make-temp-file
-             (buffer-name a-buffer)))
-           (b-file
-            (make-temp-file
-             (buffer-name b-buffer))))
-      (with-current-buffer
-          a-buffer
-        (insert a)
-        (write-file a-file))
-      (with-current-buffer
-          b-buffer
-        (insert b)
-        (write-file b-file))
-      (message "diff:%senddiff:"
-               (with-temp-buffer
-                 (call-process
-                  "diff"
-                  nil
-                  (current-buffer)
-                  nil
-                  "-c"
-                  a-file
-                  b-file)
-                 (buffer-string))))
-    nil))
+  ;; change this to t to disable noisy printout
+  (if t
+      (string= a b)
+    (if (string= a b)
+        t
+      (message "Results:\n%s\n:Complete\nShouldbe:\n%s\nComplete:" cloned-results cloned-file)
+      (let* ((a-buffer
+              (generate-new-buffer "a"))
+             (b-buffer
+              (generate-new-buffer "b"))
+             (a-file
+              (make-temp-file
+               (buffer-name a-buffer)))
+             (b-file
+              (make-temp-file
+               (buffer-name b-buffer))))
+        (with-current-buffer
+            a-buffer
+          (insert a)
+          (write-file a-file))
+        (with-current-buffer
+            b-buffer
+          (insert b)
+          (write-file b-file))
+        (message "diff:%senddiff:"
+                 (with-temp-buffer
+                   (call-process
+                    "diff"
+                    nil
+                    (current-buffer)
+                    nil
+                    "-c"
+                    a-file
+                    b-file)
+                   (buffer-string))))
+      nil)))
 
 (defun linked-buffer-test-clone-equal (init file cloned-file)
   (let ((cloned-file
