@@ -31,6 +31,26 @@
 (require 'linked-buffer)
 
 ;;; Code:
+(defmacro linked-buffer-with-markers (varlist &rest body)
+  "Bind variables after VARLIST then eval BODY.
+All variables should contain markers or collections of markers.
+All markers are niled after BODY."
+  ;; indent let part specially.
+  (declare (indent 1))
+  ;; so, create a rtn var with make-symbol (for hygene)
+  (let* ((rtn-var (make-symbol "rtn-var"))
+         (marker-vars
+          (mapcar 'car varlist))
+         (full-varlist
+          (append
+           varlist
+           `((,rtn-var
+              (progn
+                ,@body))))))
+    `(let* ,full-varlist
+       (m-buffer-nil-marker
+        (list ,@marker-vars))
+       ,rtn-var)))
 
 (defclass linked-buffer-block-configuration (linked-buffer-default-configuration)
   ((comment :initarg :comment
@@ -49,7 +69,6 @@
 A blocked linked-buffer is one where blocks of the buffer have a
 start of line block comment in one buffer but not the other."
   :abstract t)
-
 
 (defmethod linked-buffer-blk-comment-start-regexp
   ((conf linked-buffer-block-configuration))
@@ -75,15 +94,14 @@ start of line block comment in one buffer but not the other."
   "Given CONF,  remove start-of-line characters in region.
 Region is between BEGIN and END in BUFFER. CONF is a
 function `linked-buffer-configuration' object."
-  (let
+  ;;(linked-buffer-log "uncomment-region (%s,%s)" begin end)
+  (linked-buffer-with-markers
       ((comments
         (m-buffer-match
          buffer
          (linked-buffer-blk-line-start-comment conf)
          :begin begin :end end)))
-    (prog1
-        (m-buffer-replace-match comments "")
-      (m-buffer-nil-marker comments))))
+    (m-buffer-replace-match comments "")))
 
 (defun linked-buffer-blk-uncomment-buffer (conf begin end buffer)
   "Given CONF, a `linked-buffer-configuration' object, remove all
@@ -91,20 +109,15 @@ start of line comment-characters in appropriate blocks. Changes
 should only have occurred between BEGIN and END in BUFFER."
   (-map
    (lambda (pairs)
-     (let*
+     ;; nil markers off as we go
+     (linked-buffer-with-markers
          ((block-begin (car pairs))
-          (block-end (cdr pairs))
-          (rtn
-           (when
-               (and (>= end block-begin)
-                    (>= block-end begin))
-             (linked-buffer-blk-uncomment-region
-              conf
-              block-begin block-end buffer))))
-       ;; remove markers as we go
-       (set-marker (car pairs) nil)
-       (set-marker (cdr pairs) nil)
-       rtn))
+          (block-end (cdr pairs)))
+       (when
+           (and (>= end block-begin)
+                (>= block-end begin))
+         (linked-buffer-blk-uncomment-region
+          conf block-begin block-end buffer))))
    (linked-buffer-blk-marker-boundaries
     conf buffer)))
 
@@ -112,26 +125,24 @@ should only have occurred between BEGIN and END in BUFFER."
   "Given CONF, a `linked-buffer-configuration' object, add
 start of line comment characters beween BEGIN and END in BUFFER."
   (linked-buffer-log "comment-region (%s,%s,%s)" begin end buffer)
-  (let ((line-match
-         (m-buffer-match
-          buffer
-          ;; perhaps we should ignore lines which are already commented,
-          "\\(^\\).+$"
-          :begin begin :end end))
-        (comment-match
-         (m-buffer-match
+  (linked-buffer-with-markers
+      ((line-match
+        (m-buffer-match
+         buffer
+         ;; perhaps we should ignore lines which are already commented,
+         "\\(^\\).+$"
+         :begin begin :end end))
+       (comment-match
+        (m-buffer-match
           buffer
           ;; start to end of line which is what this regexp above matches
           (concat
            (linked-buffer-blk-line-start-comment conf)
            ".*")
           :begin begin :end end)))
-    (prog1
-        (m-buffer-replace-match
-         (m-buffer-match-exact-subtract line-match comment-match)
-         (oref conf :comment) nil nil 1)
-      (m-buffer-nil-marker line-match)
-      (m-buffer-nil-marker comment-match))))
+    (m-buffer-replace-match
+     (m-buffer-match-exact-subtract line-match comment-match)
+     (oref conf :comment) nil nil 1)))
 
 (defun linked-buffer-blk-comment-buffer (conf begin end buffer)
   "Given CONF, a `linked-buffer-configuration' object, add
@@ -140,27 +151,24 @@ between BEGIN and END in BUFFER."
   ;; we need these as markers because the begin and end position need to
   ;; move as we change the buffer, in the same way that the marker boundary
   ;; markers do.
-  (let* ((begin (set-marker (make-marker) begin buffer))
-         (end (set-marker (make-marker) end buffer))
-         (rtn
-          (-map
-           ;; comment each of these regions
-           (lambda (pairs)
-             (let* ((block-begin (car pairs))
-                    (block-end (cdr pairs))
-                    (rtn
-                     (when
-                         (and (>= end block-begin)
-                              (>= block-end begin))
-                       (linked-buffer-blk-comment-region
-                        conf (car pairs) (cdr pairs) buffer))))
-               (set-marker block-begin nil)
-               (set-marker block-end nil)
-               rtn))
-           (linked-buffer-blk-marker-boundaries conf buffer))))
-    (set-marker begin nil)
-    (set-marker end nil)
-    rtn))
+  (linked-buffer-with-markers 
+      ((begin (set-marker (make-marker) begin buffer))
+       (end (set-marker (make-marker) end buffer)))
+    (-map
+     ;; comment each of these regions
+     (lambda (pairs)
+       (let* ((block-begin (car pairs))
+              (block-end (cdr pairs))
+              (rtn
+               (when
+                   (and (>= end block-begin)
+                        (>= block-end begin))
+                 (linked-buffer-blk-comment-region
+                  conf (car pairs) (cdr pairs) buffer))))
+         (set-marker block-begin nil)
+         (set-marker block-end nil)
+         rtn))
+     (linked-buffer-blk-marker-boundaries conf buffer))))
 
 (put 'unmatched-delimiter-error
      'error-conditions
