@@ -36,7 +36,7 @@
 All variables should contain markers or collections of markers.
 All markers are niled after BODY."
   ;; indent let part specially.
-  (declare (indent 1))
+  (declare (indent 1)(debug let))
   ;; so, create a rtn var with make-symbol (for hygene)
   (let* ((rtn-var (make-symbol "rtn-var"))
          (marker-vars
