@@ -31,27 +31,6 @@
 (require 'linked-buffer)
 
 ;;; Code:
-(defmacro linked-buffer-with-markers (varlist &rest body)
-  "Bind variables after VARLIST then eval BODY.
-All variables should contain markers or collections of markers.
-All markers are niled after BODY."
-  ;; indent let part specially.
-  (declare (indent 1)(debug let))
-  ;; so, create a rtn var with make-symbol (for hygene)
-  (let* ((rtn-var (make-symbol "rtn-var"))
-         (marker-vars
-          (mapcar 'car varlist))
-         (full-varlist
-          (append
-           varlist
-           `((,rtn-var
-              (progn
-                ,@body))))))
-    `(let* ,full-varlist
-       (m-buffer-nil-marker
-        (list ,@marker-vars))
-       ,rtn-var)))
-
 (defclass linked-buffer-block-configuration (linked-buffer-default-configuration)
   ((comment :initarg :comment
             :documentation "The comment character")
@@ -95,7 +74,7 @@ start of line block comment in one buffer but not the other."
 Region is between BEGIN and END in BUFFER. CONF is a
 function `linked-buffer-configuration' object."
   ;;(linked-buffer-log "uncomment-region (%s,%s)" begin end)
-  (linked-buffer-with-markers
+  (m-buffer-with-markers
       ((comments
         (m-buffer-match
          buffer
@@ -110,7 +89,7 @@ should only have occurred between BEGIN and END in BUFFER."
   (-map
    (lambda (pairs)
      ;; nil markers off as we go
-     (linked-buffer-with-markers
+     (m-buffer-with-markers
          ((block-begin (car pairs))
           (block-end (cdr pairs)))
        (when
@@ -125,7 +104,7 @@ should only have occurred between BEGIN and END in BUFFER."
   "Given CONF, a `linked-buffer-configuration' object, add
 start of line comment characters beween BEGIN and END in BUFFER."
   (linked-buffer-log "comment-region (%s,%s,%s)" begin end buffer)
-  (linked-buffer-with-markers
+  (m-buffer-with-markers
       ((line-match
         (m-buffer-match
          buffer
@@ -151,7 +130,7 @@ between BEGIN and END in BUFFER."
   ;; we need these as markers because the begin and end position need to
   ;; move as we change the buffer, in the same way that the marker boundary
   ;; markers do.
-  (linked-buffer-with-markers 
+  (m-buffer-with-markers
       ((begin (set-marker (make-marker) begin buffer))
        (end (set-marker (make-marker) end buffer)))
     (-map
