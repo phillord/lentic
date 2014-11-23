@@ -154,8 +154,6 @@ of mode in the current buffer.")
 (defun linked-buffer-config-name (buffer)
   "Given BUFFER, return a name for the configuration object."
   (format "linked: %s" buffer))
-
-
 ;; #+end_src
 
 ;; ** Base Configuration
@@ -273,7 +271,8 @@ the linked-buffer."
   location)
 
 (defmethod linked-buffer-clone ((conf linked-buffer-configuration)
-                                &optional start stop length-before)
+                                &optional start stop _length-before
+                                start-converted stop-converted)
   "Updates that-buffer to reflect the contents in this-buffer.
 
 Currently, this is just a clone all method but may use regions in future."
@@ -283,19 +282,15 @@ Currently, this is just a clone all method but may use regions in future."
       ;;(linked-buffer-log "this-b (point,start,stop)(%s,%s,%s)" (point) start stop)
       (let* ((start (or start (point-min)))
              (stop (or stop (point-max)))
-             (length-before (or length-before (buffer-size that-b)))
              ;; get the start location that we converted before the change.
              ;; linked-buffer-convert is not reliable now, because the two
              ;; buffers do not share state until we have percolated it
              (converted-start
-              (or (oref conf :last-change-start-converted)
+              (or start-converted
                   (point-min)))
              (converted-stop
-              (or (oref conf :last-change-stop-converted)
+              (or stop-converted
                   (point-max))))
-        ;; used this, so dump it
-        (oset conf :last-change-start-converted nil)
-        (oset conf :last-change-stop-converted nil)
         (with-current-buffer that-b
           (delete-region (max (point-min) converted-start)
                          (min (point-max) converted-stop))
@@ -567,12 +562,26 @@ REST is currently just ignored."
   "Update the contents of that-buffer with the contents of this-buffer.
 Update mechanism depends on CONF."
   (unwind-protect
-      (progn
+      (m-buffer-with-markers
+          ((start-converted
+            (when (oref conf :last-change-start-converted)
+              (set-marker (make-marker)
+                          (oref conf :last-change-start-converted)
+                          (oref conf :that-buffer))))
+           (stop-converted
+            (when (oref conf :last-change-stop-converted)
+                (set-marker (make-marker)
+                            (oref conf :last-change-stop-converted)
+                            (oref conf :that-buffer)))))
+        ;; used these, so dump them
+        (oset conf :last-change-start-converted nil)
+        (oset conf :last-change-stop-converted nil)
         (setq inhibit-read-only t)
         ;;(linked-buffer-log
         ;;"Update config: %s" linked-buffer-config)
-        (linked-buffer-clone conf start stop length-before))
-    (setq inhibit-read-only nil)))
+        (linked-buffer-clone conf start stop length-before
+                             start-converted stop-converted)
+        (setq inhibit-read-only nil))))
 
 (defun linked-buffer-update-point (conf)
   "Update the location of point in that-buffer to reflect this-buffer.

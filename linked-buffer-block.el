@@ -244,38 +244,101 @@ between the two buffers; we don't care which one has comments."
   ()
   "Configuration for blocked linked-buffer without comments.")
 
+(defun linked-buffer-bolp (buffer position)
+  (with-current-buffer
+      buffer
+      (save-excursion
+        (goto-char position)
+        (bolp))))
+
 (defmethod linked-buffer-clone
   ((conf linked-buffer-commented-block-configuration)
-   &optional start stop length-before)
+   &optional start stop length-before start-converted stop-converted)
   "Update the contents in the linked-buffer without comments"
   ;;(linked-buffer-log "blk-clone-uncomment (from):(%s)" conf)
-  ;; clone the buffer first
-  (call-next-method conf start stop length-before)
-  ;; remove the line comments in the to buffer
-  ;; if the delimitors are unmatched, then we can do nothing other than clone.
-  (condition-case e
-      (linked-buffer-blk-uncomment-buffer
-       conf
-       ;; the buffer at this point has been copied over, but is in an
-       ;; inconsistent state (because it may have comments that it should
-       ;; not). Still, the convertor should still work because it counts from
-       ;; the end
-       (linked-buffer-convert
-        conf
-        ;; point-min if we know nothing else
-        (or start (point-min)))
-       (linked-buffer-convert
-        conf
-        ;; if we have a stop
-        (if stop
-            ;; take stop (if we have got longer) or
-            ;; start length before (if we have got shorter)
-            (max stop
-                 (+ start length-before))
-          (point-max)))
-       (linked-buffer-that conf))
-    (unmatched-delimiter-error
-     nil)))
+  (let*
+      ;; we need to detect whether start or stop are in the comment region at
+      ;; the beginning of the file. We check this by looking at :that-buffer
+      ;; -- if we are in the magic region, then we must be at the start of
+      ;; line. In this case, we copy the entire line as it is in a hard to
+      ;; predict state. This is slightly over cautious (it also catches first
+      ;; character), but this is safe, it only causes the occasional
+      ;; unnecessary whole line copy. In normal typing "whole line" will be
+      ;; one character anyway
+      ((start-in-comment
+        (when
+            (and start
+                 (linked-buffer-bolp
+                  (oref conf :that-buffer)
+                  start-converted))
+          (m-buffer-with-current-location
+              (oref conf :this-buffer)
+              start
+            (line-beginning-position))))
+       (start (or start-in-comment start))
+       (start-converted
+        (if start-in-comment
+          (with-current-buffer
+              (oref conf :that-buffer)
+            (save-excursion
+              (goto-char start-converted)
+              (line-beginning-position)))
+          start-converted))
+       ;; likewise for stop
+       (stop-in-comment
+        (when
+            (and start
+                 (linked-buffer-bolp
+                  (oref conf :that-buffer)
+                  stop-converted))
+          (m-buffer-with-current-location
+              (oref conf :this-buffer)
+              stop
+            (line-end-position))))
+       (stop (or stop-in-comment stop))
+       (stop-converted
+        (if stop-in-comment
+            (with-current-buffer
+                (oref conf :that-buffer)
+              (save-excursion
+                (goto-char stop-converted)
+                (line-end-position)))
+          stop-converted)))
+    ;; log when we have gone long
+    (if (or start-in-comment stop-in-comment)
+        (linked-buffer-log "In comment: %s %s"
+                           (when start-in-comment
+                             "start")
+                           (when stop-in-comment
+                             "stop")))
+        ;; now clone the buffer
+    (call-next-method conf start stop length-before
+                      start-converted stop-converted)
+    ;; remove the line comments in the to buffer
+    ;; if the delimitors are unmatched, then we can do nothing other than clone.
+    (condition-case e
+        (linked-buffer-blk-uncomment-buffer
+         conf
+         ;; the buffer at this point has been copied over, but is in an
+         ;; inconsistent state (because it may have comments that it should
+         ;; not). Still, the convertor should still work because it counts from
+         ;; the end
+         (linked-buffer-convert
+          conf
+          ;; point-min if we know nothing else
+          (or start (point-min)))
+         (linked-buffer-convert
+          conf
+          ;; if we have a stop
+          (if stop
+              ;; take stop (if we have got longer) or
+              ;; start length before (if we have got shorter)
+              (max stop
+                   (+ start length-before))
+            (point-max)))
+         (linked-buffer-that conf))
+      (unmatched-delimiter-error
+       nil))))
 
 (defmethod linked-buffer-invert
   ((conf linked-buffer-commented-block-configuration))
@@ -301,10 +364,11 @@ between the two buffers; we don't care which one has comments."
 
 (defmethod linked-buffer-clone
   ((conf linked-buffer-uncommented-block-configuration)
-   &optional start stop length-before)
+   &optional start stop length-before start-converted stop-converted)
   "Update the contents in the linked-buffer with comments."
   ;;(linked-buffer-log "blk-clone-comment conf):(%s)" conf)
-  (call-next-method conf start stop length-before)
+  (call-next-method conf start stop length-before
+                    start-converted stop-converted)
   (condition-case e
       (linked-buffer-blk-comment-buffer
        conf

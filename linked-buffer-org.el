@@ -211,9 +211,11 @@
 
 (defmethod linked-buffer-clone
   ((conf linked-buffer-org-to-orgel-configuration)
-   &optional start stop length-before)
+   &optional start stop length-before
+   start-converted stop-converted)
   ;; do everything else to the buffer
-  (call-next-method conf)
+  (call-next-method conf start stop length-before
+                    start-converted stop-converted)
   (m-buffer-replace-match
    (m-buffer-match
     (linked-buffer-that conf)
@@ -273,9 +275,10 @@
 
 (defmethod linked-buffer-clone
   ((conf linked-buffer-orgel-to-org-configuration)
-   &optional start stop length-before)
+   &optional start stop length-before start-converted stop-converted)
   ;; do everything else to the buffer
-  (call-next-method conf)
+  (call-next-method conf start stop length-before
+                    start-converted stop-converted)
   (m-buffer-replace-match
    (m-buffer-match
     (linked-buffer-that conf)

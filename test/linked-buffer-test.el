@@ -263,13 +263,12 @@ This mostly checks my test machinary."
 
 (ert-deftest clojure-latex-first-line ()
   "Tests for a bug after introduction of incremental blocks."
-  :expected-result :failed
   (should
    (linked-buffer-test-clone-and-change-equal
     'linked-buffer-clojure-latex-init
     "block-comment.clj" "block-comment.tex"
     (lambda ()
-      (delete-char 0)
-      (delete-char 0)
+      (delete-char 1)
+      (delete-char 1)
       (insert ";")
       (insert ";")))))
