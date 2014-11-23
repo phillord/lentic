@@ -1,24 +1,17 @@
 (require 'linked-buffer)
 
-(defvar linked-buffer-dev-insert-faces
-  '(font-lock-builtin-face
-    font-lock-comment-face
-    font-lock-constant-face
-    font-lock-doc-face
-    font-lock-function-name-face
-    font-lock-keyword-face
-    font-lock-negation-char-face
-    font-lock-preprocessor-face))
+(defvar linked-buffer-dev-insert-face 'font-lock-keyword-face)
 
 (defun linked-buffer-dev-rotate-face ()
   (interactive)
-  (setq linked-buffer-dev-insert-faces
-        (-rotate 1 linked-buffer-dev-insert-faces))
+  (setq linked-buffer-dev-insert-face
+        (nth (random (length (face-list)))
+             (face-list)))
   (message "Insert face is now %s"
            (propertize
             "this"
             'face
-            (car linked-buffer-dev-insert-faces))))
+            linked-buffer-dev-insert-face)))
 
 (defadvice linked-buffer-insertion-string-transform
   (after face-transform
@@ -28,7 +21,7 @@
         (propertize
          string
          'font-lock-face
-         (car linked-buffer-dev-insert-faces))))
+         linked-buffer-dev-insert-face)))
 
 (defvar linked-buffer-enable-insertion-marking nil)
 (defun linked-buffer-enable-insertion-marking ()
