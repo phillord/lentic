@@ -278,11 +278,10 @@ between the two buffers; we don't care which one has comments."
        (start (or start-in-comment start))
        (start-converted
         (if start-in-comment
-          (with-current-buffer
+          (m-buffer-with-current-location
               (oref conf :that-buffer)
-            (save-excursion
-              (goto-char start-converted)
-              (line-beginning-position)))
+              start-converted
+              (line-beginning-position))
           start-converted))
        ;; likewise for stop
        (stop-in-comment
@@ -298,11 +297,10 @@ between the two buffers; we don't care which one has comments."
        (stop (or stop-in-comment stop))
        (stop-converted
         (if stop-in-comment
-            (with-current-buffer
+            (m-buffer-with-current-location
                 (oref conf :that-buffer)
-              (save-excursion
-                (goto-char stop-converted)
-                (line-end-position)))
+                stop-converted
+              (line-end-position))
           stop-converted)))
     ;; log when we have gone long
     (if (or start-in-comment stop-in-comment)
