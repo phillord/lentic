@@ -145,37 +145,53 @@
 ;; At the moment, this does not check that the changes are actually
 ;; incremental, cause that's harder.
 (defun linked-buffer-test-clone-and-change-with-config
-  (filename init f)
+  (filename init &optional f-this f-that retn-that)
   "Clone file and make changes to check incremental updates.
 Using INIT clone FILE, then apply F in the buffer, and return the
 results."
   ;; most of this is the same as batch-clone..
-  (let ((retn nil))
+  (let ((retn nil)
+        (f-this
+         (or f-this
+             (lambda ())))
+        (f-that
+         (or f-that
+             (lambda ()))))
     (with-current-buffer
         (find-file-noselect filename)
       (setq linked-buffer-init init)
       (let ((linked
              (linked-buffer-init-create)))
-        (funcall f)
+        (funcall f-this)
         (with-current-buffer
             linked
-          (setq retn
-                (buffer-substring-no-properties
-                 (point-min)
-                 (point-max)))
+          (funcall f-that)
+          (unless retn-that
+            (setq retn
+                  (buffer-substring-no-properties
+                   (point-min)
+                   (point-max))))
           (set-buffer-modified-p nil)
           (kill-buffer)))
+      (when retn-that
+        (setq retn
+              (buffer-substring-no-properties
+               (point-min)
+               (point-max))))
       (set-buffer-modified-p nil)
       (kill-buffer))
     retn))
 
-(defun linked-buffer-test-clone-and-change-equal (init file cloned-file f)
+(defun linked-buffer-test-clone-and-change-equal
+  (init file cloned-file
+        &optional f-this f-that retn-that)
   (let ((cloned-file
          (f-read
           (linked-buffer-test-file cloned-file)))
         (cloned-results
          (linked-buffer-test-clone-and-change-with-config
-          (linked-buffer-test-file file) init f)))
+          (linked-buffer-test-file file) init f-this f-that
+          retn-that)))
     (if
         (string= cloned-file cloned-results)
         t
@@ -272,3 +288,20 @@ This mostly checks my test machinary."
       (delete-char 1)
       (insert ";")
       (insert ";")))))
+
+(ert-deftest orgel-org-incremental ()
+  (should
+   (linked-buffer-test-clone-and-change-equal
+    'linked-buffer-orgel-org-init
+    "orgel-org.el" "orgel-org.el"
+    nil
+    (lambda ()
+      (goto-char (point-min))
+      (forward-line)
+      (insert "a")
+      (delete-char -1))
+    t)))
+
+
+
+    
