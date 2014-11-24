@@ -21,6 +21,8 @@
         (propertize
          string
          'font-lock-face
+         linked-buffer-dev-insert-face
+         'face
          linked-buffer-dev-insert-face)))
 
 (defvar linked-buffer-enable-insertion-marking nil)
