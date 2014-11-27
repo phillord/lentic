@@ -329,6 +329,7 @@ See `linked-buffer-init' for details."
 ;; #+begin_src emacs-lisp
 (defmacro linked-buffer-when-linked (&rest body)
   "Evaluate BODY when in a linked-buffer."
+  (declare (debug let))
   `(when (and
           linked-buffer-config
           (linked-buffer-that
@@ -365,14 +366,43 @@ See `linked-buffer-init' for details."
           (goto-char (point-max))
           (insert msg))))))
 
-(defvar linked-buffer-emergency nil)
+(defvar linked-buffer-emergency  nil
+  "Iff linked-buffer-emergency is non-nil stop all change related
+  activity.
+
+This is not the same as disabling linked-buffer mode. It stops
+all linked-buffer related activity in all buffers; normally this
+happens as a result of an error condition. If linked-buffer was
+to carry on in these circumstances, serious data loss could
+occur. In normal use, this variable will only be set as a result
+of a problem with the code; it is not recoverable from a user
+perspective.
+
+It is useful to toggle this state on during development. Once
+enabled, buffers will not update automaticaly but only when
+explicitly told to. This is much easier than try to debug errors
+happening on the after-change-hooks. The
+`linked-buffer-emergency' and `linked-buffer-unemergency' hooks
+enable this.")
+
+(defvar linked-buffer-emergency-debug nil
+  "Iff non-nil, linked-buffer will store change data, even
+during a `linked-buffer-emergency'.
+
+Normally, `linked-buffer-emergency' disables all activity, but this makes
+testing incremental changes charge. With this variable set, linked-buffer will
+attempt to store enough change data to operate manually. This does require
+running some linked-buffer code (notably `linked-buffer-convert'). This is low
+risk code, but may still be buggy, and so setting this variable can cause
+repeated errors.")
 
 (defun linked-buffer-emergency ()
-  "Stop linked-buffer from working due to code problem"
+  "Stop linked-buffer from working due to code problem."
   (interactive)
   (setq linked-buffer-emergency t))
 
 (defun linked-buffer-unemergency ()
+  "Start linked-buffer working after stop due to code problem."
   (interactive)
   (setq linked-buffer-emergency nil))
 
@@ -507,9 +537,15 @@ A and B are the buffers."
    (split-window-right)
    (linked-buffer-create linked-buffer-config)))
 
+(defvar linked-buffer-emergency-last-change nil)
+(make-variable-buffer-local 'linked-buffer-emergency-last-change)
+
 (defun linked-buffer-after-change-function (start stop length-before)
   "Run change update according to `linked-buffer-config'.
 Errors are handled. REST is currently just ignored."
+  ;; store values in case we want to use them
+  (when linked-buffer-emergency-debug
+    (setq linked-buffer-emergency-last-change (list start stop length-before)))
   (unless linked-buffer-emergency
     (condition-case err
         (linked-buffer-after-change-function-1 start stop length-before)
@@ -534,7 +570,9 @@ REST is currently just ignored."
 ;; may not work properly under these circumstances.
 (defun linked-buffer-before-change-function (start stop)
   "Run before change update."
-  (unless linked-buffer-emergency
+  (unless (and
+           linked-buffer-emergency
+           (not linked-buffer-emergency-debug))
     (condition-case err
         (progn
           (linked-buffer-when-linked
@@ -750,7 +788,10 @@ Using this function is the easiest way to test an new
 painful for debugging. Set variable `linked-buffer-emergency' to
 true to disable command loop functionality."
   (interactive)
-  (linked-buffer-after-change-function-1 nil))
+  (message "Running after change with args: %s"
+           linked-buffer-emergency-last-change)
+  (apply 'linked-buffer-after-change-function-1
+         linked-buffer-emergency-last-change))
 
 (defun linked-buffer-test-post-command-hook ()
   "Run the post-command functions out of the command loop.
