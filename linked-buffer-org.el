@@ -214,23 +214,44 @@
    &optional start stop length-before
    start-converted stop-converted)
   ;; do everything else to the buffer
+
+  ;; so, this needs to be more complex -- if we include the first line, expand
+  ;; to all of the first line, I think. This should leave the first line in a
+  ;; consistent state
   (call-next-method conf start stop length-before
                     start-converted stop-converted)
   (m-buffer-replace-match
    (m-buffer-match
     (linked-buffer-that conf)
-    ";; # # "
+    ;; we can be in one of two states depending on whether we have made a new
+    ;; clone or an incremental change
+    "^;; \\(;;;\\|# #\\)"
     :end
     (cadr
      (car
       (m-buffer-match-line
        (linked-buffer-that conf)))))
-   ";;; ")
-  ;; replace big headers
+   ";;;")
+  ;; replace big headers, in either of their two states
+  (m-buffer-replace-match
+   (m-buffer-match
+    (linked-buffer-that conf)
+    "^;; [*] \\(\\w*\\)$"
+    :begin
+    (cadr
+     (car
+      (m-buffer-match-line
+       (linked-buffer-that conf)))))
+   ";;; \\1:")
   (m-buffer-replace-match
    (m-buffer-match (linked-buffer-that conf)
-                   "^;; [*] \\(\\\w*\\)")
-   ";;; \\1:"))
+                   "^;; ;;; \\(\\w*:\\)$"
+                   :begin
+                   (cadr
+                    (car
+                     (m-buffer-match-line
+                      (linked-buffer-that conf)))))
+   ";;; \\1"))
 
 (defmethod linked-buffer-invert
   ((conf linked-buffer-org-to-orgel-configuration))
@@ -284,6 +305,7 @@
     (linked-buffer-that conf)
     ";;; "
     :end
+    ;; we matching a lot of lines for one line here...
     (cadr
      (car
       (m-buffer-match-line
