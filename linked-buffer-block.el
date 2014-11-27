@@ -108,17 +108,16 @@ start of line comment characters beween BEGIN and END in BUFFER."
       ((line-match
         (m-buffer-match
          buffer
-         ;; perhaps we should ignore lines which are already commented,
          "\\(^\\).+$"
          :begin begin :end end))
        (comment-match
         (m-buffer-match
-          buffer
-          ;; start to end of line which is what this regexp above matches
-          (concat
-           (linked-buffer-blk-line-start-comment conf)
-           ".*")
-          :begin begin :end end)))
+         buffer
+         ;; start to end of line which is what this regexp above matches
+         (concat
+          (linked-buffer-blk-line-start-comment conf)
+          ".*")
+         :begin begin :end end)))
     (m-buffer-replace-match
      (m-buffer-match-exact-subtract line-match comment-match)
      (oref conf :comment) nil nil 1)))
@@ -136,17 +135,14 @@ between BEGIN and END in BUFFER."
     (-map
      ;; comment each of these regions
      (lambda (pairs)
-       (let* ((block-begin (car pairs))
-              (block-end (cdr pairs))
-              (rtn
-               (when
-                   (and (>= end block-begin)
-                        (>= block-end begin))
-                 (linked-buffer-blk-comment-region
-                  conf (car pairs) (cdr pairs) buffer))))
-         (set-marker block-begin nil)
-         (set-marker block-end nil)
-         rtn))
+       (m-buffer-with-markers
+           ((block-begin (car pairs))
+            (block-end (cdr pairs)))
+         (when
+             (and (>= end block-begin)
+                  (>= block-end begin))
+           (linked-buffer-blk-comment-region
+            conf (car pairs) (cdr pairs) buffer))))
      (linked-buffer-blk-marker-boundaries conf buffer))))
 
 (put 'unmatched-delimiter-error
