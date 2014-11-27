@@ -296,6 +296,19 @@ This mostly checks my test machinary."
       (insert ";")
       (insert ";")))))
 
+(ert-deftest clojure-latex-empty-line ()
+  "Tests for a deletion of an empty line"
+  (should
+   (linked-buffer-test-clone-and-change-equal
+    'linked-buffer-clojure-latex-init
+    "block-comment.clj" "block-comment.tex"
+    nil
+    (lambda ()
+      (goto-char (point-min))
+      (forward-line 1)
+      (delete-char 1)
+      (insert "\n")))))
+
 (ert-deftest orgel-org-incremental ()
   (should
    (linked-buffer-test-clone-and-change-equal
