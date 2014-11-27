@@ -157,30 +157,37 @@ results."
         (f-that
          (or f-that
              (lambda ()))))
-    (with-current-buffer
-        (find-file-noselect filename)
-      (setq linked-buffer-init init)
-      (let ((linked
-             (linked-buffer-init-create)))
-        (funcall f-this)
-        (with-current-buffer
-            linked
-          (funcall f-that)
-          (unless retn-that
-            (setq retn
-                  (buffer-substring-no-properties
-                   (point-min)
-                   (point-max))))
-          (set-buffer-modified-p nil)
-          (kill-buffer)))
-      (when retn-that
-        (setq retn
-              (buffer-substring-no-properties
-               (point-min)
-               (point-max))))
-      (set-buffer-modified-p nil)
-      (kill-buffer))
-    retn))
+    (let (this that)
+      (unwind-protect
+          (with-current-buffer
+              (setq this
+                    (find-file-noselect filename))
+            (setq linked-buffer-init init)
+            (progn 
+              (setq that
+                    (linked-buffer-init-create))
+              (funcall f-this)
+              (with-current-buffer
+                  that
+                (funcall f-that)
+                (unless retn-that
+                  (setq retn
+                        (buffer-substring-no-properties
+                         (point-min)
+                         (point-max))))
+                (set-buffer-modified-p nil)))
+            (when retn-that
+              (setq retn
+                    (buffer-substring-no-properties
+                     (point-min)
+                     (point-max))))
+            (set-buffer-modified-p nil)
+            retn)
+        
+        ;; unwind forms
+        (when this (kill-buffer this))
+        (when that (kill-buffer that))))
+    ))
 
 (defun linked-buffer-test-clone-and-change-equal
   (init file cloned-file
