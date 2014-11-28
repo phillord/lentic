@@ -361,30 +361,46 @@ between the two buffers; we don't care which one has comments."
    &optional start stop length-before start-converted stop-converted)
   "Update the contents in the linked-buffer with comments."
   ;;(linked-buffer-log "blk-clone-comment conf):(%s)" conf)
-  (call-next-method conf start stop length-before
-                    start-converted stop-converted)
-  (condition-case e
-      (linked-buffer-blk-comment-buffer
-       conf
-       ;; the buffer at this point has been copied over, but is in an
-       ;; inconsistent state (because it may have comments that it should
-       ;; not). Still, the convertor should still work because it counts from
-       ;; the end
-       (linked-buffer-convert
-        conf
-        ;; point-min if we know nothing else
-        (or start (point-min)))
-       (linked-buffer-convert
-        conf
-        ;; if we have a stop
-        (if stop
-            ;; take stop (if we have got longer) or
-            ;; start length before (if we have got shorter)
-            (max stop
-                 (+ start length-before))
-          (point-max)))
-       (linked-buffer-that conf))
-    (unmatched-delimiter-error nil)))
+  (let*
+      ((start-at-bolp
+        (when
+            (and start
+                 (linked-buffer-bolp
+                  (oref conf :this-buffer)
+                  start))
+          (m-buffer-with-current-location
+              (oref conf :that-buffer)
+              start-converted
+            (line-beginning-position))))
+       (start-converted (or start-at-bolp start-converted)))
+    (if (or start-at-bolp)
+        (linked-buffer-log "In comment: %s"
+                           (when start-at-bolp
+                             "start")))
+    (call-next-method conf start stop length-before
+                      start-converted stop-converted)
+    (condition-case e
+        (linked-buffer-blk-comment-buffer
+         conf
+         ;; the buffer at this point has been copied over, but is in an
+         ;; inconsistent state (because it may have comments that it should
+         ;; not). Still, the convertor should still work because it counts from
+         ;; the end
+         (linked-buffer-convert
+          conf
+          ;; point-min if we know nothing else
+          (or start (point-min)))
+         (linked-buffer-convert
+          conf
+          ;; if we have a stop
+          (if stop
+              ;; take stop (if we have got longer) or
+              ;; start length before (if we have got shorter)
+              (max stop
+                   (+ start length-before))
+            (point-max)))
+         (linked-buffer-that conf))
+      (unmatched-delimiter-error nil))))
 
 (defmethod linked-buffer-invert
   ((conf linked-buffer-uncommented-block-configuration))

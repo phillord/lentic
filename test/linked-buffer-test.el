@@ -21,7 +21,7 @@
 (defun linked-buffer-test-equal-loudly (a b)
   "Actually, this just tests equality and shouts if not."
   ;; change this to t to disable noisy printout
-  (if t
+  (if nil
       (string= a b)
     (if (string= a b)
         t
@@ -163,7 +163,7 @@ results."
               (setq this
                     (find-file-noselect filename))
             (setq linked-buffer-init init)
-            (progn 
+            (progn
               (setq that
                     (linked-buffer-init-create))
               (funcall f-this)
@@ -183,7 +183,7 @@ results."
                      (point-max))))
             (set-buffer-modified-p nil)
             retn)
-        
+
         ;; unwind forms
         (when this (kill-buffer this))
         (when that (kill-buffer that))))
@@ -316,12 +316,9 @@ This mostly checks my test machinary."
     "orgel-org.el" "orgel-org.el"
     nil
     (lambda ()
+      (show-all)
       (goto-char (point-min))
       (forward-line)
       (insert "a")
       (delete-char -1))
     t)))
-
-
-
-    
