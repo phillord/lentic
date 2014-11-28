@@ -31,7 +31,6 @@
 (require 'linked-buffer)
 
 ;;; Code:
-
 (defclass linked-buffer-block-configuration (linked-buffer-default-configuration)
   ((comment :initarg :comment
             :documentation "The comment character")
@@ -49,7 +48,6 @@
 A blocked linked-buffer is one where blocks of the buffer have a
 start of line block comment in one buffer but not the other."
   :abstract t)
-
 
 (defmethod linked-buffer-blk-comment-start-regexp
   ((conf linked-buffer-block-configuration))
@@ -75,43 +73,77 @@ start of line block comment in one buffer but not the other."
   "Given CONF,  remove start-of-line characters in region.
 Region is between BEGIN and END in BUFFER. CONF is a
 function `linked-buffer-configuration' object."
-  (m-buffer-replace-match
-    (m-buffer-match
-    buffer
-    (linked-buffer-blk-line-start-comment conf)
-    :begin begin :end end) ""))
+  ;;(linked-buffer-log "uncomment-region (%s,%s)" begin end)
+  (m-buffer-with-markers
+      ((comments
+        (m-buffer-match
+         buffer
+         (linked-buffer-blk-line-start-comment conf)
+         :begin begin :end end)))
+    (m-buffer-replace-match comments "")))
 
 (defun linked-buffer-blk-uncomment-buffer (conf begin end buffer)
   "Given CONF, a `linked-buffer-configuration' object, remove all
-start of line comment-characters in appropriate blocks between
-BEGIN and END in BUFFER."
+start of line comment-characters in appropriate blocks. Changes
+should only have occurred between BEGIN and END in BUFFER."
   (-map
    (lambda (pairs)
-     (linked-buffer-blk-uncomment-region conf
-      (car pairs) (cdr pairs) buffer))
-   (linked-buffer-blk-marker-boundaries conf begin end buffer)))
+     ;; nil markers off as we go
+     (m-buffer-with-markers
+         ((block-begin (car pairs))
+          (block-end (cdr pairs)))
+       (when
+           (and (>= end block-begin)
+                (>= block-end begin))
+         (linked-buffer-blk-uncomment-region
+          conf block-begin block-end buffer))))
+   (linked-buffer-blk-marker-boundaries
+    conf buffer)))
 
 (defun linked-buffer-blk-comment-region (conf begin end buffer)
   "Given CONF, a `linked-buffer-configuration' object, add
 start of line comment characters beween BEGIN and END in BUFFER."
-  (m-buffer-replace-match
-   (m-buffer-match
-    buffer
-    ;; perhaps we should ignore lines which are already commented,
-    "\\(^\\).+"
-    :begin begin :end end)
-   (oref conf :comment) nil nil 1))
+  (linked-buffer-log "comment-region (%s,%s,%s)" begin end buffer)
+  (m-buffer-with-markers
+      ((line-match
+        (m-buffer-match
+         buffer
+         "\\(^\\).+$"
+         :begin begin :end end))
+       (comment-match
+        (m-buffer-match
+         buffer
+         ;; start to end of line which is what this regexp above matches
+         (concat
+          (linked-buffer-blk-line-start-comment conf)
+          ".*")
+         :begin begin :end end)))
+    (m-buffer-replace-match
+     (m-buffer-match-exact-subtract line-match comment-match)
+     (oref conf :comment) nil nil 1)))
 
 (defun linked-buffer-blk-comment-buffer (conf begin end buffer)
   "Given CONF, a `linked-buffer-configuration' object, add
-start of line comment-characters in appropriate blocks between
-BEGIN and END in BUFFER."
-  (-map
-   ;; comment each of these regions
-   (lambda (pairs)
-     (linked-buffer-blk-comment-region
-      conf (car pairs) (cdr pairs) buffer))
-   (linked-buffer-blk-marker-boundaries conf begin end buffer)))
+start of line comment-characters. Changes should only have occurred
+between BEGIN and END in BUFFER."
+  ;; we need these as markers because the begin and end position need to
+  ;; move as we change the buffer, in the same way that the marker boundary
+  ;; markers do.
+  (m-buffer-with-markers
+      ((begin (set-marker (make-marker) begin buffer))
+       (end (set-marker (make-marker) end buffer)))
+    (-map
+     ;; comment each of these regions
+     (lambda (pairs)
+       (m-buffer-with-markers
+           ((block-begin (car pairs))
+            (block-end (cdr pairs)))
+         (when
+             (and (>= end block-begin)
+                  (>= block-end begin))
+           (linked-buffer-blk-comment-region
+            conf (car pairs) (cdr pairs) buffer))))
+     (linked-buffer-blk-marker-boundaries conf buffer))))
 
 (put 'unmatched-delimiter-error
      'error-conditions
@@ -120,11 +152,11 @@ BEGIN and END in BUFFER."
 (put 'unmatched-delimiter-error
      'error-message "Unmatched Delimiter in Buffer")
 
-(defun linked-buffer-blk-marker-boundaries (conf begin end buffer)
+(defun linked-buffer-blk-marker-boundaries (conf buffer)
   "Given CONF, a `linked-buffer-configuration' object, find
-demarcation markers between BEGIN and END in BUFFER. Returns a
-list of start end cons pairs. BEGIN is considered to be an
-implicit start and END an implicit stop."
+demarcation markers. Returns a list of start end cons pairs.
+`point-min' is considered to be an implicit start and `point-max'
+an implicit stop."
   (let* ((match-block
           (linked-buffer-block-match
            conf buffer))
@@ -137,18 +169,19 @@ implicit start and END an implicit stop."
            (length match-end))
       (linked-buffer-log "delimiters do not match")
       (signal 'unmatched-delimiter-error
-              (list begin end buffer)))
-    (-zip
-     ;; start comment markers
-     ;; plus the start of the region
-     (cons
-      (set-marker (make-marker) begin buffer)
-      match-start)
-     ;; end comment markers
-     ;; plus the end of the buffer
-     (append
-      match-end
-      (list (set-marker (make-marker) end buffer))))))
+              (list buffer)))
+    (with-current-buffer buffer
+      (-zip
+       ;; start comment markers
+       ;; plus the start of the region
+       (cons
+        (set-marker (make-marker) (point-min) buffer)
+        match-start)
+       ;; end comment markers
+       ;; plus the end of the buffer
+       (append
+        match-end
+        (list (set-marker (make-marker) (point-max) buffer)))))))
 
 (defmethod linked-buffer-block-match ((conf linked-buffer-block-configuration)
                                       buffer)
@@ -170,19 +203,29 @@ count from the end, until we get to location, always staying on
 the same line. This works since the buffers are identical except
 for changes to the beginning of the line. It is also symmetrical
 between the two buffers; we don't care which one has comments."
+  ;; current information comes inside a with-current-buffer. so, we capture
+  ;; data as a list rather than having two with-current-buffers.
   (let ((line-plus
          (with-current-buffer
              (linked-buffer-this conf)
-           (list
-            (line-number-at-pos location)
-            (- (line-end-position)
-               location)))))
+           (save-excursion
+             ;; move to location or line-end-position may be wrong
+             (goto-char location)
+             (list
+              ;; we are converting the location, so we need the line-number
+              (line-number-at-pos location)
+              ;; and the distance from the end
+              (- (line-end-position)
+                 location))))))
     (with-current-buffer
         (linked-buffer-that conf)
       (save-excursion
         (goto-char (point-min))
+        ;; move forward to the line in question
         (forward-line (1- (car line-plus)))
+        ;; don't move from the line in question
         (max (line-beginning-position)
+             ;; but move in from the end
              (- (line-end-position)
                 (cadr line-plus)))))))
 
@@ -197,19 +240,99 @@ between the two buffers; we don't care which one has comments."
   ()
   "Configuration for blocked linked-buffer without comments.")
 
+(defun linked-buffer-bolp (buffer position)
+  (with-current-buffer
+      buffer
+      (save-excursion
+        (goto-char position)
+        (bolp))))
+
 (defmethod linked-buffer-clone
-  ((conf linked-buffer-commented-block-configuration))
+  ((conf linked-buffer-commented-block-configuration)
+   &optional start stop length-before start-converted stop-converted)
   "Update the contents in the linked-buffer without comments"
-  (linked-buffer-log "blk-clone-uncomment (from):(%s)" conf)
-  ;; clone the buffer first
-  (call-next-method conf)
-  ;; remove the line comments in the to buffer
-  ;; if the delimitors are unmatched, then we can do nothing other than clone.
-  (condition-case e
-      (linked-buffer-blk-uncomment-buffer
-       conf (point-min) (point-max) (linked-buffer-that conf))
-    (unmatched-delimiter-error
-     nil)))
+  ;;(linked-buffer-log "blk-clone-uncomment (from):(%s)" conf)
+  (let*
+      ;; we need to detect whether start or stop are in the comment region at
+      ;; the beginning of the file. We check this by looking at :that-buffer
+      ;; -- if we are in the magic region, then we must be at the start of
+      ;; line. In this case, we copy the entire line as it is in a hard to
+      ;; predict state. This is slightly over cautious (it also catches first
+      ;; character), but this is safe, it only causes the occasional
+      ;; unnecessary whole line copy. In normal typing "whole line" will be
+      ;; one character anyway
+      ((start-in-comment
+        (when
+            (and start
+                 (linked-buffer-bolp
+                  (oref conf :that-buffer)
+                  start-converted))
+          (m-buffer-with-current-location
+              (oref conf :this-buffer)
+              start
+            (line-beginning-position))))
+       (start (or start-in-comment start))
+       (start-converted
+        (if start-in-comment
+          (m-buffer-with-current-location
+              (oref conf :that-buffer)
+              start-converted
+              (line-beginning-position))
+          start-converted))
+       ;; likewise for stop
+       (stop-in-comment
+        (when
+            (and start
+                 (linked-buffer-bolp
+                  (oref conf :that-buffer)
+                  stop-converted))
+          (m-buffer-with-current-location
+              (oref conf :this-buffer)
+              stop
+            (line-end-position))))
+       (stop (or stop-in-comment stop))
+       (stop-converted
+        (if stop-in-comment
+            (m-buffer-with-current-location
+                (oref conf :that-buffer)
+                stop-converted
+              (line-end-position))
+          stop-converted)))
+    ;; log when we have gone long
+    (if (or start-in-comment stop-in-comment)
+        (linked-buffer-log "In comment: %s %s"
+                           (when start-in-comment
+                             "start")
+                           (when stop-in-comment
+                             "stop")))
+        ;; now clone the buffer
+    (call-next-method conf start stop length-before
+                      start-converted stop-converted)
+    ;; remove the line comments in the to buffer
+    ;; if the delimitors are unmatched, then we can do nothing other than clone.
+    (condition-case e
+        (linked-buffer-blk-uncomment-buffer
+         conf
+         ;; the buffer at this point has been copied over, but is in an
+         ;; inconsistent state (because it may have comments that it should
+         ;; not). Still, the convertor should still work because it counts from
+         ;; the end
+         (linked-buffer-convert
+          conf
+          ;; point-min if we know nothing else
+          (or start (point-min)))
+         (linked-buffer-convert
+          conf
+          ;; if we have a stop
+          (if stop
+              ;; take stop (if we have got longer) or
+              ;; start length before (if we have got shorter)
+              (max stop
+                   (+ start length-before))
+            (point-max)))
+         (linked-buffer-that conf))
+      (unmatched-delimiter-error
+       nil))))
 
 (defmethod linked-buffer-invert
   ((conf linked-buffer-commented-block-configuration))
@@ -223,23 +346,61 @@ between the two buffers; we don't care which one has comments."
 
 (defmethod linked-buffer-block-comment-start-regexp
   ((conf linked-buffer-commented-block-configuration))
-  (concat (regexp-quote (oref conf :comment))
-          (oref conf :comment-start)))
+  (concat
+   "\\(" (regexp-quote (oref conf :comment)) "\\)?"
+   (oref conf :comment-start)))
 
 (defmethod linked-buffer-block-comment-stop-regexp
   ((conf linked-buffer-commented-block-configuration))
-  (concat (regexp-quote (oref conf :comment))
-          (oref conf :comment-stop)))
+  (concat
+   "\\(" (regexp-quote (oref conf :comment)) "\\)?"
+   (oref conf :comment-stop)))
 
 (defmethod linked-buffer-clone
-  ((conf linked-buffer-uncommented-block-configuration))
+  ((conf linked-buffer-uncommented-block-configuration)
+   &optional start stop length-before start-converted stop-converted)
   "Update the contents in the linked-buffer with comments."
-  (linked-buffer-log "blk-clone-comment conf):(%s)" conf)
-  (call-next-method conf)
-  (condition-case e
-      (linked-buffer-blk-comment-buffer
-       conf (point-min) (point-max) (linked-buffer-that conf))
-    (unmatched-delimiter-error nil)))
+  ;;(linked-buffer-log "blk-clone-comment conf):(%s)" conf)
+  (let*
+      ((start-at-bolp
+        (when
+            (and start
+                 (linked-buffer-bolp
+                  (oref conf :this-buffer)
+                  start))
+          (m-buffer-with-current-location
+              (oref conf :that-buffer)
+              start-converted
+            (line-beginning-position))))
+       (start-converted (or start-at-bolp start-converted)))
+    (if (or start-at-bolp)
+        (linked-buffer-log "In comment: %s"
+                           (when start-at-bolp
+                             "start")))
+    (call-next-method conf start stop length-before
+                      start-converted stop-converted)
+    (condition-case e
+        (linked-buffer-blk-comment-buffer
+         conf
+         ;; the buffer at this point has been copied over, but is in an
+         ;; inconsistent state (because it may have comments that it should
+         ;; not). Still, the convertor should still work because it counts from
+         ;; the end
+         (linked-buffer-convert
+          conf
+          ;; point-min if we know nothing else
+          (or start (point-min)))
+         (linked-buffer-convert
+          conf
+          ;; if we have a stop
+          (if stop
+              ;; take stop (if we have got longer) or
+              ;; start length before (if we have got shorter)
+              (max stop
+                   (+ start length-before))
+            (point-max)))
+         (linked-buffer-that conf))
+      (unmatched-delimiter-error nil))))
 
 (defmethod linked-buffer-invert
   ((conf linked-buffer-uncommented-block-configuration))

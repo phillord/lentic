@@ -7,7 +7,7 @@
 ;; Author: Phillip Lord <phillip.lord@newcastle.ac.uk>
 ;; Maintainer: Phillip Lord <phillip.lord@newcastle.ac.uk>
 ;; Version: 0.6
-;; Package-Requires: ((emacs "24")(m-buffer "0.5")(dash "2.5.0"))
+;; Package-Requires: ((emacs "24")(m-buffer "0.6")(dash "2.5.0"))
 
 ;; The contents of this file are subject to the GPL License, Version 3.0.
 
@@ -154,8 +154,6 @@ of mode in the current buffer.")
 (defun linked-buffer-config-name (buffer)
   "Given BUFFER, return a name for the configuration object."
   (format "linked: %s" buffer))
-
-
 ;; #+end_src
 
 ;; ** Base Configuration
@@ -175,7 +173,13 @@ of mode in the current buffer.")
     :initarg :that-buffer)
    (sync-point
     :initarg :sync-point
-    :initform t))
+    :initform t)
+   (last-change-start-converted
+    :initarg :last-change-start-converted
+    :initform nil)
+   (last-change-stop-converted
+    :initarg :last-change-stop-converted
+    :initform nil))
   "Configuration object for linked-buffer, which defines the mechanism
 by which linking happens.")
 
@@ -213,6 +217,12 @@ or create it if it does not exist."
     :initform 'normal-mode
     :initarg :linked-mode))
   "Configuration which maintains two linked-buffers with the same contents.")
+
+(defun linked-buffer-insertion-string-transform (string)
+  "Transform the string that is about to be inserted.
+This function is not meant to do anything. It's useful to
+advice."
+  string)
 
 (defmethod linked-buffer-create ((conf linked-buffer-default-configuration))
   "Create the linked-buffer for this configuration.
@@ -260,19 +270,43 @@ created."
 the linked-buffer."
   location)
 
-(defmethod linked-buffer-clone ((conf linked-buffer-configuration))
+(defmethod linked-buffer-clone ((conf linked-buffer-configuration)
+                                &optional start stop _length-before
+                                start-converted stop-converted)
   "Updates that-buffer to reflect the contents in this-buffer.
 
 Currently, this is just a clone all method but may use regions in future."
-  (with-current-buffer (oref conf :that-buffer)
-    (erase-buffer)
-    (insert
-     (save-restriction
-       (with-current-buffer (oref conf :this-buffer)
-         (widen)
-         (buffer-substring-no-properties
-          (point-min)
-          (point-max)))))))
+  (let ((this-b (oref conf :this-buffer))
+        (that-b (oref conf :that-buffer)))
+    (with-current-buffer this-b
+      ;;(linked-buffer-log "this-b (point,start,stop)(%s,%s,%s)" (point) start stop)
+      (let* ((start (or start (point-min)))
+             (stop (or stop (point-max)))
+             ;; get the start location that we converted before the change.
+             ;; linked-buffer-convert is not reliable now, because the two
+             ;; buffers do not share state until we have percolated it
+             (converted-start
+              (or start-converted
+                  (point-min)))
+             (converted-stop
+              (or stop-converted
+                  (point-max))))
+        (with-current-buffer that-b
+          (delete-region (max (point-min) converted-start)
+                         (min (point-max) converted-stop))
+          (save-excursion
+            (goto-char converted-start)
+            ;; so this insertion is happening at the wrong place in block
+            ;; comment -- in fact, it's happening one too early
+            (insert
+             (save-restriction
+               (with-current-buffer this-b
+                 (widen)
+                 ;; want to see where it goes
+                 ;; hence the property
+                 (linked-buffer-insertion-string-transform
+                  (buffer-substring-no-properties
+                   start stop)))))))))))
 
 (defun linked-buffer-default-init ()
   "Default init function.
@@ -295,6 +329,7 @@ See `linked-buffer-init' for details."
 ;; #+begin_src emacs-lisp
 (defmacro linked-buffer-when-linked (&rest body)
   "Evaluate BODY when in a linked-buffer."
+  (declare (debug let))
   `(when (and
           linked-buffer-config
           (linked-buffer-that
@@ -331,14 +366,43 @@ See `linked-buffer-init' for details."
           (goto-char (point-max))
           (insert msg))))))
 
-(defvar linked-buffer-emergency nil)
+(defvar linked-buffer-emergency  nil
+  "Iff linked-buffer-emergency is non-nil stop all change related
+  activity.
+
+This is not the same as disabling linked-buffer mode. It stops
+all linked-buffer related activity in all buffers; normally this
+happens as a result of an error condition. If linked-buffer was
+to carry on in these circumstances, serious data loss could
+occur. In normal use, this variable will only be set as a result
+of a problem with the code; it is not recoverable from a user
+perspective.
+
+It is useful to toggle this state on during development. Once
+enabled, buffers will not update automaticaly but only when
+explicitly told to. This is much easier than try to debug errors
+happening on the after-change-hooks. The
+`linked-buffer-emergency' and `linked-buffer-unemergency' hooks
+enable this.")
+
+(defvar linked-buffer-emergency-debug nil
+  "Iff non-nil, linked-buffer will store change data, even
+during a `linked-buffer-emergency'.
+
+Normally, `linked-buffer-emergency' disables all activity, but this makes
+testing incremental changes charge. With this variable set, linked-buffer will
+attempt to store enough change data to operate manually. This does require
+running some linked-buffer code (notably `linked-buffer-convert'). This is low
+risk code, but may still be buggy, and so setting this variable can cause
+repeated errors.")
 
 (defun linked-buffer-emergency ()
-  "Stop linked-buffer from working due to code problem"
+  "Stop linked-buffer from working due to code problem."
   (interactive)
   (setq linked-buffer-emergency t))
 
 (defun linked-buffer-unemergency ()
+  "Start linked-buffer working after stop due to code problem."
   (interactive)
   (setq linked-buffer-emergency nil))
 
@@ -473,44 +537,89 @@ A and B are the buffers."
    (split-window-right)
    (linked-buffer-create linked-buffer-config)))
 
-(defun linked-buffer-after-change-function (&rest rest)
+(defvar linked-buffer-emergency-last-change nil)
+(make-variable-buffer-local 'linked-buffer-emergency-last-change)
+
+(defun linked-buffer-after-change-function (start stop length-before)
   "Run change update according to `linked-buffer-config'.
 Errors are handled. REST is currently just ignored."
+  ;; store values in case we want to use them
+  (when linked-buffer-emergency-debug
+    (setq linked-buffer-emergency-last-change (list start stop length-before)))
   (unless linked-buffer-emergency
     (condition-case err
-        (linked-buffer-after-change-function-1 rest)
+        (linked-buffer-after-change-function-1 start stop length-before)
       (error
        (linked-buffer-hook-fail err "after change")))))
 
-(defun linked-buffer-after-change-function-1 (rest)
+(defun linked-buffer-after-change-function-1 (start stop length-before)
   "Run change update according to `linked-buffer-config'.
 REST is currently just ignored."
   (linked-buffer-when-linked
    (linked-buffer-log
-    "Updating after-change (current:linked:rest): %s,%s,%s"
-    (current-buffer)
-    (linked-buffer-that linked-buffer-config) rest)
-   (linked-buffer-update-contents linked-buffer-config)))
+    "After-change (start, stop, length-before): %s,%s,%s"
+    start stop length-before)
+   (linked-buffer-update-contents linked-buffer-config
+                                  start stop length-before)))
 
-(defun linked-buffer-before-change-function (&rest rest)
-  "Run before change update.
-REST is currently ignored. Currently this does nothing."
-  (unless linked-buffer-emergency
+
+;; convert the start position and store it. we need to do this BEFORE
+;; the change so that we can use the value during clone. After the
+;; change, this-buffer and that-buffer will have different contents
+;; (until the change has been percolated). and the convert function
+;; may not work properly under these circumstances.
+(defun linked-buffer-before-change-function (start stop)
+  "Run before change update."
+  (unless (and
+           linked-buffer-emergency
+           (not linked-buffer-emergency-debug))
     (condition-case err
-        (lambda ())
+        (progn
+          (linked-buffer-when-linked
+           (oset linked-buffer-config
+                 :last-change-start-converted
+                 (linked-buffer-convert
+                  linked-buffer-config
+                  start))
+           (oset linked-buffer-config
+                 :last-change-stop-converted
+                 (linked-buffer-convert
+                  linked-buffer-config
+                  stop)))
+          (linked-buffer-log
+           "Before change:(%s,%s,%s,%s)"
+           start stop
+           (oref linked-buffer-config
+                 :last-change-start-converted)
+           (oref linked-buffer-config
+                 :last-change-stop-converted)))
       (error
        (linked-buffer-hook-fail err "before change")))))
 
-(defun linked-buffer-update-contents (conf)
+(defun linked-buffer-update-contents (conf &optional start stop length-before)
   "Update the contents of that-buffer with the contents of this-buffer.
 Update mechanism depends on CONF."
   (unwind-protect
-      (progn
+      (m-buffer-with-markers
+          ((start-converted
+            (when (oref conf :last-change-start-converted)
+              (set-marker (make-marker)
+                          (oref conf :last-change-start-converted)
+                          (oref conf :that-buffer))))
+           (stop-converted
+            (when (oref conf :last-change-stop-converted)
+                (set-marker (make-marker)
+                            (oref conf :last-change-stop-converted)
+                            (oref conf :that-buffer)))))
+        ;; used these, so dump them
+        (oset conf :last-change-start-converted nil)
+        (oset conf :last-change-stop-converted nil)
         (setq inhibit-read-only t)
-        (linked-buffer-log
-         "Update config: %s" linked-buffer-config)
-        (linked-buffer-clone conf))
-    (setq inhibit-read-only nil)))
+        ;;(linked-buffer-log
+        ;;"Update config: %s" linked-buffer-config)
+        (linked-buffer-clone conf start stop length-before
+                             start-converted stop-converted)
+        (setq inhibit-read-only nil))))
 
 (defun linked-buffer-update-point (conf)
   "Update the location of point in that-buffer to reflect this-buffer.
@@ -532,6 +641,7 @@ same top-left location. Update details depend on CONF."
                (linked-buffer-this conf))))))
       ;; clone point in buffer important when the buffer is NOT visible in a
       ;; window at all
+      ;;(linked-buffer-log "sync(front-point)(%s)" from-point)
       (with-current-buffer
           (linked-buffer-that conf)
         (goto-char from-point))
@@ -678,7 +788,10 @@ Using this function is the easiest way to test an new
 painful for debugging. Set variable `linked-buffer-emergency' to
 true to disable command loop functionality."
   (interactive)
-  (linked-buffer-after-change-function-1 nil))
+  (message "Running after change with args: %s"
+           linked-buffer-emergency-last-change)
+  (apply 'linked-buffer-after-change-function-1
+         linked-buffer-emergency-last-change))
 
 (defun linked-buffer-test-post-command-hook ()
   "Run the post-command functions out of the command loop.
@@ -700,4 +813,4 @@ to make sure there is a new one."
 
 ;; #+END_SRC
 
-;; ;;; linked-buffer.el ends here
+;;; linked-buffer.el ends here
