@@ -1,6 +1,7 @@
 ;; -*- emacs-lisp -*-
 (source gnu)
 (source melpa-stable)
+(source marmalade)
 
 (package-file "linked-buffer.el")
 
