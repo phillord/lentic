@@ -3,7 +3,7 @@
 (source melpa-stable)
 (source marmalade)
 
-(package-file "linked-buffer.el")
+(package-file "lentic.el")
 
 (development
  (depends-on "f")

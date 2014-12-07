@@ -1,1 +1,1 @@
---load linked-buffer.el linked-buffer-block.el linked-buffer-latex-code linked-buffer-asciidoc linked-buffer-org test/linked-buffer-test.el
+--load lentic.el lentic-block.el lentic-latex-code lentic-asciidoc lentic-org test/lentic-test.el

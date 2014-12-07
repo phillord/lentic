@@ -1,4 +1,4 @@
-;;; linked-buffer-asciidoc.el --- asciidoc support for linked-buffer -*- lexical-binding: t -*-
+;;; lentic-asciidoc.el --- asciidoc support for lentic -*- lexical-binding: t -*-
 
 ;; This file is not part of Emacs
 
@@ -27,11 +27,11 @@
 ;; Linked buffers with asciidoc [source] blocks.
 
 ;;; Code:
-(require 'linked-buffer-block)
+(require 'lentic-block)
 (require 'm-buffer)
 
-(defun linked-buffer-asciidoc-commented-new ()
-  (linked-buffer-commented-asciidoc-configuration
+(defun lentic-asciidoc-commented-new ()
+  (lentic-commented-asciidoc-configuration
    "lb-commented-clojure asciidoc"
    :this-buffer (current-buffer)
    :linked-file
@@ -40,15 +40,15 @@
            (buffer-file-name)) ".adoc")
    :comment ";; "))
 
-(defun linked-buffer-clojure-asciidoc-init ()
-  (setq linked-buffer-config
-        (linked-buffer-asciidoc-commented-new)))
+(defun lentic-clojure-asciidoc-init ()
+  (setq lentic-config
+        (lentic-asciidoc-commented-new)))
 
-(add-to-list 'linked-buffer-init-functions
-             'linked-buffer-clojure-asciidoc-init)
+(add-to-list 'lentic-init-functions
+             'lentic-clojure-asciidoc-init)
 
-(defun linked-buffer-asciidoc-uncommented-new ()
-  (linked-buffer-uncommented-asciidoc-configuration
+(defun lentic-asciidoc-uncommented-new ()
+  (lentic-uncommented-asciidoc-configuration
    "lb-uncommented-clojure-asciidoc"
    :this-buffer (current-buffer)
    :linked-file
@@ -57,29 +57,29 @@
      (buffer-file-name)) ".clj")
    :comment ";; "))
 
-(defun linked-buffer-asciidoc-clojure-init ()
-  (setq linked-buffer-config
-        (linked-buffer-asciidoc-uncommented-new)))
+(defun lentic-asciidoc-clojure-init ()
+  (setq lentic-config
+        (lentic-asciidoc-uncommented-new)))
 
-(add-to-list 'linked-buffer-init-functions
-             'linked-buffer-asciidoc-clojure-init)
+(add-to-list 'lentic-init-functions
+             'lentic-asciidoc-clojure-init)
 
-(defclass linked-buffer-commented-asciidoc-configuration
-  (linked-buffer-commented-block-configuration)
+(defclass lentic-commented-asciidoc-configuration
+  (lentic-commented-block-configuration)
   ((srctags :initarg :srctags
             :documentation "Language tags in source block"
             :initform '("clojure" "lisp")))
   "Linked buffer config for asciidoc and other code.")
 
-(defclass linked-buffer-uncommented-asciidoc-configuration
-  (linked-buffer-uncommented-block-configuration)
+(defclass lentic-uncommented-asciidoc-configuration
+  (lentic-uncommented-block-configuration)
   ((srctags :initarg :srctags
             :documentation "Language tags in source block"
             :initform '("clojure" "lisp")))
   "Linked buffer config for asciidoc and other code")
 
 
-(defun linked-buffer-splitter (l)
+(defun lentic-splitter (l)
   "Returns a function which for use as a partition predicate.
 The returned function returns the first element of L until it is
 passed a value higher than the first element, then it returns the
@@ -91,7 +91,7 @@ second element and so on."
         (setq l (-drop 1 l)))
       (car l)))
 
-(defun linked-buffer-partition-after-source (l-source l-dots)
+(defun lentic-partition-after-source (l-source l-dots)
   "Given a set of markers l-source, partition the markers in
 l-dots.
 
@@ -100,14 +100,14 @@ next matches to \"....\" immediately after a [source] marker.
 This should remove other \"....\" matches.
 "
   (-partition-by
-   (linked-buffer-splitter l-source)
+   (lentic-splitter l-source)
    (-drop-while
     (lambda (x)
       (and l-source
            (< x (car l-source))))
     l-dots)))
 
-(defun linked-buffer-block-match-asciidoc
+(defun lentic-block-match-asciidoc
   (conf buffer)
   (let* ((source
           (m-buffer-match-begin
@@ -120,39 +120,39 @@ This should remove other \"....\" matches.
           (m-buffer-match buffer
                           "^;* *----"))
          (source-start
-          (linked-buffer-partition-after-source
+          (lentic-partition-after-source
            source
            (m-buffer-match-begin
             dots)))
          (source-end
-          (linked-buffer-partition-after-source
+          (lentic-partition-after-source
            source (m-buffer-match-end dots))))
     (when source
       (list
        (-map 'cadr source-start)
        (-map 'car source-end)))))
 
-(defmethod linked-buffer-block-match
-  ((conf linked-buffer-commented-asciidoc-configuration) buffer)
-  (linked-buffer-block-match-asciidoc conf buffer))
+(defmethod lentic-block-match
+  ((conf lentic-commented-asciidoc-configuration) buffer)
+  (lentic-block-match-asciidoc conf buffer))
 
-(defmethod linked-buffer-block-match
-  ((conf linked-buffer-uncommented-asciidoc-configuration) buffer)
-  (linked-buffer-block-match-asciidoc conf buffer))
+(defmethod lentic-block-match
+  ((conf lentic-uncommented-asciidoc-configuration) buffer)
+  (lentic-block-match-asciidoc conf buffer))
 
-(defmethod linked-buffer-invert
-  ((conf linked-buffer-commented-asciidoc-configuration))
+(defmethod lentic-invert
+  ((conf lentic-commented-asciidoc-configuration))
   (let ((rtn
-         (linked-buffer-asciidoc-uncommented-new)))
-    (oset rtn :that-buffer (linked-buffer-this conf))
+         (lentic-asciidoc-uncommented-new)))
+    (oset rtn :that-buffer (lentic-this conf))
     rtn))
 
-(defmethod linked-buffer-invert
-  ((conf linked-buffer-uncommented-asciidoc-configuration))
+(defmethod lentic-invert
+  ((conf lentic-uncommented-asciidoc-configuration))
   (let ((rtn
-         (linked-buffer-asciidoc-commented-new)))
-    (oset rtn :that-buffer (linked-buffer-this conf))
+         (lentic-asciidoc-commented-new)))
+    (oset rtn :that-buffer (lentic-this conf))
     rtn))
 
-(provide 'linked-buffer-asciidoc)
-;;; linked-buffer-asciidoc.el ends here
+(provide 'lentic-asciidoc)
+;;; lentic-asciidoc.el ends here

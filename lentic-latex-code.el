@@ -1,4 +1,4 @@
-;;; linked-buffer-latex-code.el -- Latex literate programming -*- lexical-binding: t -*-
+;;; lentic-latex-code.el -- Latex literate programming -*- lexical-binding: t -*-
 ;; This file is not part of Emacs
 
 ;; Author: Phillip Lord <phillip.lord@newcastle.ac.uk>
@@ -24,7 +24,7 @@
 
 ;;; Commentary:
 ;;
-;; A `linked-buffer-block-configuration' environment where one buffer is latex
+;; A `lentic-block-configuration' environment where one buffer is latex
 ;; and the other is some programming language, with code blocks marked up with
 ;; a \begin{code}\end{code} environment.
 ;;
@@ -34,10 +34,10 @@
 ;; author wants, by defining the code environment first.
 
 ;;; Code:
-(require 'linked-buffer-block)
+(require 'lentic-block)
 
-(defun linked-buffer-clojure-to-latex-new ()
-  (linked-buffer-commented-block-configuration
+(defun lentic-clojure-to-latex-new ()
+  (lentic-commented-block-configuration
    "lb-commented clojure latex"
    :this-buffer (current-buffer)
    :linked-file
@@ -48,16 +48,16 @@
    :comment-start "\\\\end{code}"
    :comment-stop "\\\\begin{code}"))
 
-(defun linked-buffer-clojure-latex-init ()
-  (setq linked-buffer-config
-        (linked-buffer-clojure-to-latex-new)))
+(defun lentic-clojure-latex-init ()
+  (setq lentic-config
+        (lentic-clojure-to-latex-new)))
 
-(add-to-list 'linked-buffer-init-functions
-             'linked-buffer-clojure-latex-init)
+(add-to-list 'lentic-init-functions
+             'lentic-clojure-latex-init)
 
 
-(defun linked-buffer-latex-to-clojure-new ()
-  (linked-buffer-uncommented-block-configuration
+(defun lentic-latex-to-clojure-new ()
+  (lentic-uncommented-block-configuration
    "lb-commented latex clojure"
    :this-buffer (current-buffer)
    :linked-file
@@ -68,24 +68,24 @@
    :comment-start "\\\\end{code}"
    :comment-stop "\\\\begin{code}"))
 
-(defun linked-buffer-latex-clojure-init ()
-  (setq linked-buffer-config
-        (linked-buffer-latex-to-clojure-new)))
+(defun lentic-latex-clojure-init ()
+  (setq lentic-config
+        (lentic-latex-to-clojure-new)))
 
-(add-to-list 'linked-buffer-init-functions
-             'linked-buffer-clojure-latex-init)
-
-
-(defun linked-buffer-clojure-latex-delayed-init ()
-  (linked-buffer-delayed-init 'linked-buffer-clojure-latex-init))
-
-(add-to-list 'linked-buffer-init-functions
-             'linked-buffer-clojure-latex-delayed-init)
+(add-to-list 'lentic-init-functions
+             'lentic-clojure-latex-init)
 
 
+(defun lentic-clojure-latex-delayed-init ()
+  (lentic-delayed-init 'lentic-clojure-latex-init))
+
+(add-to-list 'lentic-init-functions
+             'lentic-clojure-latex-delayed-init)
 
 
 
-(provide 'linked-buffer-latex-code)
 
-;;; linked-buffer-latex-code ends here
+
+(provide 'lentic-latex-code)
+
+;;; lentic-latex-code ends here

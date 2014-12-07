@@ -2,4 +2,4 @@
   .
   ((eval .
          (progn (require 'm-buffer)
-                (setq linked-buffer-init 'linked-buffer-orgel-org-init))))))
+                (setq lentic-init 'lentic-orgel-org-init))))))

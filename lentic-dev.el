@@ -1,19 +1,19 @@
-(require 'linked-buffer)
+(require 'lentic)
 
-(defvar linked-buffer-dev-insert-face 'font-lock-keyword-face)
+(defvar lentic-dev-insert-face 'font-lock-keyword-face)
 
-(defun linked-buffer-dev-rotate-face ()
+(defun lentic-dev-rotate-face ()
   (interactive)
-  (setq linked-buffer-dev-insert-face
+  (setq lentic-dev-insert-face
         (nth (random (length (face-list)))
              (face-list)))
   (message "Insert face is now %s"
            (propertize
             "this"
             'face
-            linked-buffer-dev-insert-face)))
+            lentic-dev-insert-face)))
 
-(defadvice linked-buffer-insertion-string-transform
+(defadvice lentic-insertion-string-transform
   (after face-transform
          (string)
          disable)
@@ -21,22 +21,22 @@
         (propertize
          string
          'font-lock-face
-         linked-buffer-dev-insert-face
+         lentic-dev-insert-face
          'face
-         linked-buffer-dev-insert-face)))
+         lentic-dev-insert-face)))
 
-(defvar linked-buffer-enable-insertion-marking nil)
-(defun linked-buffer-enable-insertion-marking ()
+(defvar lentic-enable-insertion-marking nil)
+(defun lentic-enable-insertion-marking ()
   (interactive)
-  (if linked-buffer-enable-insertion-marking
+  (if lentic-enable-insertion-marking
       (progn
-        (ad-deactivate 'linked-buffer-insertion-string-transform)
-        (setq linked-buffer-enable-insertion-marking nil)
+        (ad-deactivate 'lentic-insertion-string-transform)
+        (setq lentic-enable-insertion-marking nil)
         (message "Insertion marking off"))
-    (ad-enable-advice 'linked-buffer-insertion-string-transform
+    (ad-enable-advice 'lentic-insertion-string-transform
                       'after 'face-transform)
-    (ad-activate 'linked-buffer-insertion-string-transform)
-    (setq linked-buffer-enable-insertion-marking t)
+    (ad-activate 'lentic-insertion-string-transform)
+    (setq lentic-enable-insertion-marking t)
     (message "Insertion marking on")))
 
-(provide 'linked-buffer-dev)
+(provide 'lentic-dev)

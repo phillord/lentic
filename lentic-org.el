@@ -1,4 +1,4 @@
-;;; linked-buffer-org.el --- org support for linked-buffer -*- lexical-binding: t -*-
+;;; lentic-org.el --- org support for lentic -*- lexical-binding: t -*-
 
 ;;; Header:
 
@@ -26,7 +26,7 @@
 
 ;;; Commentary:
 
-;; This file provides linked-buffer for org and emacs-lisp files. This enables a
+;; This file provides lentic for org and emacs-lisp files. This enables a
 ;; literate form of programming with Elisp, using org mode to provide
 ;; documentation mark up.
 
@@ -35,7 +35,7 @@
 ;; between the two modes.
 
 ;; #+BEGIN_SRC emacs-lisp
-(require 'linked-buffer-block)
+(require 'lentic-block)
 ;; #+END_SRC
 
 
@@ -57,19 +57,19 @@
 ;; file-local variables. This is a particular issue if setting `lexical-binding'.
 ;; In a literate org file, this might appear on the first line of the
 ;; embedded lisp, but it will *not* appear in first line of an emacs-lisp
-;; linked-buffer, so the file will be interpreted with dynamic binding.
+;; lentic, so the file will be interpreted with dynamic binding.
 
 
 ;; *** Implementation
 
-;; The implementation is a straight-forward use of `linked-buffer-block' with
+;; The implementation is a straight-forward use of `lentic-block' with
 ;; regexps for org source blocks. It currently takes no account of
 ;; org-mode :tangle directives -- so all lisp in the buffer will be present in
-;; the emacs-lisp mode linked-buffer.
+;; the emacs-lisp mode lentic.
 
 ;; #+BEGIN_SRC emacs-lisp
-(defun linked-buffer-org-to-el-new ()
-  (linked-buffer-uncommented-block-configuration
+(defun lentic-org-to-el-new ()
+  (lentic-uncommented-block-configuration
    "lb-org-to-el"
    :this-buffer (current-buffer)
    :linked-file
@@ -81,15 +81,15 @@
    :comment-stop "#\\\+BEGIN_SRC emacs-lisp"
    :comment-start "#\\\+END_SRC"))
 
-(defun linked-buffer-org-el-init ()
-  (setq linked-buffer-config
-        (linked-buffer-org-to-el-new)))
+(defun lentic-org-el-init ()
+  (setq lentic-config
+        (lentic-org-to-el-new)))
 
-(add-to-list 'linked-buffer-init-functions
-             'linked-buffer-org-el-init)
+(add-to-list 'lentic-init-functions
+             'lentic-org-el-init)
 
-(defun linked-buffer-el-to-org-new ()
-  (linked-buffer-commented-block-configuration
+(defun lentic-el-to-org-new ()
+  (lentic-commented-block-configuration
    "lb-el-to-org"
    :this-buffer (current-buffer)
    :linked-file
@@ -101,12 +101,12 @@
    :comment-stop "#\\\+BEGIN_SRC emacs-lisp"
    :comment-start "#\\\+END_SRC"))
 
-(defun linked-buffer-el-org-init ()
-  (setq linked-buffer-config
-        (linked-buffer-el-to-org-new)))
+(defun lentic-el-org-init ()
+  (setq lentic-config
+        (lentic-el-to-org-new)))
 
-(add-to-list 'linked-buffer-init-functions
-             'linked-buffer-el-org-init)
+(add-to-list 'lentic-init-functions
+             'lentic-el-org-init)
 ;; #+END_SRC
 
 
@@ -152,8 +152,8 @@
 ;; You may also wish to add a ";;; Footer:" heading as well.
 
 ;; Secondly, mark *all* of the code with org-mode source demarks. Finally, set
-;; `linked-buffer-init' to `linked-buffer-orgel-org-init' (normally with a
-;; file-local or dir-local variable). Now linked-buffer can be started. The
+;; `lentic-init' to `lentic-orgel-org-init' (normally with a
+;; file-local or dir-local variable). Now lentic can be started. The
 ;; header will appear as normal text in the org-mode buffer, with all other
 ;; comments inside a source block. You can now move through the buffer splitting
 ;; the source block (with `org-babel-demarcate-block' which has to win a prize
@@ -167,7 +167,7 @@
 ;; fix would be to add some functionality like `org-babel-demarcate-block' to
 ;; emacs-lisp-mode. Even better would to automatically add source markup when "("
 ;; was pressed at top level (if paredit were active, then it would also be
-;; obvious where to put the close). Finally, have both `linked-buffer-org' and
+;; obvious where to put the close). Finally, have both `lentic-org' and
 ;; `org-mode' just recognise emacs-lisp as a source entity *without* any further
 ;; markup.
 
@@ -205,12 +205,12 @@
 ;; seems consistent with emacs-lisp usage.
 
 ;; #+BEGIN_SRC emacs-lisp
-(defclass linked-buffer-org-to-orgel-configuration
-  (linked-buffer-uncommented-block-configuration)
+(defclass lentic-org-to-orgel-configuration
+  (lentic-uncommented-block-configuration)
   ())
 
-(defmethod linked-buffer-clone
-  ((conf linked-buffer-org-to-orgel-configuration)
+(defmethod lentic-clone
+  ((conf lentic-org-to-orgel-configuration)
    &optional start stop length-before
    start-converted stop-converted)
   ;; do everything else to the buffer
@@ -222,7 +222,7 @@
                     start-converted stop-converted)
   (m-buffer-replace-match
    (m-buffer-match
-    (linked-buffer-that conf)
+    (lentic-that conf)
     ;; we can be in one of two states depending on whether we have made a new
     ;; clone or an incremental change
     "^;; \\(;;;\\|# #\\)"
@@ -230,39 +230,39 @@
     (cadr
      (car
       (m-buffer-match-line
-       (linked-buffer-that conf)))))
+       (lentic-that conf)))))
    ";;;")
   ;; replace big headers, in either of their two states
   (m-buffer-replace-match
    (m-buffer-match
-    (linked-buffer-that conf)
+    (lentic-that conf)
     "^;; [*] \\(\\w*\\)$"
     :begin
     (cadr
      (car
       (m-buffer-match-line
-       (linked-buffer-that conf)))))
+       (lentic-that conf)))))
    ";;; \\1:")
   (m-buffer-replace-match
-   (m-buffer-match (linked-buffer-that conf)
+   (m-buffer-match (lentic-that conf)
                    "^;; ;;; \\(\\w*:\\)$"
                    :begin
                    (cadr
                     (car
                      (m-buffer-match-line
-                      (linked-buffer-that conf)))))
+                      (lentic-that conf)))))
    ";;; \\1"))
 
-(defmethod linked-buffer-invert
-  ((conf linked-buffer-org-to-orgel-configuration))
+(defmethod lentic-invert
+  ((conf lentic-org-to-orgel-configuration))
   (let ((rtn
-         (linked-buffer-orgel-to-org-new)))
+         (lentic-orgel-to-org-new)))
     (oset rtn :that-buffer
-          (linked-buffer-this conf))
+          (lentic-this conf))
     rtn))
 
-(defun linked-buffer-org-to-orgel-new ()
-  (linked-buffer-org-to-orgel-configuration
+(defun lentic-org-to-orgel-new ()
+  (lentic-org-to-orgel-configuration
    "lb-orgel-to-el"
    :this-buffer (current-buffer)
    :linked-file
@@ -274,12 +274,12 @@
    :comment-stop "#\\\+BEGIN_SRC emacs-lisp"
    :comment-start "#\\\+END_SRC"))
 
-(defun linked-buffer-org-orgel-init ()
-  (setq linked-buffer-config
-        (linked-buffer-org-to-orgel-new)))
+(defun lentic-org-orgel-init ()
+  (setq lentic-config
+        (lentic-org-to-orgel-new)))
 
-(add-to-list 'linked-buffer-init-functions
-             'linked-buffer-org-orgel-init)
+(add-to-list 'lentic-init-functions
+             'lentic-org-orgel-init)
 ;; #+END_SRC
 
 ;; **** orgel->org
@@ -290,41 +290,41 @@
 
 ;; #+BEGIN_SRC emacs-lisp
 
-(defclass linked-buffer-orgel-to-org-configuration
-  (linked-buffer-commented-block-configuration)
+(defclass lentic-orgel-to-org-configuration
+  (lentic-commented-block-configuration)
   ())
 
-(defmethod linked-buffer-clone
-  ((conf linked-buffer-orgel-to-org-configuration)
+(defmethod lentic-clone
+  ((conf lentic-orgel-to-org-configuration)
    &optional start stop length-before start-converted stop-converted)
   ;; do everything else to the buffer
   (call-next-method conf start stop length-before
                     start-converted stop-converted)
   (m-buffer-replace-match
    (m-buffer-match
-    (linked-buffer-that conf)
+    (lentic-that conf)
     ";;; "
     :end
     ;; we matching a lot of lines for one line here...
     (cadr
      (car
       (m-buffer-match-line
-       (linked-buffer-that conf)))))
+       (lentic-that conf)))))
    "# # ")
   (m-buffer-replace-match
-   (m-buffer-match (linked-buffer-that conf)
+   (m-buffer-match (lentic-that conf)
                    "^;;; \\(\\\w*\\):")
    "* \\1"))
 
-(defmethod linked-buffer-invert
-  ((conf linked-buffer-orgel-to-org-configuration))
+(defmethod lentic-invert
+  ((conf lentic-orgel-to-org-configuration))
   (let ((rtn
-         (linked-buffer-org-to-orgel-new)))
-    (oset rtn :that-buffer (linked-buffer-this conf))
+         (lentic-org-to-orgel-new)))
+    (oset rtn :that-buffer (lentic-this conf))
     rtn))
 
-(defun linked-buffer-orgel-to-org-new ()
-  (linked-buffer-orgel-to-org-configuration
+(defun lentic-orgel-to-org-new ()
+  (lentic-orgel-to-org-configuration
    "lb-orgel-to-org"
    :this-buffer (current-buffer)
    ;; we don't really need a file and could cope without, but org mode assumes
@@ -339,12 +339,12 @@
    :comment-stop "#\\\+BEGIN_SRC emacs-lisp"
    :comment-start "#\\\+END_SRC"))
 
-(defun linked-buffer-orgel-org-init ()
-  (setq linked-buffer-config
-        (linked-buffer-orgel-to-org-new)))
+(defun lentic-orgel-org-init ()
+  (setq lentic-config
+        (lentic-orgel-to-org-new)))
 
-(add-to-list 'linked-buffer-init-functions
-             'linked-buffer-orgel-org-init)
+(add-to-list 'lentic-init-functions
+             'lentic-orgel-org-init)
 
 ;; #+END_SRC
 
@@ -354,8 +354,8 @@
 ;; *** org->clojure
 
 ;; #+BEGIN_SRC emacs-lisp
-(defun linked-buffer-org-to-clojure-new ()
-  (linked-buffer-uncommented-block-configuration
+(defun lentic-org-to-clojure-new ()
+  (lentic-uncommented-block-configuration
    "lb-org-to-clojure"
    :this-buffer (current-buffer)
    :linked-file
@@ -370,15 +370,15 @@
    ;; will be ignored. Probably we should count instead!
    :case-fold-search nil))
 
-(defun linked-buffer-org-clojure-init ()
-  (setq linked-buffer-config
-        (linked-buffer-org-to-clojure-new)))
+(defun lentic-org-clojure-init ()
+  (setq lentic-config
+        (lentic-org-to-clojure-new)))
 
-(add-to-list 'linked-buffer-init-functions
-             'linked-buffer-org-clojure-init)
+(add-to-list 'lentic-init-functions
+             'lentic-org-clojure-init)
 
-(defun linked-buffer-clojure-to-org-new ()
-  (linked-buffer-commented-block-configuration
+(defun lentic-clojure-to-org-new ()
+  (lentic-commented-block-configuration
    "lb-clojure-to-org"
    :this-buffer (current-buffer)
    :linked-file
@@ -390,27 +390,27 @@
    :comment-stop "#\\\+BEGIN_SRC clojure"
    :comment-start "#\\\+END_SRC"))
 
-(defun linked-buffer-clojure-org-init ()
-  (setq linked-buffer-config
-        (linked-buffer-clojure-to-org-new)))
+(defun lentic-clojure-org-init ()
+  (setq lentic-config
+        (lentic-clojure-to-org-new)))
 
-(add-to-list 'linked-buffer-init-functions
-             'linked-buffer-clojure-org-init)
+(add-to-list 'lentic-init-functions
+             'lentic-clojure-org-init)
 ;; #+END_SRC
 
 
 ;;; Footer:
 
 ;; Declare the end of the file, and add file-local support for orgel->org
-;; transformation. Do not use linked-buffers on this file while changing the
+;; transformation. Do not use lentics on this file while changing the
 ;; lisp in the file without backing up first!
 
 ;; #+BEGIN_SRC emacs-lisp
-(provide 'linked-buffer-org)
-;;; linked-buffer-org.el ends here
+(provide 'lentic-org)
+;;; lentic-org.el ends here
 ;; #+END_SRC
 
 
 ;; # Local Variables:
-;; # linked-buffer-init: linked-buffer-orgel-org-init
+;; # lentic-init: lentic-orgel-org-init
 ;; # End:

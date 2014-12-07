@@ -1,24 +1,24 @@
-(require 'linked-buffer)
-(require 'linked-buffer-latex-code)
-(require 'linked-buffer-asciidoc)
-(require 'linked-buffer-org)
+(require 'lentic)
+(require 'lentic-latex-code)
+(require 'lentic-asciidoc)
+(require 'lentic-org)
 (require 'f)
 
 
-(defvar linked-buffer-test-dir
+(defvar lentic-test-dir
   (concat
    (file-name-directory
-    (find-lisp-object-file-name 'linked-buffer-init 'defvar))
+    (find-lisp-object-file-name 'lentic-init 'defvar))
    "dev-resources/"))
 
-(defun linked-buffer-test-file (filename)
+(defun lentic-test-file (filename)
   (let ((file
-         (concat linked-buffer-test-dir filename)))
+         (concat lentic-test-dir filename)))
     (when (not (file-exists-p file))
       (error "Test File does not exist: %s" file))
     file))
 
-(defun linked-buffer-test-equal-loudly (a b)
+(defun lentic-test-equal-loudly (a b)
   "Actually, this just tests equality and shouts if not."
   ;; change this to t to disable noisy printout
   (if nil
@@ -57,85 +57,85 @@
                    (buffer-string))))
       nil)))
 
-(defun linked-buffer-test-clone-equal (init file cloned-file)
+(defun lentic-test-clone-equal (init file cloned-file)
   (let ((cloned-file
          (f-read
-          (linked-buffer-test-file cloned-file)))
+          (lentic-test-file cloned-file)))
         (cloned-results
-         (linked-buffer-batch-clone-with-config
-          (linked-buffer-test-file file) init)))
-    (linked-buffer-test-equal-loudly cloned-file cloned-results)))
+         (lentic-batch-clone-with-config
+          (lentic-test-file file) init)))
+    (lentic-test-equal-loudly cloned-file cloned-results)))
 
-(defun linked-buffer-test-clone-equal-generate
+(defun lentic-test-clone-equal-generate
   (init file cloned-file)
-  "Generates the test file for `linked-buffer-batch-clone-equal'."
+  "Generates the test file for `lentic-batch-clone-equal'."
   (f-write
-   (linked-buffer-batch-clone-with-config
-    (linked-buffer-test-file file) init)
+   (lentic-batch-clone-with-config
+    (lentic-test-file file) init)
    'utf-8
-   (concat linked-buffer-test-dir cloned-file))
+   (concat lentic-test-dir cloned-file))
   ;; return nil, so if we use this in a test by mistake, it will crash out.
   nil)
 
 (defvar conf-default
-  (linked-buffer-default-configuration "bob"))
+  (lentic-default-configuration "bob"))
 
-(ert-deftest linked-buffer-conf ()
+(ert-deftest lentic-conf ()
   (should
    (equal 'normal-mode
           (oref conf-default :linked-mode))))
 
-(ert-deftest linked-buffer-simple ()
+(ert-deftest lentic-simple ()
   (should
    (equal "simple\n"
-          (linked-buffer-batch-clone-with-config
-           (linked-buffer-test-file "simple-contents.txt")
-           'linked-buffer-default-init))))
+          (lentic-batch-clone-with-config
+           (lentic-test-file "simple-contents.txt")
+           'lentic-default-init))))
 
-(ert-deftest linked-buffer-clojure-latex ()
+(ert-deftest lentic-clojure-latex ()
   (should
-   (linked-buffer-test-clone-equal
-    'linked-buffer-clojure-latex-init
+   (lentic-test-clone-equal
+    'lentic-clojure-latex-init
     "block-comment.clj" "block-comment-out.tex")))
 
 
-(ert-deftest linked-buffer-asciidoc-clojure ()
+(ert-deftest lentic-asciidoc-clojure ()
   (should
-   (linked-buffer-test-clone-equal
-    'linked-buffer-asciidoc-clojure-init
+   (lentic-test-clone-equal
+    'lentic-asciidoc-clojure-init
     "asciidoc-clj.txt" "asciidoc-clj-out.clj")))
 
 ;; org mode start up prints out "OVERVIEW" from the cycle. Can't see any way
 ;; to stop this
-(ert-deftest linked-buffer-org-el ()
+(ert-deftest lentic-org-el ()
   (should
-   (linked-buffer-test-clone-equal
-    'linked-buffer-org-el-init
+   (lentic-test-clone-equal
+    'lentic-org-el-init
     "org-el.org" "org-el.el")))
 
-(ert-deftest linked-buffer-el-org ()
+(ert-deftest lentic-el-org ()
   (should
-   (linked-buffer-test-clone-equal
-    'linked-buffer-el-org-init
+   (lentic-test-clone-equal
+    'lentic-el-org-init
     "el-org.el" "el-org.org")))
 
-(ert-deftest linked-buffer-orgel-org()
+(ert-deftest lentic-orgel-org()
   (should
-   (linked-buffer-test-clone-equal
-    'linked-buffer-orgel-org-init
+   (lentic-test-clone-equal
+    'lentic-orgel-org-init
     "orgel-org.el" "orgel-org.org")))
 
-(ert-deftest linked-buffer-org-orgel()
+(ert-deftest lentic-org-orgel()
   (should
-   (linked-buffer-test-clone-equal
-    'linked-buffer-org-orgel-init
+   (lentic-test-clone-equal
+    'lentic-org-orgel-init
     "org-orgel.org" "org-orgel.el")))
 
 
-(ert-deftest linked-buffer-org-clojure ()
+(ert-deftest lentic-org-clojure ()
   (should
-   (linked-buffer-test-clone-equal
-    'linked-buffer-org-clojure-init
+   (lentic-test-clone-equal
+    'lentic-org-clojure-init
     "org-clojure.org" "org-clojure.clj"
     )))
 
@@ -144,7 +144,7 @@
 ;; these test that buffers which are created and then changed are correct.
 ;; At the moment, this does not check that the changes are actually
 ;; incremental, cause that's harder.
-(defun linked-buffer-test-clone-and-change-with-config
+(defun lentic-test-clone-and-change-with-config
   (filename init &optional f-this f-that retn-that)
   "Clone file and make changes to check incremental updates.
 Using INIT clone FILE, then apply F in the buffer, and return the
@@ -162,10 +162,10 @@ results."
           (with-current-buffer
               (setq this
                     (find-file-noselect filename))
-            (setq linked-buffer-init init)
+            (setq lentic-init init)
             (progn
               (setq that
-                    (linked-buffer-init-create))
+                    (lentic-init-create))
               (funcall f-this)
               (with-current-buffer
                   that
@@ -189,106 +189,106 @@ results."
         (when that (kill-buffer that))))
     ))
 
-(defun linked-buffer-test-clone-and-change-equal
+(defun lentic-test-clone-and-change-equal
   (init file cloned-file
         &optional f-this f-that retn-that)
   (let ((cloned-file
          (f-read
-          (linked-buffer-test-file cloned-file)))
+          (lentic-test-file cloned-file)))
         (cloned-results
-         (linked-buffer-test-clone-and-change-with-config
-          (linked-buffer-test-file file) init f-this f-that
+         (lentic-test-clone-and-change-with-config
+          (lentic-test-file file) init f-this f-that
           retn-that)))
     (if
         (string= cloned-file cloned-results)
         t
       ;; comment this out if you don't want it.
-      (linked-buffer-test-equal-loudly cloned-file cloned-results)
+      (lentic-test-equal-loudly cloned-file cloned-results)
       nil)))
 
-(defun linked-buffer-test-clone-and-change-equal-generate
+(defun lentic-test-clone-and-change-equal-generate
   (init file cloned-file f)
-  "Generates the test file for `linked-buffer-test-clone-and-change-with-config'."
+  "Generates the test file for `lentic-test-clone-and-change-with-config'."
   (f-write
-   (linked-buffer-test-clone-and-change-with-config
-    (linked-buffer-test-file file) init
+   (lentic-test-clone-and-change-with-config
+    (lentic-test-file file) init
     f)
    'utf-8
-   (concat linked-buffer-test-dir  cloned-file))
+   (concat lentic-test-dir  cloned-file))
   ;; return nil, so that if we use this in a test by mistake, it returns
   ;; false, so there is a good chance it will fail the test.
   nil)
 
-(defvar linked-buffer-test-last-transform "")
+(defvar lentic-test-last-transform "")
 
-(defadvice linked-buffer-insertion-string-transform
+(defadvice lentic-insertion-string-transform
   (before store-transform
          (string)
          activate)
-  (setq linked-buffer-test-last-transform string))
+  (setq lentic-test-last-transform string))
 
-(ert-deftest linked-buffer-simple-with-change ()
+(ert-deftest lentic-simple-with-change ()
   "Test simple-contents with a change, mostly to check my test machinary."
   (should
    (and
     (equal "simple\nnot simple"
-           (linked-buffer-test-clone-and-change-with-config
-            (linked-buffer-test-file "simple-contents.txt")
-            'linked-buffer-default-init
+           (lentic-test-clone-and-change-with-config
+            (lentic-test-file "simple-contents.txt")
+            'lentic-default-init
             (lambda ()
               (goto-char (point-max))
               (insert "not simple"))))
-    (equal linked-buffer-test-last-transform "not simple"))))
+    (equal lentic-test-last-transform "not simple"))))
 
-(ert-deftest linked-buffer-simple-with-change-file()
+(ert-deftest lentic-simple-with-change-file()
   "Test simple-contents with a change and compare to file.
 This mostly checks my test machinary."
   (should
    (and
-    (linked-buffer-test-clone-and-change-equal
-     'linked-buffer-default-init
+    (lentic-test-clone-and-change-equal
+     'lentic-default-init
      "simple-contents.txt" "simple-contents-chg.txt"
      (lambda ()
        (goto-char (point-max))
        (insert "simple")))
-    (equal linked-buffer-test-last-transform "simple"))))
+    (equal lentic-test-last-transform "simple"))))
 
-(ert-deftest linked-buffer-clojure-latex-incremental ()
+(ert-deftest lentic-clojure-latex-incremental ()
   (should
    (and
-    (linked-buffer-test-clone-and-change-equal
-     'linked-buffer-clojure-latex-init
+    (lentic-test-clone-and-change-equal
+     'lentic-clojure-latex-init
      "block-comment.clj" "block-comment-changed-out.tex"
      (lambda ()
        (forward-line 1)
        (insert ";; inserted\n")))
-    (equal linked-buffer-test-last-transform ";; inserted\n")))
+    (equal lentic-test-last-transform ";; inserted\n")))
 
   (should
    (and
-    (linked-buffer-test-clone-and-change-equal
-     'linked-buffer-latex-clojure-init
+    (lentic-test-clone-and-change-equal
+     'lentic-latex-clojure-init
      "block-comment.tex" "block-comment-changed-1.clj"
      (lambda ()
        (forward-line 1)
        (insert ";; inserted\n")))
-    (equal linked-buffer-test-last-transform ";; inserted\n")))
+    (equal lentic-test-last-transform ";; inserted\n")))
 
   (should
    (and
-    (linked-buffer-test-clone-and-change-equal
-     'linked-buffer-latex-clojure-init
+    (lentic-test-clone-and-change-equal
+     'lentic-latex-clojure-init
      "block-comment.tex" "block-comment-changed-2.clj"
      (lambda ()
        (search-forward "\\begin{code}\n")
        (insert "(form inserted)\n")))
-    (equal linked-buffer-test-last-transform "(form inserted)\n"))))
+    (equal lentic-test-last-transform "(form inserted)\n"))))
 
 (ert-deftest clojure-latex-first-line ()
   "Tests for a bug after introduction of incremental blocks."
   (should
-   (linked-buffer-test-clone-and-change-equal
-    'linked-buffer-clojure-latex-init
+   (lentic-test-clone-and-change-equal
+    'lentic-clojure-latex-init
     "block-comment.clj" "block-comment.tex"
     (lambda ()
       (delete-char 1)
@@ -299,8 +299,8 @@ This mostly checks my test machinary."
 (ert-deftest clojure-latex-empty-line ()
   "Tests for a deletion of an empty line"
   (should
-   (linked-buffer-test-clone-and-change-equal
-    'linked-buffer-clojure-latex-init
+   (lentic-test-clone-and-change-equal
+    'lentic-clojure-latex-init
     "block-comment.clj" "block-comment.tex"
     nil
     (lambda ()
@@ -311,8 +311,8 @@ This mostly checks my test machinary."
 
 (ert-deftest orgel-org-incremental ()
   (should
-   (linked-buffer-test-clone-and-change-equal
-    'linked-buffer-orgel-org-init
+   (lentic-test-clone-and-change-equal
+    'lentic-orgel-org-init
     "orgel-org.el" "orgel-org.el"
     nil
     (lambda ()

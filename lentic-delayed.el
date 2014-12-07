@@ -1,4 +1,4 @@
-;; linked-buffer-delayed.el --- linked-buffers but slowly -*- lexical-binding: t -*-
+;; lentic-delayed.el --- lentics but slowly -*- lexical-binding: t -*-
 
 ;; This file is not part of Emacs
 
@@ -23,86 +23,86 @@
 
 ;;; Commentary:
 ;;
-;; Currently, the implementation of things like linked-buffer-block.el is
+;; Currently, the implementation of things like lentic-block.el is
 ;; quite slow. This is exacerbated by changes which percolate though large
 ;; parts of the buffer. Of course, the obvious solution would be to fix the
-;; dodgy algorithms in linked-buffer-block, but why do that when instead you
+;; dodgy algorithms in lentic-block, but why do that when instead you
 ;; can run the same dodgy algorithms on the idle cycle. This has the advantage
 ;; that multiple changes with no idle setp in between will be aggregated.
 
 
 ;;; Code:
-(require 'linked-buffer)
+(require 'lentic)
 (require 'dash)
 
-(defvar linked-buffer-delayed-queue nil)
-(defvar linked-buffer-delayed-timer nil)
+(defvar lentic-delayed-queue nil)
+(defvar lentic-delayed-timer nil)
 
-(defun linked-buffer-delayed-ensure-timer ()
-  (unless linked-buffer-delayed-timer
-    (setq linked-buffer-delayed-timer
-          (run-with-idle-timer 0.05 t 'linked-buffer-delayed-timer-function))))
+(defun lentic-delayed-ensure-timer ()
+  (unless lentic-delayed-timer
+    (setq lentic-delayed-timer
+          (run-with-idle-timer 0.05 t 'lentic-delayed-timer-function))))
 
-(defun linked-buffer-delayed-timer-function ()
-  (message "linked-buffer-delayed-timer running")
+(defun lentic-delayed-timer-function ()
+  (message "lentic-delayed-timer running")
   (let ((repeat t))
     (while
         (and repeat
-             linked-buffer-delayed-queue)
-      (linked-buffer-delayed-clone
-       (pop linked-buffer-delayed-queue))
+             lentic-delayed-queue)
+      (lentic-delayed-clone
+       (pop lentic-delayed-queue))
       ;; redisplay and wait
       (setq repeat (sit-for 0.1))))
   ;; kill timer if we have finished
-  (unless linked-buffer-delayed-queue
-    (cancel-timer linked-buffer-delayed-timer)
-    (setq linked-buffer-delayed-timer nil)))
+  (unless lentic-delayed-queue
+    (cancel-timer lentic-delayed-timer)
+    (setq lentic-delayed-timer nil)))
 
-(defclass linked-buffer-delayed-configuration
-  (linked-buffer-configuration)
+(defclass lentic-delayed-configuration
+  (lentic-configuration)
   ((delayed
     :initarg :delayed))
-  "Linked-buffer in the idle cycle.")
+  "lentic in the idle cycle.")
 
-(defmethod linked-buffer-this ((conf linked-buffer-delayed-configuration))
-  (linked-buffer-this (oref conf :delayed)))
+(defmethod lentic-this ((conf lentic-delayed-configuration))
+  (lentic-this (oref conf :delayed)))
 
-(defmethod linked-buffer-that ((conf linked-buffer-delayed-configuration))
-  (linked-buffer-that (oref conf :delayed)))
+(defmethod lentic-that ((conf lentic-delayed-configuration))
+  (lentic-that (oref conf :delayed)))
 
-(defmethod linked-buffer-create ((conf linked-buffer-delayed-configuration))
-  (let ((buf (linked-buffer-create (oref conf :delayed))))
+(defmethod lentic-create ((conf lentic-delayed-configuration))
+  (let ((buf (lentic-create (oref conf :delayed))))
     ;; we should now have set up that-buffer and config, which will be the
     ;; undelayed form -- so swap a new one in
     (with-current-buffer
-        (linked-buffer-that conf)
-      (setq linked-buffer-config
-            (linked-buffer-delayed-configuration
+        (lentic-that conf)
+      (setq lentic-config
+            (lentic-delayed-configuration
              "inverted-delayed"
-             :delayed linked-buffer-config)))
+             :delayed lentic-config)))
     buf))
 
 
-(defmethod linked-buffer-convert ((conf linked-buffer-delayed-configuration)
+(defmethod lentic-convert ((conf lentic-delayed-configuration)
                                   location)
-  (linked-buffer-convert (oref conf :delayed) location))
+  (lentic-convert (oref conf :delayed) location))
 
-(defmethod linked-buffer-clone ((conf linked-buffer-delayed-configuration))
-  (add-to-list 'linked-buffer-delayed-queue
+(defmethod lentic-clone ((conf lentic-delayed-configuration))
+  (add-to-list 'lentic-delayed-queue
                conf t)
-  (linked-buffer-delayed-ensure-timer))
+  (lentic-delayed-ensure-timer))
 
-(defmethod linked-buffer-delayed-clone ((conf
-                                         linked-buffer-delayed-configuration))
+(defmethod lentic-delayed-clone ((conf
+                                         lentic-delayed-configuration))
   ;; inhibit-modification-hooks or we percolate back to the start
   (let ((inhibit-modification-hooks t))
-    (linked-buffer-clone (oref conf :delayed))
-    (linked-buffer-update-point (oref conf :delayed))))
+    (lentic-clone (oref conf :delayed))
+    (lentic-update-point (oref conf :delayed))))
 
-(defun linked-buffer-delayed-init (delayed)
-  (unless linked-buffer-config
+(defun lentic-delayed-init (delayed)
+  (unless lentic-config
     (funcall delayed)
-    (setq linked-buffer-config
-          (linked-buffer-delayed-configuration "delayed" :delayed linked-buffer-config))))
+    (setq lentic-config
+          (lentic-delayed-configuration "delayed" :delayed lentic-config))))
 
-(provide 'linked-buffer-delayed)
+(provide 'lentic-delayed)

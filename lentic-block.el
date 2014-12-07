@@ -1,4 +1,4 @@
-;;; linked-buffer-block.el --- Comment blocks in one buffer -*- lexical-binding: t -*-
+;;; lentic-block.el --- Comment blocks in one buffer -*- lexical-binding: t -*-
 
 ;; This file is not part of Emacs
 
@@ -24,14 +24,14 @@
 
 ;;; Commentary:
 ;;
-;; Provides configuration for linked-buffers where one buffer has beginning of
+;; Provides configuration for lentics where one buffer has beginning of
 ;; line comment characters that the other one lacks. Commented regions may be
 ;; in blocks with block-delimiters between then.
 (require 'm-buffer)
-(require 'linked-buffer)
+(require 'lentic)
 
 ;;; Code:
-(defclass linked-buffer-block-configuration (linked-buffer-default-configuration)
+(defclass lentic-block-configuration (lentic-default-configuration)
   ((comment :initarg :comment
             :documentation "The comment character")
    (comment-start :initarg :comment-start
@@ -44,46 +44,46 @@
                       :documentation
                       "Should match be case sensitive"
                       :initform :default))
-  :documentation "Base configuration for blocked linked-buffers.
-A blocked linked-buffer is one where blocks of the buffer have a
+  :documentation "Base configuration for blocked lentics.
+A blocked lentic is one where blocks of the buffer have a
 start of line block comment in one buffer but not the other."
   :abstract t)
 
-(defmethod linked-buffer-blk-comment-start-regexp
-  ((conf linked-buffer-block-configuration))
+(defmethod lentic-blk-comment-start-regexp
+  ((conf lentic-block-configuration))
   ;; todo -- what does this regexp do?
   (format "^\\(%s\\)*%s"
           (oref conf :comment)
           (regexp-quote
            (oref conf :comment-start))))
 
-(defmethod linked-buffer-blk-comment-stop-regexp
-  ((conf linked-buffer-block-configuration))
+(defmethod lentic-blk-comment-stop-regexp
+  ((conf lentic-block-configuration))
   (format "^\\(%s\\)*%s"
           (oref conf :comment)
           (regexp-quote
            (oref conf :comment-stop))))
 
-(defmethod linked-buffer-blk-line-start-comment
-  ((conf linked-buffer-block-configuration))
+(defmethod lentic-blk-line-start-comment
+  ((conf lentic-block-configuration))
   (concat "^"
           (oref conf :comment)))
 
-(defun linked-buffer-blk-uncomment-region (conf begin end buffer)
+(defun lentic-blk-uncomment-region (conf begin end buffer)
   "Given CONF,  remove start-of-line characters in region.
 Region is between BEGIN and END in BUFFER. CONF is a
-function `linked-buffer-configuration' object."
-  ;;(linked-buffer-log "uncomment-region (%s,%s)" begin end)
+function `lentic-configuration' object."
+  ;;(lentic-log "uncomment-region (%s,%s)" begin end)
   (m-buffer-with-markers
       ((comments
         (m-buffer-match
          buffer
-         (linked-buffer-blk-line-start-comment conf)
+         (lentic-blk-line-start-comment conf)
          :begin begin :end end)))
     (m-buffer-replace-match comments "")))
 
-(defun linked-buffer-blk-uncomment-buffer (conf begin end buffer)
-  "Given CONF, a `linked-buffer-configuration' object, remove all
+(defun lentic-blk-uncomment-buffer (conf begin end buffer)
+  "Given CONF, a `lentic-configuration' object, remove all
 start of line comment-characters in appropriate blocks. Changes
 should only have occurred between BEGIN and END in BUFFER."
   (-map
@@ -95,15 +95,15 @@ should only have occurred between BEGIN and END in BUFFER."
        (when
            (and (>= end block-begin)
                 (>= block-end begin))
-         (linked-buffer-blk-uncomment-region
+         (lentic-blk-uncomment-region
           conf block-begin block-end buffer))))
-   (linked-buffer-blk-marker-boundaries
+   (lentic-blk-marker-boundaries
     conf buffer)))
 
-(defun linked-buffer-blk-comment-region (conf begin end buffer)
-  "Given CONF, a `linked-buffer-configuration' object, add
+(defun lentic-blk-comment-region (conf begin end buffer)
+  "Given CONF, a `lentic-configuration' object, add
 start of line comment characters beween BEGIN and END in BUFFER."
-  (linked-buffer-log "comment-region (%s,%s,%s)" begin end buffer)
+  (lentic-log "comment-region (%s,%s,%s)" begin end buffer)
   (m-buffer-with-markers
       ((line-match
         (m-buffer-match
@@ -115,15 +115,15 @@ start of line comment characters beween BEGIN and END in BUFFER."
          buffer
          ;; start to end of line which is what this regexp above matches
          (concat
-          (linked-buffer-blk-line-start-comment conf)
+          (lentic-blk-line-start-comment conf)
           ".*")
          :begin begin :end end)))
     (m-buffer-replace-match
      (m-buffer-match-exact-subtract line-match comment-match)
      (oref conf :comment) nil nil 1)))
 
-(defun linked-buffer-blk-comment-buffer (conf begin end buffer)
-  "Given CONF, a `linked-buffer-configuration' object, add
+(defun lentic-blk-comment-buffer (conf begin end buffer)
+  "Given CONF, a `lentic-configuration' object, add
 start of line comment-characters. Changes should only have occurred
 between BEGIN and END in BUFFER."
   ;; we need these as markers because the begin and end position need to
@@ -141,9 +141,9 @@ between BEGIN and END in BUFFER."
          (when
              (and (>= end block-begin)
                   (>= block-end begin))
-           (linked-buffer-blk-comment-region
+           (lentic-blk-comment-region
             conf (car pairs) (cdr pairs) buffer))))
-     (linked-buffer-blk-marker-boundaries conf buffer))))
+     (lentic-blk-marker-boundaries conf buffer))))
 
 (put 'unmatched-delimiter-error
      'error-conditions
@@ -152,13 +152,13 @@ between BEGIN and END in BUFFER."
 (put 'unmatched-delimiter-error
      'error-message "Unmatched Delimiter in Buffer")
 
-(defun linked-buffer-blk-marker-boundaries (conf buffer)
-  "Given CONF, a `linked-buffer-configuration' object, find
+(defun lentic-blk-marker-boundaries (conf buffer)
+  "Given CONF, a `lentic-configuration' object, find
 demarcation markers. Returns a list of start end cons pairs.
 `point-min' is considered to be an implicit start and `point-max'
 an implicit stop."
   (let* ((match-block
-          (linked-buffer-block-match
+          (lentic-block-match
            conf buffer))
          (match-start
           (car match-block))
@@ -167,7 +167,7 @@ an implicit stop."
     (unless
         (= (length match-start)
            (length match-end))
-      (linked-buffer-log "delimiters do not match")
+      (lentic-log "delimiters do not match")
       (signal 'unmatched-delimiter-error
               (list buffer)))
     (with-current-buffer buffer
@@ -183,19 +183,19 @@ an implicit stop."
         match-end
         (list (set-marker (make-marker) (point-max) buffer)))))))
 
-(defmethod linked-buffer-block-match ((conf linked-buffer-block-configuration)
+(defmethod lentic-block-match ((conf lentic-block-configuration)
                                       buffer)
   (list
    (m-buffer-match-begin
     buffer
-    (linked-buffer-block-comment-start-regexp conf)
+    (lentic-block-comment-start-regexp conf)
     :case-fold-search (oref conf :case-fold-search))
    (m-buffer-match-end
     buffer
-    (linked-buffer-block-comment-stop-regexp conf)
+    (lentic-block-comment-stop-regexp conf)
     :case-fold-search (oref conf :case-fold-search))))
 
-(defmethod linked-buffer-convert ((conf linked-buffer-block-configuration)
+(defmethod lentic-convert ((conf lentic-block-configuration)
                                   location)
   "Converts a LOCATION in buffer FROM into one from TO.
 This uses a simple algorithm; we pick the same line and then
@@ -207,7 +207,7 @@ between the two buffers; we don't care which one has comments."
   ;; data as a list rather than having two with-current-buffers.
   (let ((line-plus
          (with-current-buffer
-             (linked-buffer-this conf)
+             (lentic-this conf)
            (save-excursion
              ;; move to location or line-end-position may be wrong
              (goto-char location)
@@ -218,7 +218,7 @@ between the two buffers; we don't care which one has comments."
               (- (line-end-position)
                  location))))))
     (with-current-buffer
-        (linked-buffer-that conf)
+        (lentic-that conf)
       (save-excursion
         (goto-char (point-min))
         ;; move forward to the line in question
@@ -230,28 +230,28 @@ between the two buffers; we don't care which one has comments."
                 (cadr line-plus)))))))
 
 
-(defclass linked-buffer-commented-block-configuration
-  (linked-buffer-block-configuration)
+(defclass lentic-commented-block-configuration
+  (lentic-block-configuration)
   ()
-  "Configuration for blocked linked-buffer with comments.")
+  "Configuration for blocked lentic with comments.")
 
-(defclass linked-buffer-uncommented-block-configuration
-  (linked-buffer-block-configuration)
+(defclass lentic-uncommented-block-configuration
+  (lentic-block-configuration)
   ()
-  "Configuration for blocked linked-buffer without comments.")
+  "Configuration for blocked lentic without comments.")
 
-(defun linked-buffer-bolp (buffer position)
+(defun lentic-bolp (buffer position)
   (with-current-buffer
       buffer
       (save-excursion
         (goto-char position)
         (bolp))))
 
-(defmethod linked-buffer-clone
-  ((conf linked-buffer-commented-block-configuration)
+(defmethod lentic-clone
+  ((conf lentic-commented-block-configuration)
    &optional start stop length-before start-converted stop-converted)
-  "Update the contents in the linked-buffer without comments"
-  ;;(linked-buffer-log "blk-clone-uncomment (from):(%s)" conf)
+  "Update the contents in the lentic without comments"
+  ;;(lentic-log "blk-clone-uncomment (from):(%s)" conf)
   (let*
       ;; we need to detect whether start or stop are in the comment region at
       ;; the beginning of the file. We check this by looking at :that-buffer
@@ -264,7 +264,7 @@ between the two buffers; we don't care which one has comments."
       ((start-in-comment
         (when
             (and start
-                 (linked-buffer-bolp
+                 (lentic-bolp
                   (oref conf :that-buffer)
                   start-converted))
           (m-buffer-with-current-location
@@ -283,7 +283,7 @@ between the two buffers; we don't care which one has comments."
        (stop-in-comment
         (when
             (and start
-                 (linked-buffer-bolp
+                 (lentic-bolp
                   (oref conf :that-buffer)
                   stop-converted))
           (m-buffer-with-current-location
@@ -300,7 +300,7 @@ between the two buffers; we don't care which one has comments."
           stop-converted)))
     ;; log when we have gone long
     (if (or start-in-comment stop-in-comment)
-        (linked-buffer-log "In comment: %s %s"
+        (lentic-log "In comment: %s %s"
                            (when start-in-comment
                              "start")
                            (when stop-in-comment
@@ -311,17 +311,17 @@ between the two buffers; we don't care which one has comments."
     ;; remove the line comments in the to buffer
     ;; if the delimitors are unmatched, then we can do nothing other than clone.
     (condition-case e
-        (linked-buffer-blk-uncomment-buffer
+        (lentic-blk-uncomment-buffer
          conf
          ;; the buffer at this point has been copied over, but is in an
          ;; inconsistent state (because it may have comments that it should
          ;; not). Still, the convertor should still work because it counts from
          ;; the end
-         (linked-buffer-convert
+         (lentic-convert
           conf
           ;; point-min if we know nothing else
           (or start (point-min)))
-         (linked-buffer-convert
+         (lentic-convert
           conf
           ;; if we have a stop
           (if stop
@@ -330,13 +330,13 @@ between the two buffers; we don't care which one has comments."
               (max stop
                    (+ start length-before))
             (point-max)))
-         (linked-buffer-that conf))
+         (lentic-that conf))
       (unmatched-delimiter-error
        nil))))
 
-(defmethod linked-buffer-invert
-  ((conf linked-buffer-commented-block-configuration))
-  (linked-buffer-uncommented-block-configuration
+(defmethod lentic-invert
+  ((conf lentic-commented-block-configuration))
+  (lentic-uncommented-block-configuration
    "commented-inverted"
    :this-buffer (oref conf :that-buffer)
    :that-buffer (oref conf :this-buffer)
@@ -344,28 +344,28 @@ between the two buffers; we don't care which one has comments."
    :comment-start (oref conf :comment-start)
    :comment-stop (oref conf :comment-stop)))
 
-(defmethod linked-buffer-block-comment-start-regexp
-  ((conf linked-buffer-commented-block-configuration))
+(defmethod lentic-block-comment-start-regexp
+  ((conf lentic-commented-block-configuration))
   (concat
    "\\(" (regexp-quote (oref conf :comment)) "\\)?"
    (oref conf :comment-start)))
 
-(defmethod linked-buffer-block-comment-stop-regexp
-  ((conf linked-buffer-commented-block-configuration))
+(defmethod lentic-block-comment-stop-regexp
+  ((conf lentic-commented-block-configuration))
   (concat
    "\\(" (regexp-quote (oref conf :comment)) "\\)?"
    (oref conf :comment-stop)))
 
-(defmethod linked-buffer-clone
-  ((conf linked-buffer-uncommented-block-configuration)
+(defmethod lentic-clone
+  ((conf lentic-uncommented-block-configuration)
    &optional start stop length-before start-converted stop-converted)
-  "Update the contents in the linked-buffer with comments."
-  ;;(linked-buffer-log "blk-clone-comment conf):(%s)" conf)
+  "Update the contents in the lentic with comments."
+  ;;(lentic-log "blk-clone-comment conf):(%s)" conf)
   (let*
       ((start-at-bolp
         (when
             (and start
-                 (linked-buffer-bolp
+                 (lentic-bolp
                   (oref conf :this-buffer)
                   start))
           (m-buffer-with-current-location
@@ -374,23 +374,23 @@ between the two buffers; we don't care which one has comments."
             (line-beginning-position))))
        (start-converted (or start-at-bolp start-converted)))
     (if (or start-at-bolp)
-        (linked-buffer-log "In comment: %s"
+        (lentic-log "In comment: %s"
                            (when start-at-bolp
                              "start")))
     (call-next-method conf start stop length-before
                       start-converted stop-converted)
     (condition-case e
-        (linked-buffer-blk-comment-buffer
+        (lentic-blk-comment-buffer
          conf
          ;; the buffer at this point has been copied over, but is in an
          ;; inconsistent state (because it may have comments that it should
          ;; not). Still, the convertor should still work because it counts from
          ;; the end
-         (linked-buffer-convert
+         (lentic-convert
           conf
           ;; point-min if we know nothing else
           (or start (point-min)))
-         (linked-buffer-convert
+         (lentic-convert
           conf
           ;; if we have a stop
           (if stop
@@ -399,12 +399,12 @@ between the two buffers; we don't care which one has comments."
               (max stop
                    (+ start length-before))
             (point-max)))
-         (linked-buffer-that conf))
+         (lentic-that conf))
       (unmatched-delimiter-error nil))))
 
-(defmethod linked-buffer-invert
-  ((conf linked-buffer-uncommented-block-configuration))
-  (linked-buffer-commented-block-configuration
+(defmethod lentic-invert
+  ((conf lentic-uncommented-block-configuration))
+  (lentic-commented-block-configuration
    "uncommented-inverted"
    :this-buffer (oref conf :that-buffer)
    :that-buffer (oref conf :this-buffer)
@@ -412,14 +412,14 @@ between the two buffers; we don't care which one has comments."
    :comment-start (oref  conf :comment-start)
    :comment-stop (oref conf :comment-stop)))
 
-(defmethod linked-buffer-block-comment-start-regexp
-  ((conf linked-buffer-uncommented-block-configuration))
+(defmethod lentic-block-comment-start-regexp
+  ((conf lentic-uncommented-block-configuration))
   (oref conf :comment-start))
 
-(defmethod linked-buffer-block-comment-stop-regexp
-  ((conf linked-buffer-uncommented-block-configuration))
+(defmethod lentic-block-comment-stop-regexp
+  ((conf lentic-uncommented-block-configuration))
   (oref conf :comment-stop))
 
-(provide 'linked-buffer-block)
+(provide 'lentic-block)
 
-;;; linked-buffer-block.el ends here
+;;; lentic-block.el ends here
