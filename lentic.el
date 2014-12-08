@@ -28,58 +28,70 @@
 
 ;;; Commentary:
 
-;; lentics enables simultaneous editing and viewing of the same (or
-;; closely related) text in two or more buffers, potentially in different modes.
+;; lentic enables /lenticular text/: simultaneous editing and viewing of the
+;; same (or closely related) text in two or more buffers, potentially in
+;; different modes. Lenticular text is named after lenticular printing, which
+;; produce images which change depending on the angle at which they are
+;; viewed.
 
-;; Sometimes, it would be nice to edit a file in two ways at once. For instance,
-;; you might have a source file in a computational language with richly marked
-;; documentation. As Emacs is a modal editor, it would be nice to edit this file
-;; both in a mode for the computational language and for the marked up
-;; documentation.
+;; Sometimes, it would be nice to edit a file in two ways at once. For
+;; instance, you might have a source file in a computational language with
+;; richly marked documentation. As Emacs is a modal editor, it would be nice
+;; to edit this file both in a mode for the computational language and for the
+;; marked up documentation.
 
 ;; One solution to this is to use a single-mode which supports both types of
 ;; editing. The problem with this is that it is fundamentally difficult to
-;; support two types of editing at the same time; more over, you need a new mode
-;; for environment.
+;; support two types of editing at the same time; more over, you need a new
+;; mode for each environment. Another solution is to use one of the
+;; multiple-mode tools which are available. The problem with this is that they
+;; generally need some suppor from the modes in question. And, again, the
+;; dificulty is supporting both fo ms of editing in the same environment. A
+;; final problem is that it is not just the editing environment that needs to;
+;; the programmatic environment needs to be untroubled by the documentation,
+;; and the documentation untroubled by the programmatic mode.
 
-;; Another solution is to use one of the multiple-mode tools which are available.
-;; The problem with this is that they generally need some support from the modes
-;; in question. And, again, the difficulty is supporting both forms of editing in
-;; the same environment.
-
-;; Linked buffers provide an alternative solution. Two linked buffers, by
+;; Lenticular text provides an alternative solution. Two lentic buffers, by
 ;; default, the two share content but are otherwise independent. Therefore,
 ;; you can have two buffers open, each showing the content in different modes;
 ;; to switch modes, you simply switch buffers. The content, location of point,
 ;; and view are shared.
 
-;; However, lentics can also perform a bi-directional transformation
-;; between the two. If this is done, then the two can have different but related
-;; text. It is possible to configure the transformation for any two buffers in a
+;; Moreover, lentic buffers can also perform a bi-directional transformation
+;; between the two. If this is done, then the two can have different but
+;; related text. This also solves the problem of integration with a
+;; tool-chain; each lentic buffer can be associated with a different file and
+;; a different syntax.  This file is, itself, lenticular text. It can be
+;; viewed either as Emacs-Lisp or in Org-Mode. In Emacs-Lisp mode, this text
+;; is commented out, in org-mode it is not. In fact, even the default
+;; behaviour of lentic uses this transformation capability--the text is
+;; shared, but text properties are not, a behaviour which differs between
+;; lentic buffers and indirect buffers.
+
+;; It is possible to configure the transformation for any two buffers in a
 ;; extensible way, although mostly we have concentrated on mode-specific
 ;; configuration.
 
 ;; The main user entry point is through `global-lentic-start-mode' which
-;; provides tools to create new a new lentic.
+;; provides tools to create a new lentic buffer.
 
 ;;; Configuration:
 
-;; lentics are configurable in a large number of ways. It is possible
+;; lentic buffers are configurable in a large number of ways. It is possible
 ;; to control the nature of the transformation, the default buffer name that a
-;; lentic takes, and the file location (or not) of the lentic.
-;; For this release of lentic currently, each buffer can only be linked
-;; to a single buffer, although this restriction will be removed in later
-;; versions.
+;; lentic buffer takes, and the file location (or not) of the lentic buffer.
+;; For this release of lentic currently, each buffer can only be linked to a
+;; single buffer, although this restriction will be removed in later versions.
 
 ;; Configuration of a buffer happens in one of two places. First,
-;; `lentic-init' is run when a lentic is first created. This
+;; `lentic-init' is run when a lentic buffer is first created. This
 ;; function should set the actual configuration `lentic-config', and is
 ;; mostly designed for use as a file-local or dir-local variable. All subsequent
 ;; configuration happens through `lentic-config' which is an EIEIO object
 ;; and associated methods.
 
 ;; There are now a number of different configurations, which can be used for
-;; general-purpose use as well as an extension points for subclass
+;; general-purposes use as well as an extension points for subclass
 ;; configurations. The two most general configurations are:
 
 ;;  - default: this copies all text exactly, but does not transfer
@@ -100,30 +112,35 @@
 ;; There are still bugs and it can perform badly and destructively, particularly
 ;; on buffers which are ill-formed with respect to their expected syntax.
 
+;; Previous releases of this package were called "linked-buffer". I changed
+;; this because I wanted a name for the general idea of text with two
+;; visualisations; "linked text" doesn't work because it is sounds like
+;; hyperlinked text.
+
 ;; Although it is still too early to guarantee, I hope that the current
 ;; configuration scheme will remain fixed, and subclass extensions should require
 ;; little change for the future, except as a result of changes to address the
 ;; issues described in the next paragraph.
 
-;; The current implementation is crude -- currently, the entire buffer is copied
-;; on every change event. For large buffer, this comes with a significant
-;; performance penalty, although for modern computers "large" means "pretty big".
-;; One solution to this is offered by `lentic-delayed-configuration'; this
-;; performs the copying in the idle cycle and, as a side-effect, amalgamates
-;; multiple changes into a single copy. As a second problem when switching
-;; buffers rapidly, it can effectively break the undo mechanism -- or at least, I
-;; think it is this that is causing the problem. Currently, there is no
-;; workaround for this. We hope to address this in later releases with a more
-;; fine-grained cloning mechanism.
+;; Generally, the implementation of lentic uses Emacs native change hooks and
+;; transfers only the changed text between the two buffers. Some
+;; configurations need to transfer slightly more text, and need to perform
+;; whole buffer analysis on every keypress. This mechanism is reasonably
+;; performant. On a modern machine, buffers of 4k lines can be edited without
+;; noticable lag, and profiling suggests that lentic uses less than 5% of CPU
+;; in normal usage. Lentic also supports a fall-back implementation which
+;; copies the whole buffer after every keypress; this is much easier to
+;; write new configurations for, and is still reasonable performant to 3-400
+;; line buffers.
 
 ;;; Code:
 
 ;; ** State
 
-;; This section defines all of the variables that the basic state for
-;; lentic is stored in. We deliberately have as few of these as possible,
-;; as this makes re-initializing the state during development as straight-forward
-;; as possible.
+;; This section defines all of the variables that the basic state for lentic
+;; is stored in. We deliberately have as few of these as possible, as this
+;; makes re-initializing the state during development as straight-forward as
+;; possible.
 
 ;; #+BEGIN_SRC emacs-lisp
 
