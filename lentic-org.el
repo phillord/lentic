@@ -35,6 +35,7 @@
 ;; between the two modes.
 
 ;; #+BEGIN_SRC emacs-lisp
+(require 'cl-lib)
 (require 'lentic-block)
 ;; #+END_SRC
 
@@ -220,38 +221,31 @@
   ;; consistent state
   (call-next-method conf start stop length-before
                     start-converted stop-converted)
-  (m-buffer-replace-match
-   (m-buffer-match
-    (lentic-that conf)
-    ;; we can be in one of two states depending on whether we have made a new
-    ;; clone or an incremental change
-    "^;; \\(;;;\\|# #\\)"
-    :end
-    (cadr
-     (car
-      (m-buffer-match-line
-       (lentic-that conf)))))
-   ";;;")
-  ;; replace big headers, in either of their two states
-  (m-buffer-replace-match
-   (m-buffer-match
-    (lentic-that conf)
-    "^;; [*] \\(\\w*\\)$"
-    :begin
-    (cadr
-     (car
-      (m-buffer-match-line
-       (lentic-that conf)))))
-   ";;; \\1:")
-  (m-buffer-replace-match
-   (m-buffer-match (lentic-that conf)
-                   "^;; ;;; \\(\\w*:\\)$"
-                   :begin
-                   (cadr
-                    (car
-                     (m-buffer-match-line
-                      (lentic-that conf)))))
-   ";;; \\1"))
+  (m-buffer-with-markers
+      ((first-line-end-match
+        (cl-cadar
+         (m-buffer-match-first-line
+          (lentic-that conf)))))
+    (m-buffer-replace-match
+     (m-buffer-match
+      (lentic-that conf)
+      ;; we can be in one of two states depending on whether we have made a new
+      ;; clone or an incremental change
+      "^;; \\(;;;\\|# #\\)"
+      :end first-line-end-match)
+     ";;;")
+    ;; replace big headers, in either of their two states
+    (m-buffer-replace-match
+     (m-buffer-match
+      (lentic-that conf)
+      "^;; [*] \\(\\w*\\)$"
+      :begin first-line-end-match)
+     ";;; \\1:")
+    (m-buffer-replace-match
+     (m-buffer-match (lentic-that conf)
+                     "^;; ;;; \\(\\w*:\\)$"
+                     :begin first-line-end-match)
+     ";;; \\1")))
 
 (defmethod lentic-invert
   ((conf lentic-org-to-orgel-configuration))
@@ -305,11 +299,9 @@
     (lentic-that conf)
     ";;; "
     :end
-    ;; we matching a lot of lines for one line here...
-    (cadr
-     (car
-      (m-buffer-match-line
-       (lentic-that conf)))))
+    (cl-cadar
+     (m-buffer-match-first-line
+      (lentic-that conf))))
    "# # ")
   (m-buffer-replace-match
    (m-buffer-match (lentic-that conf)
