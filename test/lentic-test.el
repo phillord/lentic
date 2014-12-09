@@ -77,13 +77,12 @@
   ;; return nil, so if we use this in a test by mistake, it will crash out.
   nil)
 
-(defvar conf-default
-  (lentic-default-configuration "bob"))
-
 (ert-deftest lentic-conf ()
   (should
    (equal 'normal-mode
-          (oref conf-default :linked-mode))))
+          (oref
+           (lentic-default-configuration "bob")
+           :linked-mode))))
 
 (ert-deftest lentic-simple ()
   (should
