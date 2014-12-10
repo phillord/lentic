@@ -28,6 +28,7 @@
 ;; line comment characters that the other one lacks. Commented regions may be
 ;; in blocks with block-delimiters between then.
 (require 'm-buffer)
+(require 'm-buffer-at)
 (require 'lentic)
 
 ;;; Code:
@@ -240,13 +241,6 @@ between the two buffers; we don't care which one has comments."
   ()
   "Configuration for blocked lentic without comments.")
 
-(defun lentic-bolp (buffer position)
-  (with-current-buffer
-      buffer
-      (save-excursion
-        (goto-char position)
-        (bolp))))
-
 (defmethod lentic-clone
   ((conf lentic-commented-block-configuration)
    &optional start stop length-before start-converted stop-converted)
@@ -264,39 +258,35 @@ between the two buffers; we don't care which one has comments."
       ((start-in-comment
         (when
             (and start
-                 (lentic-bolp
+                 (m-buffer-at-bolp
                   (oref conf :that-buffer)
                   start-converted))
-          (m-buffer-with-current-location
-              (oref conf :this-buffer)
-              start
-            (line-beginning-position))))
+          (m-buffer-at-line-beginning-position
+           (oref conf :this-buffer)
+           start)))
        (start (or start-in-comment start))
        (start-converted
         (if start-in-comment
-          (m-buffer-with-current-location
-              (oref conf :that-buffer)
-              start-converted
-              (line-beginning-position))
+          (m-buffer-at-line-beginning-position
+           (oref conf :that-buffer)
+           start-converted)
           start-converted))
        ;; likewise for stop
        (stop-in-comment
         (when
-            (and start
-                 (lentic-bolp
+            (and stop
+                 (m-buffer-at-bolp
                   (oref conf :that-buffer)
                   stop-converted))
-          (m-buffer-with-current-location
+          (m-buffer-at-line-end-position
               (oref conf :this-buffer)
-              stop
-            (line-end-position))))
+              stop)))
        (stop (or stop-in-comment stop))
        (stop-converted
         (if stop-in-comment
-            (m-buffer-with-current-location
+            (m-buffer-at-line-end-position
                 (oref conf :that-buffer)
-                stop-converted
-              (line-end-position))
+                stop-converted)
           stop-converted)))
     ;; log when we have gone long
     (if (or start-in-comment stop-in-comment)
@@ -365,13 +355,12 @@ between the two buffers; we don't care which one has comments."
       ((start-at-bolp
         (when
             (and start
-                 (lentic-bolp
+                 (m-buffer-at-bolp
                   (oref conf :this-buffer)
                   start))
-          (m-buffer-with-current-location
+          (m-buffer-at-line-beginning-position
               (oref conf :that-buffer)
-              start-converted
-            (line-beginning-position))))
+              start-converted)))
        (start-converted (or start-at-bolp start-converted)))
     (if (or start-at-bolp)
         (lentic-log "In comment: %s"
