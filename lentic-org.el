@@ -37,6 +37,7 @@
 ;; #+BEGIN_SRC emacs-lisp
 (require 'cl-lib)
 (require 'lentic-block)
+(require 'm-buffer-at)
 ;; #+END_SRC
 
 
@@ -219,33 +220,89 @@
   ;; so, this needs to be more complex -- if we include the first line, expand
   ;; to all of the first line, I think. This should leave the first line in a
   ;; consistent state
-  (call-next-method conf start stop length-before
-                    start-converted stop-converted)
   (m-buffer-with-markers
-      ((first-line-end-match
-        (cl-cadar
-         (m-buffer-match-first-line
-          (lentic-that conf)))))
-    (m-buffer-replace-match
-     (m-buffer-match
-      (lentic-that conf)
-      ;; we can be in one of two states depending on whether we have made a new
-      ;; clone or an incremental change
-      "^;; \\(;;;\\|# #\\)"
-      :end first-line-end-match)
-     ";;;")
-    ;; replace big headers, in either of their two states
-    (m-buffer-replace-match
-     (m-buffer-match
-      (lentic-that conf)
-      "^;; [*] \\(\\w*\\)$"
-      :begin first-line-end-match)
-     ";;; \\1:")
-    (m-buffer-replace-match
-     (m-buffer-match (lentic-that conf)
-                     "^;; ;;; \\(\\w*:\\)$"
-                     :begin first-line-end-match)
-     ";;; \\1")))
+      ((first-line
+        (m-buffer-match-first-line
+         (lentic-this conf)))
+       (header-one-line
+        (m-buffer-match
+          (lentic-this conf)
+          "^[*] \\(\\w*\\)$"
+          :begin (cl-cadar first-line)))
+       (special-lines
+        (-concat first-line header-one-line)))
+    ;; check whether we are in a special line -- if so widen the change extent
+    (let*
+        ((start-in-special
+          (when
+              (and
+               start
+               (m-buffer-in-match-p
+                special-lines start))
+            (m-buffer-at-line-beginning-position
+             (lentic-this conf)
+             start)))
+         (start (or start-in-special start))
+         (start-converted
+          (if start-in-special
+              (m-buffer-at-line-beginning-position
+               (lentic-that conf)
+               start-converted)
+            start-converted))
+         (stop-in-special
+          (when
+              (and
+               stop
+               (m-buffer-in-match-p
+                special-lines stop))
+            (m-buffer-at-line-end-position
+             (lentic-this conf)
+             stop)))
+         (stop (or stop-in-special stop))
+         (stop-converted
+          (if stop-in-special
+              (m-buffer-at-line-end-position
+               (lentic-that conf)
+               stop-converted)
+            stop-converted)))
+      (call-next-method conf start stop length-before
+                        start-converted stop-converted)
+      (let ((first-line-end-match
+             (cl-cadar
+              (m-buffer-match-first-line
+               (lentic-that conf)))))
+        (m-buffer-replace-match
+         (m-buffer-match
+          (lentic-that conf)
+          ;; we can be in one of two states depending on whether we have made a new
+          ;; clone or an incremental change
+          "^;; \\(;;;\\|# #\\)"
+          :end first-line-end-match)
+         ";;;")
+        ;; replace big headers, in either of their two states
+        (m-buffer-replace-match
+         (m-buffer-match
+          (lentic-that conf)
+          "^;; [*] \\(\\w*\\)$"
+          :begin first-line-end-match)
+         ";;; \\1:")
+        (m-buffer-replace-match
+         (m-buffer-match (lentic-that conf)
+                         "^;; ;;; \\(\\w*:\\)$"
+                         :begin first-line-end-match)
+         ";;; \\1")))))
+
+(defmethod lentic-convert
+  ((conf lentic-org-to-orgel-configuration)
+   location)
+  (let ((converted (call-next-method conf location)))
+    (m-buffer-with-current-position
+        (oref conf :this-buffer)
+        location
+      (beginning-of-line)
+      (if (looking-at "[*] \\w*$")
+          (- converted 1)
+        converted))))
 
 (defmethod lentic-invert
   ((conf lentic-org-to-orgel-configuration))
