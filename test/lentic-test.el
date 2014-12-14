@@ -18,10 +18,12 @@
       (error "Test File does not exist: %s" file))
     file))
 
+(defvar lentic-test-quiet t)
+
 (defun lentic-test-equal-loudly (a b)
   "Actually, this just tests equality and shouts if not."
   ;; change this to t to disable noisy printout
-  (if nil
+  (if lentic-test-quiet
       (string= a b)
     (if (string= a b)
         t
@@ -320,4 +322,30 @@ This mostly checks my test machinary."
       (forward-line)
       (insert "a")
       (delete-char -1))
+    t)))
+
+;; Editing the header one lines causes problems
+(ert-deftest orgel-org-incremental-on-header-one ()
+  (should
+   (lentic-test-clone-and-change-equal
+    'lentic-orgel-org-init
+    "orgel-org.el" "orgel-org.el"
+    nil
+    (lambda ()
+      (show-all)
+      (goto-char (point-max))
+      ;; add a "a" just after the * character of the new line
+      (search-backward " Commentary")
+      (insert "a")
+      ;; move to the beginning of the a
+      (search-backward "a")
+      ;; delete the "*" character
+      (delete-char -1)
+      ;; insert the * character and a space
+      (insert "* ")
+      ;; remove the "a")
+      (search-forward "a")
+      (delete-char -1)
+      ;; this should be a round trip but isn't!
+      )
     t)))
