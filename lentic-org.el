@@ -216,10 +216,6 @@
    &optional start stop length-before
    start-converted stop-converted)
   ;; do everything else to the buffer
-
-  ;; so, this needs to be more complex -- if we include the first line, expand
-  ;; to all of the first line, I think. This should leave the first line in a
-  ;; consistent state
   (m-buffer-with-markers
       ((first-line
         (m-buffer-match-first-line
