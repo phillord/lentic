@@ -151,6 +151,8 @@
   "Function that initializes a lentic.
 This should set up `lentic-config' appropriately.")
 
+(make-variable-buffer-local 'lentic-init)
+
 ;; In future versions, this may get turned into a list so that we can have
 ;; multiple linked buffers, but it is not clear how the user interface
 ;; functions such as `lentic-swap-window' would work now.
@@ -578,7 +580,7 @@ REST is currently just ignored."
     "After-change (start, stop, length-before): %s,%s,%s"
     start stop length-before)
    (lentic-update-contents lentic-config
-                                  start stop length-before)))
+                           start stop length-before)))
 
 
 ;; convert the start position and store it. we need to do this BEFORE
@@ -636,7 +638,7 @@ Update mechanism depends on CONF."
         ;;(lentic-log
         ;;"Update config: %s" lentic-config)
         (lentic-clone conf start stop length-before
-                             start-converted stop-converted)
+                      start-converted stop-converted)
         (setq inhibit-read-only nil))))
 
 (defun lentic-update-point (conf)

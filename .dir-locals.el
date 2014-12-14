@@ -1,5 +1,4 @@
 ((emacs-lisp-mode
   .
-  ((eval .
-         (progn (require 'm-buffer)
-                (setq lentic-init 'lentic-orgel-org-init))))))
+  ((lentic-init 'lentic-orgel-org-init)
+   (eval . (require 'm-buffer)))))
