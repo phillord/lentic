@@ -1,8 +1,12 @@
-Linked-buffer allows two buffers to share the same or similar content but
-otherwise operate independently. This allows multi-modal editing.
+Lentic allows two buffers to share the same or similar content but
+otherwise operate independently. This allows multi-modal editing, both with
+identical text, or with related but different text. It's somewhat similar to
+Emacs indirect buffers but more powerful.
 
-For more details see linked-buffer.el
+For more details see lentic.el
 
+
+Previously, lentic was known as linked-buffer.
 
 ## ChangeLog
 
