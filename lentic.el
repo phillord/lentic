@@ -80,8 +80,8 @@
 ;; lentic buffers are configurable in a large number of ways. It is possible
 ;; to control the nature of the transformation, the default buffer name that a
 ;; lentic buffer takes, and the file location (or not) of the lentic buffer.
-;; For this release of lentic currently, each buffer can only be linked to a
-;; single buffer, although this restriction will be removed in later versions.
+;; For this release of lentic currently, each buffer can have a single lentic
+;; buffer, although this restriction will be removed in later versions.
 
 ;; Configuration of a buffer happens in one of two places. First,
 ;; `lentic-init' is run when a lentic buffer is first created. This
@@ -154,7 +154,7 @@ This should set up `lentic-config' appropriately.")
 (make-variable-buffer-local 'lentic-init)
 
 ;; In future versions, this may get turned into a list so that we can have
-;; multiple linked buffers, but it is not clear how the user interface
+;; multiple lentic buffers, but it is not clear how the user interface
 ;; functions such as `lentic-swap-window' would work now.
 (defvar lentic-config nil
   "Configuration for lentic.
@@ -173,7 +173,7 @@ of mode in the current buffer.")
 
 (defun lentic-config-name (buffer)
   "Given BUFFER, return a name for the configuration object."
-  (format "linked: %s" buffer))
+  (format "lentic: %s" buffer))
 ;; #+end_src
 
 ;; ** Base Configuration
@@ -236,12 +236,12 @@ or create it if it does not exist."
 ;; #+begin_src emacs-lisp
 
 (defclass lentic-default-configuration (lentic-configuration)
-  ((linked-file
+  ((lentic-file
     :initform nil
-    :initarg :linked-file)
-   (linked-mode
+    :initarg :lentic-file)
+   (lentic-mode
     :initform 'normal-mode
-    :initarg :linked-mode))
+    :initarg :lentic-mode))
   "Configuration which maintains two lentics with the same contents.")
 
 (defun lentic-insertion-string-transform (string)
@@ -256,18 +256,18 @@ Given a `lentic-configuration' object, create the lentic
 appropriate for that configurationuration. It is the callers
 responsibility to check that buffer has not already been
 created."
-  ;; make sure the world is ready for linked buffers
+  ;; make sure the world is ready for lentic buffers
   (lentic-ensure-hooks)
   ;; create lentic
   (let* ((this-buffer
           (lentic-this conf))
          (that-buffer
           (get-buffer-create
-           (format "*linked: %s*"
+           (format "*lentic: %s*"
                    (buffer-name
                     this-buffer))))
-         (sec-mode (oref conf :linked-mode))
-         (sec-file (oref conf :linked-file)))
+         (sec-mode (oref conf :lentic-mode))
+         (sec-file (oref conf :lentic-file)))
     ;; make sure this-buffer knows about that-buffer
     (oset conf :that-buffer that-buffer)
     ;; insert the contents
@@ -355,7 +355,7 @@ see `lentic-init' for details."
 ;; Hooks into Emacs change system, some basic window management tools and so on.
 
 ;; #+begin_src emacs-lisp
-(defmacro lentic-when-linked (&rest body)
+(defmacro lentic-when-lentic (&rest body)
   "Evaluate BODY when in a lentic."
   (declare (debug let))
   `(when (and
@@ -384,7 +384,7 @@ see `lentic-init' for details."
 (defmacro lentic-log (&rest rest)
   "Log REST."
   `(when lentic-log
-     (lentic-when-linked
+     (lentic-when-lentic
       (let ((msg
              (concat
               (format ,@rest)
@@ -437,7 +437,7 @@ repeated errors.")
 (defvar lentic-saving-p nil)
 
 (defun lentic-after-save-hook ()
-  (lentic-when-linked
+  (lentic-when-lentic
    ;; don't want to recurse!
    (when (not lentic-saving-p)
      (let ((lentic-saving-p t))
@@ -458,7 +458,7 @@ repeated errors.")
 (defun lentic-post-command-hook-1 ()
   "Update point according to config."
   (progn
-    (lentic-when-linked
+    (lentic-when-lentic
      (lentic-update-point lentic-config))))
 
 (defun lentic-hook-fail (err hook)
@@ -473,7 +473,7 @@ ERR is the error. HOOK is the hook type."
     (princ (error-message-string err)))
   (select-window (get-buffer-window "*lentic-fail*")))
 
-(defun lentic-move-linked-window ()
+(defun lentic-move-lentic-window ()
   "Move the lentic into the current window.
 If the lentic is currently being displayed in another
 window, then the current-buffer will be moved into that window.
@@ -491,11 +491,11 @@ See also `lentic-swap-buffer-windows'."
      before-window-start)
     (goto-char before-window-point)))
 
-(defun lentic-swap-linked-window ()
+(defun lentic-swap-lentic-window ()
   "Swap the window of the buffer and lentic.
 If both are current displayed, swap the windows they
 are displayed in, which keeping current buffer.
-See also `lentic-move-linked-window'."
+See also `lentic-move-lentic-window'."
   (interactive)
   (lentic-swap-buffer-windows
    (current-buffer)
@@ -534,7 +534,7 @@ A and B are the buffers."
   (lentic-create lentic-config))
 
 (defun lentic-create-in-selected-window ()
-  "Create a linked buffer and move it to the current window."
+  "Create a lentic buffer and move it to the current window."
   (interactive)
   (let ((before-window-start
          (window-start (get-buffer-window)))
@@ -550,7 +550,7 @@ A and B are the buffers."
     (goto-char before-window-point)))
 
 (defun lentic-split-window-below ()
-  "Create a linked buffer in a new window below."
+  "Create a lentic buffer in a new window below."
   (interactive)
   (lentic-ensure-init)
   (set-window-buffer
@@ -558,7 +558,7 @@ A and B are the buffers."
    (lentic-create lentic-config)))
 
 (defun lentic-split-window-right ()
-  "Create a linked buffer in a new window right."
+  "Create a lentic buffer in a new window right."
   (interactive)
   (lentic-ensure-init)
   (set-window-buffer
@@ -583,7 +583,7 @@ Errors are handled. REST is currently just ignored."
 (defun lentic-after-change-function-1 (start stop length-before)
   "run change update according to `lentic-config'.
 rest is currently just ignored."
-  (lentic-when-linked
+  (lentic-when-lentic
    (lentic-log
     "after-change (start, stop, length-before): %s,%s,%s"
     start stop length-before)
@@ -603,7 +603,7 @@ rest is currently just ignored."
            (not lentic-emergency-debug))
     (condition-case err
         (progn
-          (lentic-when-linked
+          (lentic-when-lentic
            (oset lentic-config :last-change-start start)
            (oset lentic-config
                  :last-change-start-converted
@@ -732,7 +732,7 @@ same top-left location. Update details depend on CONF."
 ;; #+begin_src emacs-lisp
 (defun lentic-toggle-auto-sync-point ()
   (interactive)
-  (lentic-when-linked
+  (lentic-when-lentic
    (oset lentic-config :sync-point
          (not (oref lentic-config :sync-point)))))
 
@@ -740,10 +740,10 @@ same top-left location. Update details depend on CONF."
   "Keymap for lentic-minor-mode")
 
 (define-key lentic-mode-map
-  (kbd "C-c ,s") 'lentic-swap-linked-window)
+  (kbd "C-c ,s") 'lentic-swap-lentic-window)
 
 (define-key lentic-mode-map
-  (kbd "C-c ,h") 'lentic-move-linked-window)
+  (kbd "C-c ,h") 'lentic-move-lentic-window)
 
 (define-minor-mode lentic-mode
   :lighter "lb"
@@ -755,7 +755,7 @@ same top-left location. Update details depend on CONF."
  '(["Create Here" lentic-create-in-selected-window]
    ["Split Below" lentic-split-window-below]
    ["Split Right" lentic-split-window-right]
-   ["Move Here" lentic-move-linked-window :active lentic-config]
+   ["Move Here" lentic-move-lentic-window :active lentic-config]
    ["Swap" lentic-swap-buffer-windows :active lentic-config]))
 
 (defun lentic-insert-file-local (init-function)

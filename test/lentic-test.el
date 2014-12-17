@@ -84,7 +84,7 @@
    (equal 'normal-mode
           (oref
            (lentic-default-configuration "bob")
-           :linked-mode))))
+           :lentic-mode))))
 
 (ert-deftest lentic-simple ()
   (should
@@ -326,7 +326,6 @@ This mostly checks my test machinary."
 
 ;; Editing the header one lines causes problems
 (ert-deftest orgel-org-incremental-on-header-one ()
-  :expected-result :failed
   (should
    (lentic-test-clone-and-change-equal
     'lentic-orgel-org-init
@@ -343,7 +342,7 @@ This mostly checks my test machinary."
       ;; delete the "*" character
       (delete-char -1)
       ;; insert the * character and a space
-      (insert "* ")
+      (insert "*")
       ;; remove the "a")
       (search-forward "a")
       (delete-char -1)

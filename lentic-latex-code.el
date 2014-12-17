@@ -40,7 +40,7 @@
   (lentic-commented-block-configuration
    "lb-commented clojure latex"
    :this-buffer (current-buffer)
-   :linked-file
+   :lentic-file
    (concat
     (file-name-sans-extension
      (buffer-file-name)) ".tex")
@@ -60,7 +60,7 @@
   (lentic-uncommented-block-configuration
    "lb-commented latex clojure"
    :this-buffer (current-buffer)
-   :linked-file
+   :lentic-file
    (concat
     (file-name-sans-extension
      (buffer-file-name)) ".clj")

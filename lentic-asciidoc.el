@@ -24,7 +24,7 @@
 
 ;;; Commentary:
 ;;
-;; Linked buffers with asciidoc [source] blocks.
+;; Lentic buffers with asciidoc [source] blocks.
 
 ;;; Code:
 (require 'lentic-block)
@@ -34,7 +34,7 @@
   (lentic-commented-asciidoc-configuration
    "lb-commented-clojure asciidoc"
    :this-buffer (current-buffer)
-   :linked-file
+   :lentic-file
    (concat
     (file-name-sans-extension
            (buffer-file-name)) ".adoc")
@@ -51,7 +51,7 @@
   (lentic-uncommented-asciidoc-configuration
    "lb-uncommented-clojure-asciidoc"
    :this-buffer (current-buffer)
-   :linked-file
+   :lentic-file
    (concat
     (file-name-sans-extension
      (buffer-file-name)) ".clj")
@@ -69,14 +69,14 @@
   ((srctags :initarg :srctags
             :documentation "Language tags in source block"
             :initform '("clojure" "lisp")))
-  "Linked buffer config for asciidoc and other code.")
+  "Lentic buffer config for asciidoc and other code.")
 
 (defclass lentic-uncommented-asciidoc-configuration
   (lentic-uncommented-block-configuration)
   ((srctags :initarg :srctags
             :documentation "Language tags in source block"
             :initform '("clojure" "lisp")))
-  "Linked buffer config for asciidoc and other code")
+  "Lentic buffer config for asciidoc and other code")
 
 
 (defun lentic-splitter (l)

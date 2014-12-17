@@ -74,7 +74,7 @@
   (lentic-uncommented-block-configuration
    "lb-org-to-el"
    :this-buffer (current-buffer)
-   :linked-file
+   :lentic-file
    (concat
     (file-name-sans-extension
      (buffer-file-name))
@@ -94,7 +94,7 @@
   (lentic-commented-block-configuration
    "lb-el-to-org"
    :this-buffer (current-buffer)
-   :linked-file
+   :lentic-file
    (concat
     (file-name-sans-extension
      (buffer-file-name))
@@ -312,7 +312,7 @@
   (lentic-org-to-orgel-configuration
    "lb-orgel-to-el"
    :this-buffer (current-buffer)
-   :linked-file
+   :lentic-file
    (concat
     (file-name-sans-extension
      (buffer-file-name))
@@ -375,7 +375,7 @@
    ;; we don't really need a file and could cope without, but org mode assumes
    ;; that the buffer is file name bound when it exports. As it happens, this
    ;; also means that file saving is possible which in turn saves the el file
-   :linked-file
+   :lentic-file
    (concat
     (file-name-sans-extension
      (buffer-file-name))
@@ -403,7 +403,7 @@
   (lentic-uncommented-block-configuration
    "lb-org-to-clojure"
    :this-buffer (current-buffer)
-   :linked-file
+   :lentic-file
    (concat
     (file-name-sans-extension
      (buffer-file-name))
@@ -426,7 +426,7 @@
   (lentic-commented-block-configuration
    "lb-clojure-to-org"
    :this-buffer (current-buffer)
-   :linked-file
+   :lentic-file
    (concat
     (file-name-sans-extension
      (buffer-file-name))
