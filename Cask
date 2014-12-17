@@ -5,6 +5,8 @@
 
 (package-file "lentic.el")
 
+(files "lentic*.el")
+
 (development
  (depends-on "f")
  (depends-on "ert-runner"))
