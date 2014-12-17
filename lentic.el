@@ -194,8 +194,14 @@ of mode in the current buffer.")
    (sync-point
     :initarg :sync-point
     :initform t)
+   (last-change-start
+    :initarg :last-change-start
+    :initform nil)
    (last-change-start-converted
     :initarg :last-change-start-converted
+    :initform nil)
+   (last-change-stop
+    :initarg :last-change-stop
     :initform nil)
    (last-change-stop-converted
     :initarg :last-change-stop-converted
@@ -573,53 +579,93 @@ Errors are handled. REST is currently just ignored."
        (lentic-hook-fail err "after change")))))
 
 (defun lentic-after-change-function-1 (start stop length-before)
-  "Run change update according to `lentic-config'.
-REST is currently just ignored."
+  "run change update according to `lentic-config'.
+rest is currently just ignored."
   (lentic-when-linked
    (lentic-log
-    "After-change (start, stop, length-before): %s,%s,%s"
+    "after-change (start, stop, length-before): %s,%s,%s"
     start stop length-before)
    (lentic-update-contents lentic-config
                            start stop length-before)))
 
 
-;; convert the start position and store it. we need to do this BEFORE
-;; the change so that we can use the value during clone. After the
+;; convert the start position and store it. we need to do this before
+;; the change so that we can use the value during clone. after the
 ;; change, this-buffer and that-buffer will have different contents
 ;; (until the change has been percolated). and the convert function
 ;; may not work properly under these circumstances.
 (defun lentic-before-change-function (start stop)
-  "Run before change update."
+  "run before change update."
   (unless (and
            lentic-emergency
            (not lentic-emergency-debug))
     (condition-case err
         (progn
           (lentic-when-linked
+           (oset lentic-config :last-change-start start)
            (oset lentic-config
                  :last-change-start-converted
                  (lentic-convert
                   lentic-config
                   start))
+           (oset lentic-config :last-change-stop stop)
            (oset lentic-config
                  :last-change-stop-converted
                  (lentic-convert
                   lentic-config
                   stop)))
           (lentic-log
-           "Before change:(%s,%s,%s,%s)"
+           "before change:(start,stop,start-c,stop-c,command): %s,%s,%s,%s,%s"
            start stop
            (oref lentic-config
                  :last-change-start-converted)
            (oref lentic-config
-                 :last-change-stop-converted)))
+                 :last-change-stop-converted)
+           this-command))
       (error
        (lentic-hook-fail err "before change")))))
 
 (defun lentic-update-contents (conf &optional start stop length-before)
-  "Update the contents of that-buffer with the contents of this-buffer.
-Update mechanism depends on CONF."
-  (unwind-protect
+  "update the contents of that-buffer with the contents of this-buffer.
+update mechanism depends on conf."
+  (let ((inhibit-read-only t))
+    ;; unfortunately b-c-f and a-c-f are not always consistent with each
+    ;; other. b-c-f signals the maximal extent that may be changed, while
+    ;; a-c-f signals the exact extend. We did our conversion on b-c-f when the
+    ;; buffers were in sync, so we must use these values. Which means that we
+    ;; need to calculate current start and stop values which are consistent
+    ;; with the maximal extent, not the actual extent. This is slightly less
+    ;; efficient, but correct.
+
+    ;; The start location is always likely to be correct iff the emacs core
+    ;; works from the start of the buffer to the end. So we only need to worry
+    ;; about the stop.
+
+    ;; for an insertion, the start and stop pre-change are equal, so the
+    ;; stop cannot be an over-estimate. Hence we need to do nothing.
+    ;; pre-change == 0
+
+    ;; For a deletion, the stop location is likely to be correct, again
+    ;; iff the emacs core works from start to end. post-change start == stop.
+
+    ;; So, only changes should be problematic So, we need to fiddle things iff
+    ;; pre-change > 0 and post-change start != stop. Changes do not involve
+    ;; size changes, so we can just make post-change stop == pre-change stop
+    (let ((stop
+           (if (and start stop length-before
+                    (and (< 0 length-before)
+                         (not (= start stop))))
+               (progn
+                 (lentic-log "Expanding stop: %s"
+                             (max stop
+                                  (oref conf :last-change-stop)))
+                 ;; the max is necessary for those cases (replace-match
+                 ;; mainly) where there has been both increase in size and a
+                 ;; replacement. So, replacing "a" with "bb" will increase the
+                 ;; stop size and give +ve length-before
+                 (max stop
+                      (oref conf :last-change-stop)))
+             stop)))
       (m-buffer-with-markers
           ((start-converted
             (when (oref conf :last-change-start-converted)
@@ -628,18 +674,18 @@ Update mechanism depends on CONF."
                           (oref conf :that-buffer))))
            (stop-converted
             (when (oref conf :last-change-stop-converted)
-                (set-marker (make-marker)
-                            (oref conf :last-change-stop-converted)
-                            (oref conf :that-buffer)))))
+              (set-marker (make-marker)
+                          (oref conf :last-change-stop-converted)
+                          (oref conf :that-buffer)))))
         ;; used these, so dump them
+        (oset conf :last-change-start nil)
         (oset conf :last-change-start-converted nil)
+        (oset conf :last-change-stop nil)
         (oset conf :last-change-stop-converted nil)
-        (setq inhibit-read-only t)
         ;;(lentic-log
         ;;"Update config: %s" lentic-config)
         (lentic-clone conf start stop length-before
-                      start-converted stop-converted)
-        (setq inhibit-read-only nil))))
+                      start-converted stop-converted)))))
 
 (defun lentic-update-point (conf)
   "Update the location of point in that-buffer to reflect this-buffer.
