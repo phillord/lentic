@@ -292,51 +292,53 @@ created."
 
 (defmethod lentic-convert ((conf lentic-default-configuration)
                                   location)
-  "For this configuration, convert LOCATION to an equivalent location in
+  "for this configuration, convert location to an equivalent location in
 the lentic."
   location)
 
 (defmethod lentic-clone ((conf lentic-configuration)
                                 &optional start stop _length-before
                                 start-converted stop-converted)
-  "Updates that-buffer to reflect the contents in this-buffer.
+  "updates that-buffer to reflect the contents in this-buffer.
 
-Currently, this is just a clone all method but may use regions in future."
+currently, this is just a clone all method but may use regions in future."
   (let ((this-b (oref conf :this-buffer))
         (that-b (oref conf :that-buffer)))
     (with-current-buffer this-b
       ;;(lentic-log "this-b (point,start,stop)(%s,%s,%s)" (point) start stop)
-      (let* ((start (or start (point-min)))
-             (stop (or stop (point-max)))
-             ;; get the start location that we converted before the change.
-             ;; lentic-convert is not reliable now, because the two
-             ;; buffers do not share state until we have percolated it
-             (converted-start
-              (or start-converted
-                  (point-min)))
-             (converted-stop
-              (or stop-converted
-                  (point-max))))
-        (with-current-buffer that-b
-          (delete-region (max (point-min) converted-start)
-                         (min (point-max) converted-stop))
-          (save-excursion
-            (goto-char converted-start)
-            ;; so this insertion is happening at the wrong place in block
-            ;; comment -- in fact, it's happening one too early
-            (insert
-             (save-restriction
-               (with-current-buffer this-b
-                 (widen)
-                 ;; want to see where it goes
-                 ;; hence the property
-                 (lentic-insertion-string-transform
-                  (buffer-substring-no-properties
-                   start stop)))))))))))
+      (save-restriction
+        (widen)
+        (let* ((start (or start (point-min)))
+               (stop (or stop (point-max))))
+          (with-current-buffer that-b
+            (save-restriction
+              ;; get the start location that we converted before the change.
+              ;; lentic-convert is not reliable now, because the two
+              ;; buffers do not share state until we have percolated it
+              (let ((converted-start
+                     (or start-converted
+                         (point-min)))
+                    (converted-stop
+                     (or stop-converted
+                         (point-max))))
+                (widen)
+                (delete-region (max (point-min) converted-start)
+                               (min (point-max) converted-stop))
+                (save-excursion
+                  (goto-char converted-start)
+                  ;; so this insertion is happening at the wrong place in block
+                  ;; comment -- in fact, it's happening one too early
+                  (insert
+                   (with-current-buffer this-b
+                     ;; want to see where it goes
+                     ;; hence the property
+                     (lentic-insertion-string-transform
+                      (buffer-substring-no-properties
+                       start stop)))))))))))))
 
 (defun lentic-default-init ()
-  "Default init function.
-See `lentic-init' for details."
+  "default init function.
+see `lentic-init' for details."
   (setq lentic-config
         (lentic-default-configuration
          (lentic-config-name (current-buffer))
