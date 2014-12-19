@@ -292,16 +292,16 @@ created."
 
 (defmethod lentic-convert ((conf lentic-default-configuration)
                                   location)
-  "for this configuration, convert location to an equivalent location in
+  "For this configuration, convert location to an equivalent location in
 the lentic."
   location)
 
 (defmethod lentic-clone ((conf lentic-configuration)
                                 &optional start stop _length-before
                                 start-converted stop-converted)
-  "updates that-buffer to reflect the contents in this-buffer.
+  "Updates that-buffer to reflect the contents in this-buffer.
 
-currently, this is just a clone all method but may use regions in future."
+Currently, this is just a clone all method but may use regions in future."
   (let ((this-b (oref conf :this-buffer))
         (that-b (oref conf :that-buffer)))
     (with-current-buffer this-b
@@ -337,7 +337,7 @@ currently, this is just a clone all method but may use regions in future."
                        start stop)))))))))))))
 
 (defun lentic-default-init ()
-  "default init function.
+  "Default init function.
 see `lentic-init' for details."
   (setq lentic-config
         (lentic-default-configuration
@@ -677,8 +677,10 @@ update mechanism depends on conf."
         (oset conf :last-change-stop-converted nil)
         ;;(lentic-log
         ;;"Update config: %s" lentic-config)
-        (lentic-clone conf start stop length-before
-                      start-converted stop-converted)))))
+        (if skewed
+            (lentic-clone conf)
+          (lentic-clone conf start stop length-before
+                        start-converted stop-converted))))))
 
 (defun lentic-update-point (conf)
   "Update the location of point in that-buffer to reflect this-buffer.
@@ -714,8 +716,6 @@ same top-left location. Update details depend on CONF."
              (goto-char from-point)
              (set-window-start window from-window-start))))
        (get-buffer-window-list (lentic-that conf))))))
-
-
 ;; #+end_src
 
 ;; ** Minor Mode
@@ -736,6 +736,7 @@ same top-left location. Update details depend on CONF."
 (define-key lentic-mode-map
   (kbd "C-c ,h") 'lentic-move-lentic-window)
 
+;;;###autoload
 (define-minor-mode lentic-mode
   :lighter "lb"
   :keymap lentic-mode-map)
@@ -782,19 +783,18 @@ same top-left location. Update details depend on CONF."
 (define-key lentic-start-mode-map
   (kbd "C-c ,c") 'lentic-create-in-selected-window)
 
-
+;;;###autoload
 (define-minor-mode lentic-start-mode
   :lighter ""
   :keymap lentic-start-mode-map)
 
+;;;###autoload
 (define-globalized-minor-mode global-lentic-start-mode
   lentic-start-mode
   lentic-start-on)
 
 (defun lentic-start-on ()
   (lentic-start-mode 1))
-
-
 ;; #+end_src
 
 ;; ** Test Functions
