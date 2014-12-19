@@ -634,48 +634,39 @@ update mechanism depends on conf."
     ;; unfortunately b-c-f and a-c-f are not always consistent with each
     ;; other. b-c-f signals the maximal extent that may be changed, while
     ;; a-c-f signals the exact extend. We did our conversion on b-c-f when the
-    ;; buffers were in sync, so we must use these values. Which means that we
-    ;; need to calculate current start and stop values which are consistent
-    ;; with the maximal extent, not the actual extent. This is slightly less
-    ;; efficient, but correct.
+    ;; buffers were in sync, so we these are the only values we have.
 
-    ;; The start location is always likely to be correct iff the emacs core
-    ;; works from the start of the buffer to the end. So we only need to worry
-    ;; about the stop.
-
-    ;; for an insertion, the start and stop pre-change are equal, so the
-    ;; stop cannot be an over-estimate. Hence we need to do nothing.
-    ;; pre-change == 0
-
-    ;; For a deletion, the stop location is likely to be correct, again
-    ;; iff the emacs core works from start to end. post-change start == stop.
-
-    ;; So, only changes should be problematic So, we need to fiddle things iff
-    ;; pre-change > 0 and post-change start != stop. Changes do not involve
-    ;; size changes, so we can just make post-change stop == pre-change stop
-    (let ((stop
-           (if (and start stop length-before
-                    (and (< 0 length-before)
-                         (not (= start stop))))
-               (progn
-                 (lentic-log "Expanding stop: %s"
-                             (max stop
-                                  (oref conf :last-change-stop)))
-                 ;; the max is necessary for those cases (replace-match
-                 ;; mainly) where there has been both increase in size and a
-                 ;; replacement. So, replacing "a" with "bb" will increase the
-                 ;; stop size and give +ve length-before
-                 (max stop
-                      (oref conf :last-change-stop)))
-             stop)))
+    ;; Overestimate give inconsistency between the length before on a-c-f
+    ;; (which is the actual) and the different between b-c-f start and stop.
+    ;; Unfortunately, this can also occur in some correct circumstances --
+    ;; replace-match for example can both insert and change simultaneously.
+    ;; Currently, the best solution I have for this is to fall-back to a full
+    ;; clone.
+    (let ((skewed
+           (when (and
+                  ;; we can't be skewed where we have no region!
+                  start stop length-before
+                  ;; skews only occur in insertions which result in a positive
+                  ;; length-before. This also picks up no-insertion changes
+                  (and (< 0 length-before)
+                       ;; = start stop means we have a deletion because
+                       ;; there is no range after. Deletions seem to be
+                       ;; safe.
+                       (not (= start stop))))
+             (lentic-log "Skew detected: %s" this-command)
+             t)))
       (m-buffer-with-markers
           ((start-converted
-            (when (oref conf :last-change-start-converted)
+            (when
+                (and (not skewed)
+                     (oref conf :last-change-start-converted))
               (set-marker (make-marker)
                           (oref conf :last-change-start-converted)
                           (oref conf :that-buffer))))
            (stop-converted
-            (when (oref conf :last-change-stop-converted)
+            (when
+                (and (not skewed)
+                     (oref conf :last-change-stop-converted))
               (set-marker (make-marker)
                           (oref conf :last-change-stop-converted)
                           (oref conf :that-buffer)))))
