@@ -84,7 +84,7 @@
    (equal 'normal-mode
           (oref
            (lentic-default-configuration "bob")
-           :linked-mode))))
+           :lentic-mode))))
 
 (ert-deftest lentic-simple ()
   (should
@@ -326,7 +326,6 @@ This mostly checks my test machinary."
 
 ;; Editing the header one lines causes problems
 (ert-deftest orgel-org-incremental-on-header-one ()
-  :expected-result :failed
   (should
    (lentic-test-clone-and-change-equal
     'lentic-orgel-org-init
@@ -343,10 +342,37 @@ This mostly checks my test machinary."
       ;; delete the "*" character
       (delete-char -1)
       ;; insert the * character and a space
-      (insert "* ")
+      (insert "*")
       ;; remove the "a")
       (search-forward "a")
       (delete-char -1)
       ;; this should be a round trip but isn't!
       )
     t)))
+
+
+;; tests for lots of types of change and whether they break the incremental
+;; updates.
+(defvar abc-txt "aaa\nbbb\nccc\n")
+
+(defun simple-change-that (f)
+  "Do a single change and check that."
+  (lentic-test-clone-and-change-with-config
+     (lentic-test-file "abc.txt")
+     'lentic-default-init  f
+     nil t))
+
+(ert-deftest null-operation ()
+  (should
+   (equal
+    abc-txt
+    (simple-change-that nil))))
+
+(ert-deftest single-insertion ()
+  (should
+   (equal
+    (concat "x" abc-txt)
+    (simple-change-that
+     (lambda ()
+       (goto-char (point-min))
+       (insert "x"))))))

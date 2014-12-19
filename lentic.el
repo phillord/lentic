@@ -80,8 +80,8 @@
 ;; lentic buffers are configurable in a large number of ways. It is possible
 ;; to control the nature of the transformation, the default buffer name that a
 ;; lentic buffer takes, and the file location (or not) of the lentic buffer.
-;; For this release of lentic currently, each buffer can only be linked to a
-;; single buffer, although this restriction will be removed in later versions.
+;; For this release of lentic currently, each buffer can have a single lentic
+;; buffer, although this restriction will be removed in later versions.
 
 ;; Configuration of a buffer happens in one of two places. First,
 ;; `lentic-init' is run when a lentic buffer is first created. This
@@ -154,7 +154,7 @@ This should set up `lentic-config' appropriately.")
 (make-variable-buffer-local 'lentic-init)
 
 ;; In future versions, this may get turned into a list so that we can have
-;; multiple linked buffers, but it is not clear how the user interface
+;; multiple lentic buffers, but it is not clear how the user interface
 ;; functions such as `lentic-swap-window' would work now.
 (defvar lentic-config nil
   "Configuration for lentic.
@@ -173,7 +173,7 @@ of mode in the current buffer.")
 
 (defun lentic-config-name (buffer)
   "Given BUFFER, return a name for the configuration object."
-  (format "linked: %s" buffer))
+  (format "lentic: %s" buffer))
 ;; #+end_src
 
 ;; ** Base Configuration
@@ -194,8 +194,14 @@ of mode in the current buffer.")
    (sync-point
     :initarg :sync-point
     :initform t)
+   (last-change-start
+    :initarg :last-change-start
+    :initform nil)
    (last-change-start-converted
     :initarg :last-change-start-converted
+    :initform nil)
+   (last-change-stop
+    :initarg :last-change-stop
     :initform nil)
    (last-change-stop-converted
     :initarg :last-change-stop-converted
@@ -230,12 +236,12 @@ or create it if it does not exist."
 ;; #+begin_src emacs-lisp
 
 (defclass lentic-default-configuration (lentic-configuration)
-  ((linked-file
+  ((lentic-file
     :initform nil
-    :initarg :linked-file)
-   (linked-mode
+    :initarg :lentic-file)
+   (lentic-mode
     :initform 'normal-mode
-    :initarg :linked-mode))
+    :initarg :lentic-mode))
   "Configuration which maintains two lentics with the same contents.")
 
 (defun lentic-insertion-string-transform (string)
@@ -250,18 +256,18 @@ Given a `lentic-configuration' object, create the lentic
 appropriate for that configurationuration. It is the callers
 responsibility to check that buffer has not already been
 created."
-  ;; make sure the world is ready for linked buffers
+  ;; make sure the world is ready for lentic buffers
   (lentic-ensure-hooks)
   ;; create lentic
   (let* ((this-buffer
           (lentic-this conf))
          (that-buffer
           (get-buffer-create
-           (format "*linked: %s*"
+           (format "*lentic: %s*"
                    (buffer-name
                     this-buffer))))
-         (sec-mode (oref conf :linked-mode))
-         (sec-file (oref conf :linked-file)))
+         (sec-mode (oref conf :lentic-mode))
+         (sec-file (oref conf :lentic-file)))
     ;; make sure this-buffer knows about that-buffer
     (oset conf :that-buffer that-buffer)
     ;; insert the contents
@@ -286,7 +292,7 @@ created."
 
 (defmethod lentic-convert ((conf lentic-default-configuration)
                                   location)
-  "For this configuration, convert LOCATION to an equivalent location in
+  "For this configuration, convert location to an equivalent location in
 the lentic."
   location)
 
@@ -300,37 +306,39 @@ Currently, this is just a clone all method but may use regions in future."
         (that-b (oref conf :that-buffer)))
     (with-current-buffer this-b
       ;;(lentic-log "this-b (point,start,stop)(%s,%s,%s)" (point) start stop)
-      (let* ((start (or start (point-min)))
-             (stop (or stop (point-max)))
-             ;; get the start location that we converted before the change.
-             ;; lentic-convert is not reliable now, because the two
-             ;; buffers do not share state until we have percolated it
-             (converted-start
-              (or start-converted
-                  (point-min)))
-             (converted-stop
-              (or stop-converted
-                  (point-max))))
-        (with-current-buffer that-b
-          (delete-region (max (point-min) converted-start)
-                         (min (point-max) converted-stop))
-          (save-excursion
-            (goto-char converted-start)
-            ;; so this insertion is happening at the wrong place in block
-            ;; comment -- in fact, it's happening one too early
-            (insert
-             (save-restriction
-               (with-current-buffer this-b
-                 (widen)
-                 ;; want to see where it goes
-                 ;; hence the property
-                 (lentic-insertion-string-transform
-                  (buffer-substring-no-properties
-                   start stop)))))))))))
+      (save-restriction
+        (widen)
+        (let* ((start (or start (point-min)))
+               (stop (or stop (point-max))))
+          (with-current-buffer that-b
+            (save-restriction
+              ;; get the start location that we converted before the change.
+              ;; lentic-convert is not reliable now, because the two
+              ;; buffers do not share state until we have percolated it
+              (let ((converted-start
+                     (or start-converted
+                         (point-min)))
+                    (converted-stop
+                     (or stop-converted
+                         (point-max))))
+                (widen)
+                (delete-region (max (point-min) converted-start)
+                               (min (point-max) converted-stop))
+                (save-excursion
+                  (goto-char converted-start)
+                  ;; so this insertion is happening at the wrong place in block
+                  ;; comment -- in fact, it's happening one too early
+                  (insert
+                   (with-current-buffer this-b
+                     ;; want to see where it goes
+                     ;; hence the property
+                     (lentic-insertion-string-transform
+                      (buffer-substring-no-properties
+                       start stop)))))))))))))
 
 (defun lentic-default-init ()
   "Default init function.
-See `lentic-init' for details."
+see `lentic-init' for details."
   (setq lentic-config
         (lentic-default-configuration
          (lentic-config-name (current-buffer))
@@ -347,7 +355,7 @@ See `lentic-init' for details."
 ;; Hooks into Emacs change system, some basic window management tools and so on.
 
 ;; #+begin_src emacs-lisp
-(defmacro lentic-when-linked (&rest body)
+(defmacro lentic-when-lentic (&rest body)
   "Evaluate BODY when in a lentic."
   (declare (debug let))
   `(when (and
@@ -376,7 +384,7 @@ See `lentic-init' for details."
 (defmacro lentic-log (&rest rest)
   "Log REST."
   `(when lentic-log
-     (lentic-when-linked
+     (lentic-when-lentic
       (let ((msg
              (concat
               (format ,@rest)
@@ -429,7 +437,7 @@ repeated errors.")
 (defvar lentic-saving-p nil)
 
 (defun lentic-after-save-hook ()
-  (lentic-when-linked
+  (lentic-when-lentic
    ;; don't want to recurse!
    (when (not lentic-saving-p)
      (let ((lentic-saving-p t))
@@ -450,7 +458,7 @@ repeated errors.")
 (defun lentic-post-command-hook-1 ()
   "Update point according to config."
   (progn
-    (lentic-when-linked
+    (lentic-when-lentic
      (lentic-update-point lentic-config))))
 
 (defun lentic-hook-fail (err hook)
@@ -465,7 +473,7 @@ ERR is the error. HOOK is the hook type."
     (princ (error-message-string err)))
   (select-window (get-buffer-window "*lentic-fail*")))
 
-(defun lentic-move-linked-window ()
+(defun lentic-move-lentic-window ()
   "Move the lentic into the current window.
 If the lentic is currently being displayed in another
 window, then the current-buffer will be moved into that window.
@@ -483,11 +491,11 @@ See also `lentic-swap-buffer-windows'."
      before-window-start)
     (goto-char before-window-point)))
 
-(defun lentic-swap-linked-window ()
+(defun lentic-swap-lentic-window ()
   "Swap the window of the buffer and lentic.
 If both are current displayed, swap the windows they
 are displayed in, which keeping current buffer.
-See also `lentic-move-linked-window'."
+See also `lentic-move-lentic-window'."
   (interactive)
   (lentic-swap-buffer-windows
    (current-buffer)
@@ -526,7 +534,7 @@ A and B are the buffers."
   (lentic-create lentic-config))
 
 (defun lentic-create-in-selected-window ()
-  "Create a linked buffer and move it to the current window."
+  "Create a lentic buffer and move it to the current window."
   (interactive)
   (let ((before-window-start
          (window-start (get-buffer-window)))
@@ -542,7 +550,7 @@ A and B are the buffers."
     (goto-char before-window-point)))
 
 (defun lentic-split-window-below ()
-  "Create a linked buffer in a new window below."
+  "Create a lentic buffer in a new window below."
   (interactive)
   (lentic-ensure-init)
   (set-window-buffer
@@ -550,7 +558,7 @@ A and B are the buffers."
    (lentic-create lentic-config)))
 
 (defun lentic-split-window-right ()
-  "Create a linked buffer in a new window right."
+  "Create a lentic buffer in a new window right."
   (interactive)
   (lentic-ensure-init)
   (set-window-buffer
@@ -573,73 +581,106 @@ Errors are handled. REST is currently just ignored."
        (lentic-hook-fail err "after change")))))
 
 (defun lentic-after-change-function-1 (start stop length-before)
-  "Run change update according to `lentic-config'.
-REST is currently just ignored."
-  (lentic-when-linked
+  "run change update according to `lentic-config'.
+rest is currently just ignored."
+  (lentic-when-lentic
    (lentic-log
-    "After-change (start, stop, length-before): %s,%s,%s"
+    "after-change (start, stop, length-before): %s,%s,%s"
     start stop length-before)
    (lentic-update-contents lentic-config
                            start stop length-before)))
 
 
-;; convert the start position and store it. we need to do this BEFORE
-;; the change so that we can use the value during clone. After the
+;; convert the start position and store it. we need to do this before
+;; the change so that we can use the value during clone. after the
 ;; change, this-buffer and that-buffer will have different contents
 ;; (until the change has been percolated). and the convert function
 ;; may not work properly under these circumstances.
 (defun lentic-before-change-function (start stop)
-  "Run before change update."
+  "run before change update."
   (unless (and
            lentic-emergency
            (not lentic-emergency-debug))
     (condition-case err
         (progn
-          (lentic-when-linked
+          (lentic-when-lentic
+           (oset lentic-config :last-change-start start)
            (oset lentic-config
                  :last-change-start-converted
                  (lentic-convert
                   lentic-config
                   start))
+           (oset lentic-config :last-change-stop stop)
            (oset lentic-config
                  :last-change-stop-converted
                  (lentic-convert
                   lentic-config
                   stop)))
           (lentic-log
-           "Before change:(%s,%s,%s,%s)"
+           "before change:(start,stop,start-c,stop-c,command): %s,%s,%s,%s,%s"
            start stop
            (oref lentic-config
                  :last-change-start-converted)
            (oref lentic-config
-                 :last-change-stop-converted)))
+                 :last-change-stop-converted)
+           this-command))
       (error
        (lentic-hook-fail err "before change")))))
 
 (defun lentic-update-contents (conf &optional start stop length-before)
-  "Update the contents of that-buffer with the contents of this-buffer.
-Update mechanism depends on CONF."
-  (unwind-protect
+  "update the contents of that-buffer with the contents of this-buffer.
+update mechanism depends on conf."
+  (let ((inhibit-read-only t))
+    ;; unfortunately b-c-f and a-c-f are not always consistent with each
+    ;; other. b-c-f signals the maximal extent that may be changed, while
+    ;; a-c-f signals the exact extend. We did our conversion on b-c-f when the
+    ;; buffers were in sync, so we these are the only values we have.
+
+    ;; Overestimate give inconsistency between the length before on a-c-f
+    ;; (which is the actual) and the different between b-c-f start and stop.
+    ;; Unfortunately, this can also occur in some correct circumstances --
+    ;; replace-match for example can both insert and change simultaneously.
+    ;; Currently, the best solution I have for this is to fall-back to a full
+    ;; clone.
+    (let ((skewed
+           (when (and
+                  ;; we can't be skewed where we have no region!
+                  start stop length-before
+                  ;; skews only occur in insertions which result in a positive
+                  ;; length-before. This also picks up no-insertion changes
+                  (and (< 0 length-before)
+                       ;; = start stop means we have a deletion because
+                       ;; there is no range after. Deletions seem to be
+                       ;; safe.
+                       (not (= start stop))))
+             (lentic-log "Skew detected: %s" this-command)
+             t)))
       (m-buffer-with-markers
           ((start-converted
-            (when (oref conf :last-change-start-converted)
+            (when
+                (and (not skewed)
+                     (oref conf :last-change-start-converted))
               (set-marker (make-marker)
                           (oref conf :last-change-start-converted)
                           (oref conf :that-buffer))))
            (stop-converted
-            (when (oref conf :last-change-stop-converted)
-                (set-marker (make-marker)
-                            (oref conf :last-change-stop-converted)
-                            (oref conf :that-buffer)))))
+            (when
+                (and (not skewed)
+                     (oref conf :last-change-stop-converted))
+              (set-marker (make-marker)
+                          (oref conf :last-change-stop-converted)
+                          (oref conf :that-buffer)))))
         ;; used these, so dump them
+        (oset conf :last-change-start nil)
         (oset conf :last-change-start-converted nil)
+        (oset conf :last-change-stop nil)
         (oset conf :last-change-stop-converted nil)
-        (setq inhibit-read-only t)
         ;;(lentic-log
         ;;"Update config: %s" lentic-config)
-        (lentic-clone conf start stop length-before
-                      start-converted stop-converted)
-        (setq inhibit-read-only nil))))
+        (if skewed
+            (lentic-clone conf)
+          (lentic-clone conf start stop length-before
+                        start-converted stop-converted))))))
 
 (defun lentic-update-point (conf)
   "Update the location of point in that-buffer to reflect this-buffer.
@@ -675,8 +716,6 @@ same top-left location. Update details depend on CONF."
              (goto-char from-point)
              (set-window-start window from-window-start))))
        (get-buffer-window-list (lentic-that conf))))))
-
-
 ;; #+end_src
 
 ;; ** Minor Mode
@@ -684,7 +723,7 @@ same top-left location. Update details depend on CONF."
 ;; #+begin_src emacs-lisp
 (defun lentic-toggle-auto-sync-point ()
   (interactive)
-  (lentic-when-linked
+  (lentic-when-lentic
    (oset lentic-config :sync-point
          (not (oref lentic-config :sync-point)))))
 
@@ -692,11 +731,12 @@ same top-left location. Update details depend on CONF."
   "Keymap for lentic-minor-mode")
 
 (define-key lentic-mode-map
-  (kbd "C-c ,s") 'lentic-swap-linked-window)
+  (kbd "C-c ,s") 'lentic-swap-lentic-window)
 
 (define-key lentic-mode-map
-  (kbd "C-c ,h") 'lentic-move-linked-window)
+  (kbd "C-c ,h") 'lentic-move-lentic-window)
 
+;;;###autoload
 (define-minor-mode lentic-mode
   :lighter "lb"
   :keymap lentic-mode-map)
@@ -707,7 +747,7 @@ same top-left location. Update details depend on CONF."
  '(["Create Here" lentic-create-in-selected-window]
    ["Split Below" lentic-split-window-below]
    ["Split Right" lentic-split-window-right]
-   ["Move Here" lentic-move-linked-window :active lentic-config]
+   ["Move Here" lentic-move-lentic-window :active lentic-config]
    ["Swap" lentic-swap-buffer-windows :active lentic-config]))
 
 (defun lentic-insert-file-local (init-function)
@@ -743,19 +783,18 @@ same top-left location. Update details depend on CONF."
 (define-key lentic-start-mode-map
   (kbd "C-c ,c") 'lentic-create-in-selected-window)
 
-
+;;;###autoload
 (define-minor-mode lentic-start-mode
   :lighter ""
   :keymap lentic-start-mode-map)
 
+;;;###autoload
 (define-globalized-minor-mode global-lentic-start-mode
   lentic-start-mode
   lentic-start-on)
 
 (defun lentic-start-on ()
   (lentic-start-mode 1))
-
-
 ;; #+end_src
 
 ;; ** Test Functions
