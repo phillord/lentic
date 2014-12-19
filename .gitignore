@@ -6,3 +6,4 @@ auto
 /.cask/
 \#*\#
 /linked-buffer-org.org
+/lentic-autoloads.el
