@@ -50,8 +50,7 @@
 
 ;;;###autoload
 (defun lentic-clojure-latex-init ()
-  (setq lentic-config
-        (lentic-clojure-to-latex-new)))
+  (lentic-clojure-to-latex-new))
 
 (add-to-list 'lentic-init-functions
              'lentic-clojure-latex-init)
@@ -71,8 +70,7 @@
 
 ;;;###autoload
 (defun lentic-latex-clojure-init ()
-  (setq lentic-config
-        (lentic-latex-to-clojure-new)))
+  (lentic-latex-to-clojure-new))
 
 (add-to-list 'lentic-init-functions
              'lentic-clojure-latex-init)

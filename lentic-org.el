@@ -85,8 +85,7 @@
 
 ;;;###autoload
 (defun lentic-org-el-init ()
-  (setq lentic-config
-        (lentic-org-to-el-new)))
+  (lentic-org-to-el-new))
 
 (add-to-list 'lentic-init-functions
              'lentic-org-el-init)
@@ -106,8 +105,7 @@
 
 ;;;###autoload
 (defun lentic-el-org-init ()
-  (setq lentic-config
-        (lentic-el-to-org-new)))
+  (lentic-el-to-org-new))
 
 (add-to-list 'lentic-init-functions
              'lentic-el-org-init)
@@ -324,8 +322,7 @@
    :comment-start "#\\\+END_SRC"))
 
 (defun lentic-org-orgel-init ()
-  (setq lentic-config
-        (lentic-org-to-orgel-new)))
+  (lentic-org-to-orgel-new))
 
 (add-to-list 'lentic-init-functions
              'lentic-org-orgel-init)
@@ -387,8 +384,7 @@
    :comment-start "#\\\+END_SRC"))
 
 (defun lentic-orgel-org-init ()
-  (setq lentic-config
-        (lentic-orgel-to-org-new)))
+  (lentic-orgel-to-org-new))
 
 (add-to-list 'lentic-init-functions
              'lentic-orgel-org-init)
@@ -418,8 +414,7 @@
    :case-fold-search nil))
 
 (defun lentic-org-clojure-init ()
-  (setq lentic-config
-        (lentic-org-to-clojure-new)))
+  (lentic-org-to-clojure-new))
 
 (add-to-list 'lentic-init-functions
              'lentic-org-clojure-init)
@@ -438,8 +433,7 @@
    :comment-start "#\\\+END_SRC"))
 
 (defun lentic-clojure-org-init ()
-  (setq lentic-config
-        (lentic-clojure-to-org-new)))
+  (lentic-clojure-to-org-new))
 
 (add-to-list 'lentic-init-functions
              'lentic-clojure-org-init)

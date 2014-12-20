@@ -41,8 +41,7 @@
    :comment ";; "))
 
 (defun lentic-clojure-asciidoc-init ()
-  (setq lentic-config
-        (lentic-asciidoc-commented-new)))
+  (lentic-asciidoc-commented-new))
 
 (add-to-list 'lentic-init-functions
              'lentic-clojure-asciidoc-init)
@@ -58,8 +57,7 @@
    :comment ";; "))
 
 (defun lentic-asciidoc-clojure-init ()
-  (setq lentic-config
-        (lentic-asciidoc-uncommented-new)))
+  (lentic-asciidoc-uncommented-new))
 
 (add-to-list 'lentic-init-functions
              'lentic-asciidoc-clojure-init)

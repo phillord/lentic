@@ -340,10 +340,9 @@ Currently, this is just a clone all method but may use regions in future."
 (defun lentic-default-init ()
   "Default init function.
 see `lentic-init' for details."
-  (setq lentic-config
-        (lentic-default-configuration
-         (lentic-config-name (current-buffer))
-         :this-buffer (current-buffer))))
+  (lentic-default-configuration
+   (lentic-config-name (current-buffer))
+   :this-buffer (current-buffer)))
 
 (add-to-list 'lentic-init-functions
              'lentic-default-init)
@@ -411,7 +410,7 @@ It is useful to toggle this state on during development. Once
 enabled, buffers will not update automaticaly but only when
 explicitly told to. This is much easier than try to debug errors
 happening on the after-change-hooks. The
-`lentic-emergency' and `lentic-unemergency' hooks
+`lentic-emergency' and `lentic-unemergency' functions
 enable this.")
 
 (defvar lentic-emergency-debug nil
@@ -527,7 +526,8 @@ A and B are the buffers."
                 lentic-config :that-buffer)
                (buffer-live-p (lentic-that
                                lentic-config)))
-    (funcall lentic-init)))
+    (setq lentic-config
+          (funcall lentic-init))))
 
 (defun lentic-init-create ()
   "Create the lentic for current-buffer."
