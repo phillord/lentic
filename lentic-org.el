@@ -83,6 +83,7 @@
    :comment-stop "#\\\+BEGIN_SRC emacs-lisp"
    :comment-start "#\\\+END_SRC"))
 
+;;;###autoload
 (defun lentic-org-el-init ()
   (setq lentic-config
         (lentic-org-to-el-new)))
@@ -103,6 +104,7 @@
    :comment-stop "#\\\+BEGIN_SRC emacs-lisp"
    :comment-start "#\\\+END_SRC"))
 
+;;;###autoload
 (defun lentic-el-org-init ()
   (setq lentic-config
         (lentic-el-to-org-new)))

@@ -336,6 +336,7 @@ Currently, this is just a clone all method but may use regions in future."
                       (buffer-substring-no-properties
                        start stop)))))))))))))
 
+;;;###autoload
 (defun lentic-default-init ()
   "Default init function.
 see `lentic-init' for details."
@@ -721,6 +722,7 @@ same top-left location. Update details depend on CONF."
 ;; ** Minor Mode
 
 ;; #+begin_src emacs-lisp
+;;;###autoload
 (defun lentic-toggle-auto-sync-point ()
   (interactive)
   (lentic-when-lentic
@@ -750,6 +752,7 @@ same top-left location. Update details depend on CONF."
    ["Move Here" lentic-move-lentic-window :active lentic-config]
    ["Swap" lentic-swap-buffer-windows :active lentic-config]))
 
+;;;###autoload
 (defun lentic-insert-file-local (init-function)
   (interactive
    (list (completing-read

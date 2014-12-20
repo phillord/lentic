@@ -48,6 +48,7 @@
    :comment-start "\\\\end{code}"
    :comment-stop "\\\\begin{code}"))
 
+;;;###autoload
 (defun lentic-clojure-latex-init ()
   (setq lentic-config
         (lentic-clojure-to-latex-new)))
@@ -68,6 +69,7 @@
    :comment-start "\\\\end{code}"
    :comment-stop "\\\\begin{code}"))
 
+;;;###autoload
 (defun lentic-latex-clojure-init ()
   (setq lentic-config
         (lentic-latex-to-clojure-new)))
@@ -75,16 +77,12 @@
 (add-to-list 'lentic-init-functions
              'lentic-clojure-latex-init)
 
-
+;;;###autoload
 (defun lentic-clojure-latex-delayed-init ()
   (lentic-delayed-init 'lentic-clojure-latex-init))
 
 (add-to-list 'lentic-init-functions
              'lentic-clojure-latex-delayed-init)
-
-
-
-
 
 (provide 'lentic-latex-code)
 
