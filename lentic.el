@@ -473,51 +473,6 @@ ERR is the error. HOOK is the hook type."
     (princ (error-message-string err)))
   (select-window (get-buffer-window "*lentic-fail*")))
 
-(defun lentic-move-lentic-window ()
-  "Move the lentic into the current window.
-If the lentic is currently being displayed in another
-window, then the current-buffer will be moved into that window.
-See also `lentic-swap-buffer-windows'."
-  (interactive)
-  (let ((before-window-start
-         (window-start (get-buffer-window)))
-        (before-window-point
-         (point)))
-    (lentic-swap-buffer-windows
-     (current-buffer)
-     (lentic-that lentic-config))
-    (set-window-start
-     (selected-window)
-     before-window-start)
-    (goto-char before-window-point)))
-
-(defun lentic-swap-lentic-window ()
-  "Swap the window of the buffer and lentic.
-If both are current displayed, swap the windows they
-are displayed in, which keeping current buffer.
-See also `lentic-move-lentic-window'."
-  (interactive)
-  (lentic-swap-buffer-windows
-   (current-buffer)
-   (lentic-that lentic-config))
-  (when (window-live-p
-         (get-buffer-window
-          (current-buffer)))
-    (select-window
-     (get-buffer-window
-      (current-buffer)))))
-
-(defun lentic-swap-buffer-windows (a b)
-  "Swaps the window that two buffers are displayed in.
-A and B are the buffers."
-  (let ((window-a (get-buffer-window a))
-        (window-b (get-buffer-window b)))
-    (when window-a
-      (set-window-buffer
-       window-a b))
-    (when window-b
-      (set-window-buffer
-       window-b a))))
 
 (defun lentic-ensure-init ()
   "Ensure that the `lentic-init' has been run."
@@ -534,37 +489,6 @@ A and B are the buffers."
   (lentic-ensure-init)
   (lentic-create lentic-config))
 
-(defun lentic-create-in-selected-window ()
-  "Create a lentic buffer and move it to the current window."
-  (interactive)
-  (let ((before-window-start
-         (window-start (get-buffer-window)))
-        (before-window-point
-         (point)))
-    (lentic-ensure-init)
-    (set-window-buffer
-     (selected-window)
-     (lentic-create lentic-config))
-    (set-window-start
-     (selected-window)
-     before-window-start)
-    (goto-char before-window-point)))
-
-(defun lentic-split-window-below ()
-  "Create a lentic buffer in a new window below."
-  (interactive)
-  (lentic-ensure-init)
-  (set-window-buffer
-   (split-window-below)
-   (lentic-create lentic-config)))
-
-(defun lentic-split-window-right ()
-  "Create a lentic buffer in a new window right."
-  (interactive)
-  (lentic-ensure-init)
-  (set-window-buffer
-   (split-window-right)
-   (lentic-create lentic-config)))
 
 (defvar lentic-emergency-last-change nil)
 (make-variable-buffer-local 'lentic-emergency-last-change)
@@ -719,93 +643,12 @@ same top-left location. Update details depend on CONF."
        (get-buffer-window-list (lentic-that conf))))))
 ;; #+end_src
 
-;; ** Minor Mode
 
-;; #+begin_src emacs-lisp
-;;;###autoload
-(defun lentic-toggle-auto-sync-point ()
-  (interactive)
-  (lentic-when-lentic
-   (oset lentic-config :sync-point
-         (not (oref lentic-config :sync-point)))))
+;; ** Batch Functions
 
-(defvar lentic-mode-map (make-sparse-keymap)
-  "Keymap for lentic-minor-mode")
-
-(define-key lentic-mode-map
-  (kbd "C-c ,s") 'lentic-swap-lentic-window)
-
-(define-key lentic-mode-map
-  (kbd "C-c ,h") 'lentic-move-lentic-window)
-
-;;;###autoload
-(define-minor-mode lentic-mode
-  :lighter "lb"
-  :keymap lentic-mode-map)
-
-(easy-menu-change
- '("Edit")
- "Lentic"
- '(["Create Here" lentic-create-in-selected-window]
-   ["Split Below" lentic-split-window-below]
-   ["Split Right" lentic-split-window-right]
-   ["Move Here" lentic-move-lentic-window :active lentic-config]
-   ["Swap" lentic-swap-buffer-windows :active lentic-config]))
-
-;;;###autoload
-(defun lentic-insert-file-local (init-function)
-  (interactive
-   (list (completing-read
-          "Lentic init function: "
-          (mapcar
-           'symbol-name
-           lentic-init-functions)
-          'identity 'confirm)))
-  (save-excursion
-    (goto-char (point-max))
-    (let ((start (point)))
-      (insert
-       (format
-        ;; split this string or we get local variable not terminated properly
-        ;; errors.
-        (concat "\nLocal"
-                " Variables:\nlentic-init: %s\nEnd:\n") init-function))
-      (comment-region start (point)))))
-
-(defvar lentic-start-mode-map (make-sparse-keymap))
-
-(define-key lentic-start-mode-map
-  (kbd "C-c ,b") 'lentic-split-window-below)
-
-(define-key lentic-start-mode-map
-  (kbd "C-c ,r") 'lentic-split-window-right)
-
-(define-key lentic-start-mode-map
-  (kbd "C-c ,f") 'lentic-insert-file-local)
-
-(define-key lentic-start-mode-map
-  (kbd "C-c ,c") 'lentic-create-in-selected-window)
-
-;;;###autoload
-(define-minor-mode lentic-start-mode
-  :lighter ""
-  :keymap lentic-start-mode-map)
-
-;;;###autoload
-(define-globalized-minor-mode global-lentic-start-mode
-  lentic-start-mode
-  lentic-start-on)
-
-(defun lentic-start-on ()
-  (lentic-start-mode 1))
-;; #+end_src
-
-;; ** Test Functions
-
-;; Functions which are used for testing new lentic-configurations; as such
-;; they are either batch operation functionality, or interactive commands to run
-;; the various hook commands rather than from the post-command or after-change
-;; hook functionality.
+;; These functions are for batch operation on lentic buffers. Mostly, these
+;; are useful for writing tests, but they can be useful for generating
+;; the lentic form of a file during any automated pipeline.
 
 ;; #+begin_src emacs-lisp
 (defun lentic-batch-clone-and-save-with-config (filename init)
@@ -842,34 +685,6 @@ Return the lentic contents without properties."
       (set-buffer-modified-p nil)
       (kill-buffer))
     retn))
-
-(defun lentic-test-after-change-function ()
-  "Run the change functions out of the command loop.
-Using this function is the easiest way to test an new
-`lentic-clone' method, as doing so in the command loop is
-painful for debugging. Set variable `lentic-emergency' to
-true to disable command loop functionality."
-  (interactive)
-  (message "Running after change with args: %s"
-           lentic-emergency-last-change)
-  (apply 'lentic-after-change-function-1
-         lentic-emergency-last-change))
-
-(defun lentic-test-post-command-hook ()
-  "Run the post-command functions out of the command loop.
-Using this function is the easiest way to test an new
-`lentic-convert' method, as doing so in the command loop is
-painful for debugging. Set variable `lentic-emergency' to
-true to disable command loop functionality."
-  (interactive)
-  (lentic-post-command-hook-1))
-
-(defun lentic-test-reinit ()
-  "Recall the init function regardless of current status.
-This can help if you have change the config object and need
-to make sure there is a new one."
-  (interactive)
-  (funcall lentic-init))
 
 (provide 'lentic)
 

@@ -1,4 +1,4 @@
-;; lentic-dev.el --- Tools for developers -*- lexical-binding: t -*-
+;;; lentic-dev.el --- Tools for developers -*- lexical-binding: t -*-
 
 ;;; Header:
 
@@ -7,19 +7,19 @@
 ;; Author: Phillip Lord <phillip.lord@newcastle.ac.uk>
 ;; Maintainer: Phillip Lord <phillip.lord@newcastle.ac.uk>
 ;; The contents of this file are subject to the GPL License, Version 3.0.
-;;
+
 ;; Copyright (C) 2014, Phillip Lord, Newcastle University
-;;
+
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or
 ;; (at your option) any later version.
-;;
+
 ;; This program is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
-;;
+
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -33,9 +33,79 @@
 ;; #+begin_src emacs-lisp
 (require 'lentic)
 
-(defvar lentic-dev-insert-face 'font-lock-keyword-face)
+;; #+end_src
 
-(defun lentic-dev-rotate-face ()
+;; ** Manual Updates
+
+;; Usually, lentic uses Emacs hooks to percolate changes in one buffer to
+;; another. Unfortunately, all the hooks that do this not only silently discard
+;; errors, but they delete the offending function from the hook. So, post-mortem
+;; debugging is hard. Step-through is also hard since it happens in the command
+;; loop.
+
+;; Lentic has a function for disabling its functionality (due to breakage
+;; rather than just normal switching it off), called `linked-buffer-emergency'
+;; (and the inverse `linked-buffer-unemergency'). In this emergency state, we
+;; can still run the hooks manually, which is by far the best way to debug them.
+
+;; For the `lentic-test-after-change-function' to work `lentic-emergency-debug'
+;; must be set. It is also critical that only a single change has happened before
+;; this function is called -- otherwise the result of the previous change are
+;; deleted, and the lentic buffers will update in an inconsistent and haphazard
+;; way.
+
+
+;; #+begin_src emacs-lisp
+(defun lentic-dev-after-change-function ()
+  "Run the change functions out of the command loop.
+Using this function is the easiest way to test an new
+`lentic-clone' method, as doing so in the command loop is
+painful for debugging. Set variable `lentic-emergency' to
+true to disable command loop functionality."
+  (interactive)
+  (message "Running after change with args: %s"
+           lentic-emergency-last-change)
+  (apply 'lentic-after-change-function-1
+         lentic-emergency-last-change))
+
+(defun lentic-dev-post-command-hook ()
+  "Run the post-command functions out of the command loop.
+Using this function is the easiest way to test an new
+`lentic-convert' method, as doing so in the command loop is
+painful for debugging. Set variable `lentic-emergency' to
+true to disable command loop functionality."
+  (interactive)
+  (lentic-post-command-hook-1))
+
+(defun lentic-dev-reinit ()
+  "Recall the init function regardless of current status.
+This can help if you have change the config object and need
+to make sure there is a new one."
+  (interactive)
+  (funcall lentic-init))
+
+
+;; #+end_src
+
+;; ** Font-Lock changes
+
+;; These commands enable or disable fontification of changes that lentic has
+;; percolated. This is very useful for incremental changes; it's the only
+;; practical way of seeing what has been copied.
+
+;; The exact behaviour of this depends on the mode of the buffer displaying the
+;; lentic buffer. Sometimes, the natural buffer fontification functions just
+;; change the font back to whatever the syntax suggests. In this case, try
+;; switching off `font-lock-mode'.
+
+;; #+begin_src emacs-lisp
+
+(defvar lentic-dev-insert-face
+  "Start face to use for inserted text."
+  'font-lock-keyword-face)
+
+(defun lentic-dev-random-face ()
+  "Change the insertion face to a random one."
   (interactive)
   (setq lentic-dev-insert-face
         (nth (random (length (face-list)))
@@ -60,6 +130,7 @@
 
 (defvar lentic-dev-enable-insertion-marking nil)
 (defun lentic-dev-enable-insertion-marking ()
+  "Enable font locking properties for inserted text."
   (interactive)
   (if lentic-enable-insertion-marking
       (progn
@@ -73,4 +144,6 @@
     (message "Insertion marking on")))
 
 (provide 'lentic-dev)
+;;; lentic-dev.el ends here
+
 ;; #+end_src
