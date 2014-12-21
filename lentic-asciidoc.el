@@ -1,5 +1,7 @@
 ;;; lentic-asciidoc.el --- asciidoc support for lentic -*- lexical-binding: t -*-
 
+;;; Header:
+
 ;; This file is not part of Emacs
 
 ;; Author: Phillip Lord <phillip.lord@newcastle.ac.uk>
@@ -27,6 +29,8 @@
 ;; Lentic buffers with asciidoc [source] blocks.
 
 ;;; Code:
+
+;; #+begin_src emacs-lisp
 (require 'lentic-block)
 (require 'm-buffer)
 
@@ -154,3 +158,5 @@ This should remove other \"....\" matches.
 
 (provide 'lentic-asciidoc)
 ;;; lentic-asciidoc.el ends here
+
+;; #+end_src

@@ -1,5 +1,7 @@
 ;; lentic-delayed.el --- lentics but slowly -*- lexical-binding: t -*-
 
+;;; Header:
+
 ;; This file is not part of Emacs
 
 ;; Author: Phillip Lord <phillip.lord@newcastle.ac.uk>
@@ -22,16 +24,16 @@
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-;;
-;; Currently, the implementation of things like lentic-block.el is
-;; quite slow. This is exacerbated by changes which percolate though large
-;; parts of the buffer. Of course, the obvious solution would be to fix the
-;; dodgy algorithms in lentic-block, but why do that when instead you
-;; can run the same dodgy algorithms on the idle cycle. This has the advantage
-;; that multiple changes with no idle setp in between will be aggregated.
 
+;; This runs lentic updates in the idle cycle. It is not really necessary now,
+;; as lentic now percolates updates incrementally, rather than copying entire
+;; buffers with every keypress.
+
+;; However, incremental updates are a lot harder to implement than cloning the
+;; entire buffer, so this might still be useful.
 
 ;;; Code:
+;; #+begin_src emacs-lisp
 (require 'lentic)
 (require 'dash)
 
@@ -93,7 +95,7 @@
   (lentic-delayed-ensure-timer))
 
 (defmethod lentic-delayed-clone ((conf
-                                         lentic-delayed-configuration))
+                                  lentic-delayed-configuration))
   ;; inhibit-modification-hooks or we percolate back to the start
   (let ((inhibit-modification-hooks t))
     (lentic-clone (oref conf :delayed))
@@ -106,3 +108,5 @@
           (lentic-delayed-configuration "delayed" :delayed lentic-config))))
 
 (provide 'lentic-delayed)
+;;; lentic-delayed.el ends here
+;; #+end_src

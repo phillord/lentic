@@ -1,5 +1,7 @@
 ;;; lentic-block.el --- Comment blocks in one buffer -*- lexical-binding: t -*-
 
+;;; Header:
+
 ;; This file is not part of Emacs
 
 ;; Author: Phillip Lord <phillip.lord@newcastle.ac.uk>
@@ -27,11 +29,14 @@
 ;; Provides configuration for lentics where one buffer has beginning of
 ;; line comment characters that the other one lacks. Commented regions may be
 ;; in blocks with block-delimiters between then.
+
+;;; Code:
+
+;; #+begin_src emacs-lisp
 (require 'm-buffer)
 (require 'm-buffer-at)
 (require 'lentic)
 
-;;; Code:
 (defclass lentic-block-configuration (lentic-default-configuration)
   ((comment :initarg :comment
             :documentation "The comment character")
@@ -412,3 +417,5 @@ between the two buffers; we don't care which one has comments."
 (provide 'lentic-block)
 
 ;;; lentic-block.el ends here
+
+;; #+end_src

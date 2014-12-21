@@ -321,6 +321,7 @@
    :comment-stop "#\\\+BEGIN_SRC emacs-lisp"
    :comment-start "#\\\+END_SRC"))
 
+;;;###autoload
 (defun lentic-org-orgel-init ()
   (lentic-org-to-orgel-new))
 
@@ -383,6 +384,7 @@
    :comment-stop "#\\\+BEGIN_SRC emacs-lisp"
    :comment-start "#\\\+END_SRC"))
 
+;;;###autoload
 (defun lentic-orgel-org-init ()
   (lentic-orgel-to-org-new))
 
