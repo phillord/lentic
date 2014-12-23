@@ -132,7 +132,7 @@ to make sure there is a new one."
 (defun lentic-dev-enable-insertion-marking ()
   "Enable font locking properties for inserted text."
   (interactive)
-  (if lentic-enable-insertion-marking
+  (if lentic-dev-enable-insertion-marking
       (progn
         (ad-deactivate 'lentic-insertion-string-transform)
         (setq lentic-enable-insertion-marking nil)
