@@ -5,7 +5,11 @@ auto
 *elc
 /.cask/
 \#*\#
-/linked-buffer-org.org
+/dist
+/org
+/lentic-pkg.el
+/local-lentic-autoloads.el
+/lentic*org
 /lentic-autoloads.el
 /examples/lentic-orgel-org-big.org
 /examples/block-comment.tex
