@@ -56,6 +56,7 @@
 
 
 ;; #+begin_src emacs-lisp
+;;;###autoload
 (defun lentic-dev-after-change-function ()
   "Run the change functions out of the command loop.
 Using this function is the easiest way to test an new
@@ -68,6 +69,7 @@ true to disable command loop functionality."
   (apply 'lentic-after-change-function-1
          lentic-emergency-last-change))
 
+;;;###autoload
 (defun lentic-dev-post-command-hook ()
   "Run the post-command functions out of the command loop.
 Using this function is the easiest way to test an new
@@ -77,6 +79,7 @@ true to disable command loop functionality."
   (interactive)
   (lentic-post-command-hook-1))
 
+;;;###autoload
 (defun lentic-dev-reinit ()
   "Recall the init function regardless of current status.
 This can help if you have change the config object and need
@@ -104,6 +107,7 @@ to make sure there is a new one."
   "Start face to use for inserted text."
   'font-lock-keyword-face)
 
+;;;###autoload
 (defun lentic-dev-random-face ()
   "Change the insertion face to a random one."
   (interactive)
@@ -129,6 +133,7 @@ to make sure there is a new one."
          lentic-dev-insert-face)))
 
 (defvar lentic-dev-enable-insertion-marking nil)
+;;;###autoload
 (defun lentic-dev-enable-insertion-marking ()
   "Enable font locking properties for inserted text."
   (interactive)
