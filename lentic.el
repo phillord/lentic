@@ -296,8 +296,8 @@ created."
 (defmethod lentic-invert ((conf lentic-default-configuration))
   (lentic-default-configuration
    (lentic-config-name (lentic-that conf))
-   :this-buffer (oref conf :that-buffer)
-   :that-buffer (oref conf :this-buffer)))
+   :this-buffer (lentic-that conf)
+   :that-buffer (lentic-this conf)))
 
 (defmethod lentic-convert ((conf lentic-default-configuration)
                                   location)
@@ -311,8 +311,8 @@ the lentic."
   "Updates that-buffer to reflect the contents in this-buffer.
 
 Currently, this is just a clone all method but may use regions in future."
-  (let ((this-b (oref conf :this-buffer))
-        (that-b (oref conf :that-buffer)))
+  (let ((this-b (lentic-this conf))
+        (that-b (lentic-that conf)))
     (with-current-buffer this-b
       ;;(lentic-log "this-b (point,start,stop)(%s,%s,%s)" (point) start stop)
       (save-restriction
@@ -596,14 +596,14 @@ update mechanism depends on conf."
                      (oref conf :last-change-start-converted))
               (set-marker (make-marker)
                           (oref conf :last-change-start-converted)
-                          (oref conf :that-buffer))))
+                          (lentic-that conf))))
            (stop-converted
             (when
                 (and (not skewed)
                      (oref conf :last-change-stop-converted))
               (set-marker (make-marker)
                           (oref conf :last-change-stop-converted)
-                          (oref conf :that-buffer)))))
+                          (lentic-that conf)))))
         ;; used these, so dump them
         (oset conf :last-change-start nil)
         (oset conf :last-change-start-converted nil)

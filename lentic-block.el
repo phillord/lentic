@@ -264,16 +264,16 @@ between the two buffers; we don't care which one has comments."
         (when
             (and start
                  (m-buffer-at-bolp
-                  (oref conf :that-buffer)
+                  (lentic-that conf)
                   start-converted))
           (m-buffer-at-line-beginning-position
-           (oref conf :this-buffer)
+           (lentic-this conf)
            start)))
        (start (or start-in-comment start))
        (start-converted
         (if start-in-comment
           (m-buffer-at-line-beginning-position
-           (oref conf :that-buffer)
+           (lentic-that conf)
            start-converted)
           start-converted))
        ;; likewise for stop
@@ -281,16 +281,16 @@ between the two buffers; we don't care which one has comments."
         (when
             (and stop
                  (m-buffer-at-bolp
-                  (oref conf :that-buffer)
+                  (lentic-that conf)
                   stop-converted))
           (m-buffer-at-line-end-position
-              (oref conf :this-buffer)
+              (lentic-this conf)
               stop)))
        (stop (or stop-in-comment stop))
        (stop-converted
         (if stop-in-comment
             (m-buffer-at-line-end-position
-                (oref conf :that-buffer)
+                (lentic-that conf)
                 stop-converted)
           stop-converted)))
     ;; log when we have gone long
@@ -300,7 +300,7 @@ between the two buffers; we don't care which one has comments."
                              "start")
                            (when stop-in-comment
                              "stop")))
-        ;; now clone the buffer
+    ;; now clone the buffer
     (call-next-method conf start stop length-before
                       start-converted stop-converted)
     ;; remove the line comments in the to buffer
@@ -333,8 +333,8 @@ between the two buffers; we don't care which one has comments."
   ((conf lentic-commented-block-configuration))
   (lentic-uncommented-block-configuration
    "commented-inverted"
-   :this-buffer (oref conf :that-buffer)
-   :that-buffer (oref conf :this-buffer)
+   :this-buffer (lentic-that conf)
+   :that-buffer (lentic-this conf)
    :comment (oref conf :comment)
    :comment-start (oref conf :comment-start)
    :comment-stop (oref conf :comment-stop)))
@@ -361,10 +361,10 @@ between the two buffers; we don't care which one has comments."
         (when
             (and start
                  (m-buffer-at-bolp
-                  (oref conf :this-buffer)
+                  (lentic-this conf)
                   start))
           (m-buffer-at-line-beginning-position
-              (oref conf :that-buffer)
+              (lentic-that conf)
               start-converted)))
        (start-converted (or start-at-bolp start-converted)))
     (if (or start-at-bolp)
@@ -400,8 +400,8 @@ between the two buffers; we don't care which one has comments."
   ((conf lentic-uncommented-block-configuration))
   (lentic-commented-block-configuration
    "uncommented-inverted"
-   :this-buffer (oref conf :that-buffer)
-   :that-buffer (oref conf :this-buffer)
+   :this-buffer (lentic-that conf)
+   :that-buffer (lentic-this conf)
    :comment (oref conf :comment)
    :comment-start (oref  conf :comment-start)
    :comment-stop (oref conf :comment-stop)))
