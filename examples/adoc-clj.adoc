@@ -18,6 +18,6 @@ Well strangely this
 
 //
 // Local Variables:
-// linked-buffer-init: linked-buffer-asciidoc-clojure-init
+// lentic-init: lentic-asciidoc-clojure-init
 // End: 
 //
