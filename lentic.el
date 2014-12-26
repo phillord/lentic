@@ -28,7 +28,7 @@
 
 ;;; Commentary:
 
-;; lentic enables /lenticular text/: simultaneous editing and viewing of the
+;; `lentic' enables /lenticular text/: simultaneous editing and viewing of the
 ;; same (or closely related) text in two or more buffers, potentially in
 ;; different modes. Lenticular text is named after lenticular printing, which
 ;; produce images which change depending on the angle at which they are
@@ -52,7 +52,7 @@
 ;; and the documentation untroubled by the programmatic mode.
 
 ;; Lenticular text provides an alternative solution. Two lentic buffers, by
-;; default, the two share content but are otherwise independent. Therefore,
+;; default, the share content but are otherwise independent. Therefore,
 ;; you can have two buffers open, each showing the content in different modes;
 ;; to switch modes, you simply switch buffers. The content, location of point,
 ;; and view are shared.
@@ -61,9 +61,9 @@
 ;; between the two. If this is done, then the two can have different but
 ;; related text. This also solves the problem of integration with a
 ;; tool-chain; each lentic buffer can be associated with a different file and
-;; a different syntax.  This file is, itself, lenticular text. It can be
-;; viewed either as Emacs-Lisp or in Org-Mode. In Emacs-Lisp mode, this text
-;; is commented out, in org-mode it is not. In fact, even the default
+;; a different syntax. For example, this file is, itself, lenticular text. It
+;; can be viewed either as Emacs-Lisp or in Org-Mode. In Emacs-Lisp mode, this
+;; text is commented out, in org-mode it is not. In fact, even the default
 ;; behaviour of lentic uses this transformation capability--the text is
 ;; shared, but text properties are not, a behaviour which differs between
 ;; lentic buffers and indirect buffers.
@@ -74,6 +74,15 @@
 
 ;; The main user entry point is through `global-lentic-start-mode' which
 ;; provides tools to create a new lentic buffer.
+
+;;; Usage:
+
+;; lentic can be installed through MELPA then add
+
+;; (require 'lentic-autoload)
+;; (global-lentic-start-mode)
+
+;; to your .emacs.
 
 ;;; Configuration:
 
