@@ -390,3 +390,13 @@ This mostly checks my test machinary."
      (lambda ()
        (goto-char (point-min))
        (insert "x"))))))
+
+
+(ert-deftest single-delete ()
+  (should
+   (equal
+    (substring abc-txt 1)
+    (simple-change-that
+     (lambda ()
+       (goto-char (point-min))
+       (delete-char 1))))))
