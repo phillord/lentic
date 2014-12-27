@@ -356,28 +356,14 @@ This mostly checks my test machinary."
   (should
    (equal
     (concat "x" abc-txt)
-    (let ((x
-           (lentic-test-clone-and-change-with-config
-            (lentic-test-file "abc.txt")
-            'lentic-delayed-default-init
-            (lambda ()
-              (message "lentic config in delayed is: %s" lentic-config)
-              (goto-char (point-min))
-              (insert "x")
-              (message "buffer contents: %s" (buffer-string))
-              (save-excursion
-                (set-buffer (lentic-that lentic-config))
-                (message "lentic contents: %s" (buffer-string)))
-              (message "Sitting")
-              (lentic-delayed-timer-function)
-              (message "Sitting...done")
-              (message "buffer contents: %s" (buffer-string))
-              (save-excursion
-                (set-buffer (lentic-that lentic-config))
-                (message "lentic contents: %s" (buffer-string)))
-              ))))
-      (message "Return value: %s" x)
-      x))))
+    (lentic-test-clone-and-change-with-config
+     (lentic-test-file "abc.txt")
+     'lentic-delayed-default-init
+     (lambda ()
+       (goto-char (point-min))
+       (insert "x")
+       ;; run timer by ourselves.
+       (lentic-delayed-timer-function))))))
 
 ;; tests for lots of types of change and whether they break the incremental
 ;; updates.
