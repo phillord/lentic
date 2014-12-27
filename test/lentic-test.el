@@ -391,7 +391,6 @@ This mostly checks my test machinary."
        (goto-char (point-min))
        (insert "x"))))))
 
-
 (ert-deftest single-delete ()
   (should
    (equal
@@ -400,3 +399,20 @@ This mostly checks my test machinary."
      (lambda ()
        (goto-char (point-min))
        (delete-char 1))))))
+
+(ert-deftest line-delete ()
+  (should
+   (equal
+    (substring abc-txt 3)
+    (simple-change-that
+     (lambda ()
+       (goto-char (point-min))
+       (kill-line))))))
+
+(ert-deftest erase-buffer ()
+  (should
+   (equal
+    ""
+    (simple-change-that
+     (lambda ()
+       (erase-buffer))))))
