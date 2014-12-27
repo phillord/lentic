@@ -60,6 +60,7 @@
      (buffer-file-name)) ".clj")
    :comment ";; "))
 
+;;;###autoload
 (defun lentic-asciidoc-clojure-init ()
   (lentic-asciidoc-uncommented-new))
 
