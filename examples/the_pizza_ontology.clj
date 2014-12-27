@@ -598,6 +598,6 @@
 
 ;; %%
 ;; %% Local Variables:
-;; %% linked-buffer-init: linked-buffer-clojure-latex-init
+;; %% lentic-init: lentic-clojure-latex-init
 ;; %% End:
 ;; %%

@@ -1,8 +1,8 @@
-;;; lentic.el --- One buffer as a view of another -*- lexical-binding: t -*-
+;;; not-lentic.el --- Test file -*- lexical-binding: t -*-
 
 ;;; Header:
 
-;; This file is not part of Emacs
+;; This file is just a test file -- see commentary.
 
 ;; Author: Phillip Lord <phillip.lord@newcastle.ac.uk>
 ;; Maintainer: Phillip Lord <phillip.lord@newcastle.ac.uk>
@@ -28,8 +28,11 @@
 
 ;;; Commentary:
 
-;; lentics enables simultaneous editing and viewing of the same (or
-;; closely related) text in two or more buffers, potentially in different modes.
+;; This is an example emacs-lisp file which can transform into an org-mode
+;; file. There are simpler files as well, but this one is useful to for
+;; testing performance. It's just a snapshot of lentic.el (all of the files in
+;; lentic are now documented in this form), which are therefore also examples.
+;; It's useful to have a separate test file, though, for when I am developing!
 
 ;; Sometimes, it would be nice to edit a file in two ways at once. For instance,
 ;; you might have a source file in a computational language with richly marked

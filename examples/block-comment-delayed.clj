@@ -1,4 +1,3 @@
-
 ;; This file is similar to block-comment.clj, but uses delayed cloning.
 ;; That is all the lentic functionality runs on the idle cycle. Originally,
 ;; this was a good idea, as lentic.el was rather inefficient, and could make
@@ -31,7 +30,7 @@
 ;; Nam vestibulum accumsan nisl.
 
 
-;;
+;; ;;
 
 ;; %%
 ;; %% Local Variables:

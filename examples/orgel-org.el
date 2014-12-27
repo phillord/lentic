@@ -4,13 +4,15 @@
 
 ;;; Commentary:
 
-;; First I want to add stuff here because it makes far more sense than adding
-;; it anywhere else. However, I also want to try here, and to me this seems an
-;; awful lot less laggy than it did before. We can add stuff.
+;; This is an "orgel" file. That is a valid emacs lisp file with comments in
+;; org-mode. The header comments are translated into header one in org mode.
+
 
 ;; #+BEGIN_SRC emacs-lisp
 (defun orgel-function ())
 ;; #+END_SRC
+
+;; And we finish off with the local variables declaration.
 
 ;; # Local Variables:
 ;; # lentic-init: lentic-orgel-org-init

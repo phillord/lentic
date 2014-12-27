@@ -6,18 +6,20 @@
 ;; %% it under the terms of the GNU Lesser General Public License as published by
 ;; %% the Free Software Foundation, either version 3 of the License, or
 ;; %%  (at your option) any later version.
-;; %% 
+;; %%
 ;; %%  This program is distributed in the hope that it will be useful,
 ;; %%  but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; %%  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; %%  GNU Lesser General Public License for more details.
-;; %% 
+;; %%
 ;; %%  You should have received a copy of the GNU Lesser General Public License
 ;; %%  along with this program.  If not, see http://www.gnu.org/licenses/.
 
-;; In this section we import lots of things which is, of course, a really good
-;; thing to do.
+;; This is just a big file to test performance of clojure->latex transformation.
+;; The code comes from my Tawny-OWL project, but is not an up to date version.
 
+;; In this case, I have a single code block comment which is obviously not
+;; what we would want in reality.
 ;; \begin{code}
 (ns ^{:doc "Build ontologies in OWL."
       :author "Phillip Lord"}
@@ -2719,8 +2721,9 @@ cases this will have been imported."
             :owl true))
        (var-get (var ~symb)))))
 ;; \end{code}
+
 ;; %%
 ;; %% Local Variables:
-;; %% linked-buffer-init: linked-buffer-clojure-latex-delayed-init
+;; %% lentic-init: lentic-clojure-latex-init
 ;; %% End:
 ;; %%

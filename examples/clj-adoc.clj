@@ -1,37 +1,25 @@
-;; A title
-;; =======
+;; Clojure Asciidoc
+;; ================
 
-;; A simple hello world program.
-
-;; Now let's see if it works
-;; I wanted an html first solution.
+;; This is the same transformation as adoc-clj, but we start from this time from
+;; the clojure file rather than the asciidoc.
 
 ;; [source,lisp]
 ;; ----
 (println "hello")
-
-(println "Hello")
-(do (println "That do is pointless"))
 ;; ----
 
-;; We can type some more of this if we want.
-
-;; All of this is good, but I suspect it will break
-
-;; And we have it working here as well.
-
-;; Hello, hello
-;; Now is the winter of our discontent.
-
-;; And this way
+;; In practice, this makes very little difference.
 
 ;; [source,clojure]
 ;; ----
 (println "In case I am using the clojure style")
 ;; ----
 
+;; And here are the local variables.
+
 ;; //
 ;; // Local Variables:
-;; // linked-buffer-init: linked-buffer-clojure-asciidoc-init
+;; // lentic-init: lentic-clojure-asciidoc-init
 ;; // End: 
 ;; //
