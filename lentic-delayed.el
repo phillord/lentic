@@ -43,10 +43,9 @@
 (defun lentic-delayed-ensure-timer ()
   (unless lentic-delayed-timer
     (setq lentic-delayed-timer
-          (run-with-idle-timer 0.05 t 'lentic-delayed-timer-function))))
+          (run-with-idle-timer 0.2 t 'lentic-delayed-timer-function))))
 
 (defun lentic-delayed-timer-function ()
-  (message "lentic-delayed-timer running")
   (let ((repeat t))
     (while
         (and repeat
@@ -57,7 +56,8 @@
       (setq repeat (sit-for 0.1))))
   ;; kill timer if we have finished
   (unless lentic-delayed-queue
-    (cancel-timer lentic-delayed-timer)
+    (when lentic-delayed-timer
+      (cancel-timer lentic-delayed-timer))
     (setq lentic-delayed-timer nil)))
 
 (defclass lentic-delayed-configuration
@@ -86,10 +86,11 @@
 
 
 (defmethod lentic-convert ((conf lentic-delayed-configuration)
-                                  location)
+                           location)
   (lentic-convert (oref conf :delayed) location))
 
-(defmethod lentic-clone ((conf lentic-delayed-configuration))
+(defmethod lentic-clone ((conf lentic-delayed-configuration)
+                         &rest _rest)
   (add-to-list 'lentic-delayed-queue
                conf t)
   (lentic-delayed-ensure-timer))
@@ -101,11 +102,17 @@
     (lentic-clone (oref conf :delayed))
     (lentic-update-point (oref conf :delayed))))
 
+;;;###autoload
 (defun lentic-delayed-init (delayed)
   (unless lentic-config
-    (funcall delayed)
-    (setq lentic-config
-          (lentic-delayed-configuration "delayed" :delayed lentic-config))))
+    (lentic-delayed-configuration
+     "delayed"
+     :delayed (funcall delayed))))
+
+;;;###autoload
+(defun lentic-delayed-default-init ()
+  (lentic-delayed-init
+   'lentic-default-init))
 
 (provide 'lentic-delayed)
 ;;; lentic-delayed.el ends here

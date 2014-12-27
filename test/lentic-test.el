@@ -2,6 +2,7 @@
 (require 'lentic-latex-code)
 (require 'lentic-asciidoc)
 (require 'lentic-org)
+(require 'lentic-delayed)
 (require 'f)
 
 
@@ -146,7 +147,7 @@
 ;; At the moment, this does not check that the changes are actually
 ;; incremental, cause that's harder.
 (defun lentic-test-clone-and-change-with-config
-  (filename init &optional f-this f-that retn-that)
+  (filename init &optional f-this f-that retn-this)
   "Clone file and make changes to check incremental updates.
 Using INIT clone FILE, then apply F in the buffer, and return the
 results."
@@ -171,13 +172,13 @@ results."
               (with-current-buffer
                   that
                 (funcall f-that)
-                (unless retn-that
+                (unless retn-this
                   (setq retn
                         (buffer-substring-no-properties
                          (point-min)
                          (point-max))))
                 (set-buffer-modified-p nil)))
-            (when retn-that
+            (when retn-this
               (setq retn
                     (buffer-substring-no-properties
                      (point-min)
@@ -350,6 +351,33 @@ This mostly checks my test machinary."
       )
     t)))
 
+;; ** delayed init
+(ert-deftest lentic-simple-delayed ()
+  (should
+   (equal
+    (concat "x" abc-txt)
+    (let ((x
+           (lentic-test-clone-and-change-with-config
+            (lentic-test-file "abc.txt")
+            'lentic-delayed-default-init
+            (lambda ()
+              (message "lentic config in delayed is: %s" lentic-config)
+              (goto-char (point-min))
+              (insert "x")
+              (message "buffer contents: %s" (buffer-string))
+              (save-excursion
+                (set-buffer (lentic-that lentic-config))
+                (message "lentic contents: %s" (buffer-string)))
+              (message "Sitting")
+              (lentic-delayed-timer-function)
+              (message "Sitting...done")
+              (message "buffer contents: %s" (buffer-string))
+              (save-excursion
+                (set-buffer (lentic-that lentic-config))
+                (message "lentic contents: %s" (buffer-string)))
+              ))))
+      (message "Return value: %s" x)
+      x))))
 
 ;; tests for lots of types of change and whether they break the incremental
 ;; updates.
@@ -360,7 +388,7 @@ This mostly checks my test machinary."
   (lentic-test-clone-and-change-with-config
      (lentic-test-file "abc.txt")
      'lentic-default-init  f
-     nil t))
+     nil nil))
 
 (ert-deftest null-operation ()
   (should
