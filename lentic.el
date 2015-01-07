@@ -43,13 +43,14 @@
 ;; One solution to this is to use a single-mode which supports both types of
 ;; editing. The problem with this is that it is fundamentally difficult to
 ;; support two types of editing at the same time; more over, you need a new
-;; mode for each environment. Another solution is to use one of the
+;; mode for each combination. Another solution is to use one of the
 ;; multiple-mode tools which are available. The problem with this is that they
-;; generally need some suppor from the modes in question. And, again, the
-;; dificulty is supporting both fo ms of editing in the same environment. A
-;; final problem is that it is not just the editing environment that needs to;
-;; the programmatic environment needs to be untroubled by the documentation,
-;; and the documentation untroubled by the programmatic mode.
+;; generally need some support from the modes in question. And, again, the
+;; dificulty is supporting both forms of editing in the same environment. A
+;; final problem is that it is not just the editing environment that needs to
+;; be adapted; the programmatic environment needs to be untroubled by the
+;; documentation, and the documentation environment untroubled by the program
+;; code.
 
 ;; Lenticular text provides an alternative solution. Two lentic buffers, by
 ;; default, the share content but are otherwise independent. Therefore,
@@ -63,17 +64,19 @@
 ;; tool-chain; each lentic buffer can be associated with a different file and
 ;; a different syntax. For example, this file is, itself, lenticular text. It
 ;; can be viewed either as Emacs-Lisp or in Org-Mode. In Emacs-Lisp mode, this
-;; text is commented out, in org-mode it is not. In fact, even the default
-;; behaviour of lentic uses this transformation capability--the text is
-;; shared, but text properties are not, a behaviour which differs between
-;; lentic buffers and indirect buffers.
+;; text is commented out, in org-mode it is not.
+
+;; In fact, although the default behaviour of lentic appears to keep the same
+;; text in each buffer, even it uses this bi-directional transformation
+;; capability; while the text is shared, the text properties are not. This is
+;; a behaviour which differs between lentic buffers and indirect buffers. The
+;; lentic buffers can therefore be in different modes without fighting each
+;; other to set the text properties.
 
 ;; It is possible to configure the transformation for any two buffers in a
-;; extensible way, although mostly we have concentrated on mode-specific
-;; configuration.
-
-;; The main user entry point is through `global-lentic-start-mode' which
-;; provides tools to create a new lentic buffer.
+;; extensible way. Mostly I have concentrated on mode-specific operation,
+;; but, for instance, I have also used this ability on a per-project basis
+;; controlling, for instance, the location of the lentic-file.
 
 ;;; Usage:
 
@@ -84,6 +87,12 @@
 
 ;; to your .emacs.
 
+;; The main user entry point is through `global-lentic-start-mode' which
+;; provides tools to create a new lentic buffer, including a menu. Various
+;; `lentic-mode-create-in-selected-window' will create a lentic-buffer swap it
+;; to the current window, while `lentic-mode-split-window-below' will split
+;; the current window and create a lentic buffer.
+
 ;;; Configuration:
 
 ;; lentic buffers are configurable in a large number of ways. It is possible
@@ -93,11 +102,10 @@
 ;; buffer, although this restriction will be removed in later versions.
 
 ;; Configuration of a buffer happens in one of two places. First,
-;; `lentic-init' is run when a lentic buffer is first created. This
-;; function should set the actual configuration `lentic-config', and is
-;; mostly designed for use as a file-local or dir-local variable. All subsequent
-;; configuration happens through `lentic-config' which is an EIEIO object
-;; and associated methods.
+;; `lentic-init' is run when a lentic buffer is first created. This function
+;; should return the configuration object, and is mostly designed for use as a
+;; file-local or dir-local variable. This object is stored in the `lentic-config'
+;; and all subsequent operation happens through this.
 
 ;; There are now a number of different configurations, which can be used for
 ;; general-purposes use as well as an extension points for subclass
@@ -697,6 +705,5 @@ Return the lentic contents without properties."
 
 (provide 'lentic)
 
-;; #+END_SRC
-
 ;;; lentic.el ends here
+;; #+END_SRC
