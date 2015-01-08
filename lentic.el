@@ -82,7 +82,7 @@
 
 ;; lentic can be installed through MELPA then add
 
-;; (require 'lentic-autoload)
+;; (require 'lentic-autoloads)
 ;; (global-lentic-start-mode)
 
 ;; to your .emacs.
