@@ -14,6 +14,7 @@ Previously, lentic was known as linked-buffer.
 #### Bug Fix
 
 - documentation updates for autoload error
+- lentic-mode.el now requires lentic.el
 
 ### 0.6
 

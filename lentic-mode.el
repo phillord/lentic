@@ -29,6 +29,10 @@
 
 ;;; Code:
 
+;; ** Preliminaries
+
+(require 'lentic)
+
 ;; ** Window and Buffer Functions
 
 ;; #+begin_src emacs-lisp
