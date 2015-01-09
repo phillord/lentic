@@ -9,6 +9,12 @@ Previously, lentic was known as linked-buffer.
 
 ## ChangeLog
 
+### 0.6.1
+
+#### Bug Fix
+
+- documentation updates for autoload error
+
 ### 0.6
 
 The main feature of this release is that changes percolation now happens

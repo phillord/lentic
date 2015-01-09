@@ -80,12 +80,14 @@
 
 ;;; Usage:
 
-;; lentic can be installed through MELPA then add
+;; lentic can be installed through MELPA/Marmalade then add
 
-;; (require 'lentic-autoloads)
 ;; (global-lentic-start-mode)
 
-;; to your .emacs.
+;; to your .emacs. Or alternatively, you can install manually and add
+;; (require 'lentic-autoloads)
+;; first.
+
 
 ;; The main user entry point is through `global-lentic-start-mode' which
 ;; provides tools to create a new lentic buffer, including a menu. Various
