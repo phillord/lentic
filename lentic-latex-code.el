@@ -87,6 +87,21 @@
 (add-to-list 'lentic-init-functions
              'lentic-clojure-latex-delayed-init)
 
+;;;###autoload
+(defun lentic-haskell-latex-init ()
+  (lentic-default-configuration
+   "lb-haskell"
+   :this-buffer (current-buffer)
+   :lentic-file
+   (concat
+    (file-name-sans-extension
+     (buffer-file-name))
+    ".tex")))
+
+(add-to-list
+ 'lentic-init-functions
+ 'lentic-haskell-latex-init)
+
 (provide 'lentic-latex-code)
 
 ;;; lentic-latex-code ends here
