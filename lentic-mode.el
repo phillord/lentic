@@ -143,11 +143,16 @@ A and B are the buffers."
 (easy-menu-change
  '("Edit")
  "Lentic"
- '(["Create Here" lentic-mode-create-in-selected-window]
-   ["Split Below" lentic-mode-split-window-below]
-   ["Split Right" lentic-mode-split-window-right]
+ '(["Create Here" lentic-mode-create-in-selected-window
+    :active (not lentic-config)]
+   ["Split Below" lentic-mode-split-window-below
+    :active (not lentic-config)]
+   ["Split Right" lentic-mode-split-window-right
+    :active (not lentic-config)]
+   ["Insert File Local" lentic-mode-insert-file-local
+    :active (not lentic-config)]
    ["Move Here" lentic-mode-move-lentic-window :active lentic-config]
-   ["Swap" lentic-mode-swap-buffer-windows :active lentic-config]))
+   ["Swap" lentic-mode-swap-lentic-window :active lentic-config]))
 
 ;;;###autoload
 (defun lentic-mode-insert-file-local (init-function)
@@ -175,7 +180,7 @@ A and B are the buffers."
   (kbd "C-c ,b") 'lentic-mode-split-window-below)
 
 (define-key lentic-start-mode-map
-  (kbd "C-c ,r") 'lentic-mode-split-window-right)
+  (kbd "C-c ,t") 'lentic-mode-split-window-right)
 
 (define-key lentic-start-mode-map
   (kbd "C-c ,f") 'lentic-mode-insert-file-local)

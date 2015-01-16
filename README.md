@@ -15,6 +15,10 @@ Previously, lentic was known as linked-buffer.
 
 - haskell->latex support added
 
+#### Bug Fix
+
+- "swap" menu item now functional
+
 ### 0.6.1
 
 #### Bug Fix
