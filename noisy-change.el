@@ -34,11 +34,9 @@
 (defmacro noisy-change-log (&rest rest)
   "Log REST."
   `(when noisy-change-log
-     (with-selected-window
-         (get-buffer-window
-          (get-buffer-create "*noisy-change-log*"))
+     (with-current-buffer
+         (get-buffer-create "*noisy-change-log*")
        (goto-char (point-max))
-       (recenter)
        (insert
         (concat
          (format ,@rest)
@@ -52,7 +50,7 @@
 
 (defun noisy-change-after-function (start stop length)
   (when
-      (and noisy-change-bcf
+      (and noisy-change-last-bcf
            (and (< 0 length)
                 (not (= start stop))))
     (noisy-change-log "Skew Detected"))
