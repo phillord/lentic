@@ -5,8 +5,9 @@
 
 (package-file "lentic.el")
 
-(files "lentic*.el")
+(files "lentic*.el" "dir" "*info")
 
 (development
  (depends-on "f")
- (depends-on "ert-runner"))
+ (depends-on "ert-runner")
+ (depends-on "commander"))
