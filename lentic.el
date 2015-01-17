@@ -212,6 +212,11 @@ of mode in the current buffer.")
     :initarg :this-buffer)
    (that-buffer
     :initarg :that-buffer)
+   (creator
+    :initarg :creator
+    :initform nil
+    :documentation
+    "Non-nil if this lentic-configuration was used to create a lentic view.")
    (sync-point
     :initarg :sync-point
     :initform t)
@@ -289,6 +294,7 @@ created."
                     this-buffer))))
          (sec-mode (oref conf :lentic-mode))
          (sec-file (oref conf :lentic-file)))
+    (oset conf :creator t)
     ;; make sure this-buffer knows about that-buffer
     (oset conf :that-buffer that-buffer)
     ;; insert the contents
@@ -399,7 +405,9 @@ see `lentic-init' for details."
   (add-hook 'before-change-functions
             'lentic-before-change-function)
   (add-hook 'after-save-hook
-            'lentic-after-save-hook))
+            'lentic-after-save-hook)
+  (add-hook 'kill-buffer-hook
+            'lentic-kill-buffer-hook))
 
 (defvar lentic-log t)
 (defmacro lentic-log (&rest rest)
@@ -466,6 +474,12 @@ repeated errors.")
            (lentic-that lentic-config)
          (when (buffer-file-name)
            (save-buffer)))))))
+
+(defun lentic-kill-buffer-hook ()
+  (lentic-when-lentic
+   (when (oref lentic-config :creator)
+     (kill-buffer
+      (lentic-that lentic-config)))))
 
 (defun lentic-post-command-hook ()
   "Update point according to config, with error handling."
