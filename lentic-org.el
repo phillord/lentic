@@ -365,6 +365,7 @@
   ((conf lentic-orgel-to-org-configuration))
   (let ((rtn
          (lentic-org-to-orgel-new)))
+    (oset rtn :delete-on-exit t)
     (oset rtn :that-buffer (lentic-this conf))
     rtn))
 

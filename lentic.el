@@ -5,7 +5,7 @@
 ;; This file is not part of Emacs
 
 ;; Author: Phillip Lord <phillip.lord@newcastle.ac.uk>
-;; Maintainer: Phillip Lord <phillip.lord@newcastle.ac.uk>
+;; () Maintainer: Phillip Lord <phillip.lord@newcastle.ac.uk>
 ;; Version: 0.6.2
 ;; Package-Requires: ((emacs "24")(m-buffer "0.8")(dash "2.5.0"))
 
@@ -25,7 +25,6 @@
 
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 ;;; Commentary:
 
 ;; `lentic' enables /lenticular text/: simultaneous editing and viewing of the
@@ -217,6 +216,11 @@ of mode in the current buffer.")
     :initform nil
     :documentation
     "Non-nil if this lentic-configuration was used to create a lentic view.")
+   (delete-on-exit
+    :initarg :delete-on-exit
+    :initform nil
+    :documentation
+    "Non-nil if the file associated with this should be deleted on exit")
    (sync-point
     :initarg :sync-point
     :initform t)
@@ -407,7 +411,9 @@ see `lentic-init' for details."
   (add-hook 'after-save-hook
             'lentic-after-save-hook)
   (add-hook 'kill-buffer-hook
-            'lentic-kill-buffer-hook))
+            'lentic-kill-buffer-hook)
+  (add-hook 'kill-emacs-hook
+            'lentic-kill-emacs-hook))
 
 (defvar lentic-log t)
 (defmacro lentic-log (&rest rest)
@@ -477,9 +483,34 @@ repeated errors.")
 
 (defun lentic-kill-buffer-hook ()
   (lentic-when-lentic
+   ;; remove files
+   (when
+       (and (oref lentic-config :delete-on-exit)
+            ;; might not exist if we not saved yet!
+            (file-exists-p buffer-file-name)
+            ;; if we are cloning in batch, we really do not want to kill
+            ;; everything at the end
+            (not noninteractive))
+     (message "Deleting file k-b-h %s" (current-buffer))
+     (delete-file (buffer-file-name)))
+   ;; kill lentic-buffers
    (when (oref lentic-config :creator)
      (kill-buffer
       (lentic-that lentic-config)))))
+
+(defun lentic-kill-emacs-hook ()
+  (-map
+   (lambda (b)
+     (with-current-buffer
+         b
+       (when
+           (and lentic-config
+                (oref lentic-config :delete-on-exit)
+                (file-exists-p buffer-file-name)
+                (not noninteractive))
+         (message "Deleting file k-e-h %s" (current-buffer))
+         (delete-file (buffer-file-name)))))
+   (buffer-list)))
 
 (defun lentic-post-command-hook ()
   "Update point according to config, with error handling."
