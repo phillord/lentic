@@ -1,5 +1,8 @@
 ;;; lentic.el --- One buffer as a view of another -*- lexical-binding: t -*-
 
+;; #+TITLE: Lenticular Text for Emacs.
+;; #+AUTHOR: Phillip Lord
+
 ;;; Header:
 
 ;; This file is not part of Emacs
@@ -491,7 +494,6 @@ repeated errors.")
             ;; if we are cloning in batch, we really do not want to kill
             ;; everything at the end
             (not noninteractive))
-     (message "Deleting file k-b-h %s" (current-buffer))
      (delete-file (buffer-file-name)))
    ;; kill lentic-buffers
    (when (oref lentic-config :creator)
@@ -508,7 +510,6 @@ repeated errors.")
                 (oref lentic-config :delete-on-exit)
                 (file-exists-p buffer-file-name)
                 (not noninteractive))
-         (message "Deleting file k-e-h %s" (current-buffer))
          (delete-file (buffer-file-name)))))
    (buffer-list)))
 
@@ -756,3 +757,6 @@ Return the lentic contents without properties."
 
 ;;; lentic.el ends here
 ;; #+END_SRC
+
+
+;; #+INCLUDE: "./lentic-block.org" :minlevel 1
