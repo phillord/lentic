@@ -3,6 +3,9 @@ auto
 /test/markdown-el.html
 /test/owl.tex
 *elc
+*texi
+*info
+*html
 /.cask/
 \#*\#
 /dist
