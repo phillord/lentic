@@ -5,7 +5,7 @@
 ;; This file is not part of Emacs
 
 ;; Author: Phillip Lord <phillip.lord@newcastle.ac.uk>
-;; () Maintainer: Phillip Lord <phillip.lord@newcastle.ac.uk>
+;; Maintainer: Phillip Lord <phillip.lord@newcastle.ac.uk>
 ;; Version: 0.6.2
 ;; Package-Requires: ((emacs "24")(m-buffer "0.8")(dash "2.5.0"))
 
