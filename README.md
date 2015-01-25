@@ -14,9 +14,9 @@ Previously, lentic was known as linked-buffer.
 
 ## Contributions
 
-I welcome contributions to lentic. I would like to keep control of the
-copyright. If you wish to directly contribute code, can you please tell me if
-you are have completed
+I welcome contributions to lentic. I would like to contribute lentic to ELPA
+or the Emacs core in the future, so would prefer that contributors has
+completed the relevant paper with the FSF.
 
 
 ## ChangeLog
