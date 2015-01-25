@@ -1,8 +1,5 @@
 ;;; lentic.el --- One buffer as a view of another -*- lexical-binding: t -*-
 
-;; #+TITLE: Lenticular Text for Emacs.
-;; #+AUTHOR: Phillip Lord
-
 ;;; Header:
 
 ;; This file is not part of Emacs
@@ -10,7 +7,7 @@
 ;; Author: Phillip Lord <phillip.lord@newcastle.ac.uk>
 ;; Maintainer: Phillip Lord <phillip.lord@newcastle.ac.uk>
 ;; Version: 0.6.2
-;; Package-Requires: ((emacs "24")(m-buffer "0.8")(dash "2.5.0"))
+;; Package-Requires: ((emacs "24")(m-buffer "0.8")(dash "2.5.0")(f "0.17.2"))
 
 ;; The contents of this file are subject to the GPL License, Version 3.0.
 
@@ -28,6 +25,7 @@
 
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 ;;; Commentary:
 
 ;; `lentic' enables /lenticular text/: simultaneous editing and viewing of the
@@ -86,18 +84,25 @@
 
 ;; (global-lentic-start-mode)
 
-;; to your .emacs. Or alternatively, you can install manually and add
+;; to your .emacs.
 
-;; (require 'lentic-autoloads)
+;; The main user entry points are accessible through the lentic edit menu, or
+;; through `global-lentic-start-mode' which adds keybindings to tools to create a
+;; new lentic buffer. `lentic-mode-create-in-selected-window' will create a
+;; lentic-buffer swap it to the current window, while
+;; `lentic-mode-split-window-below' will split the current window and create a
+;; lentic buffer.
 
-;; first.
+;; By default, the lentic buffer created contains exactly the same contents as
+;; the original buffer, but is otherwise separate; it can have a different major
+;; modes, different syntax highlighting, invisible regions and even different
+;; narrowing. Saving one buffer will save the other; killing the lentic buffer
+;; does not affect the original, but killing the original also kills the lentic.
 
-
-;; The main user entry point is through `global-lentic-start-mode' which
-;; provides tools to create a new lentic buffer, including a menu. Various
-;; `lentic-mode-create-in-selected-window' will create a lentic-buffer swap it
-;; to the current window, while `lentic-mode-split-window-below' will split
-;; the current window and create a lentic buffer.
+;; While this is somewhat useful, more generally a buffer will be configured to
+;; produce a particular transformation. This can control many features of the
+;; lentic, including the file name, major mode and an arbitrary transformation
+;; between the two. Configuration is considered next.
 
 ;;; Configuration:
 
@@ -131,9 +136,9 @@
 
 ;;; Status:
 
-;; This is an early release partly because I am interested in comments.
-;; There are still bugs and it can perform badly and destructively, particularly
-;; on buffers which are ill-formed with respect to their expected syntax.
+;; This is an early release. It is generallly functional now and seems to be
+;; stable, however, there is the possibility that it will behave badly and may
+;; result in data loss. Please use with care on files with backups.
 
 ;; Previous releases of this package were called "linked-buffer". I changed
 ;; this because I wanted a name for the general idea of text with two
@@ -141,9 +146,9 @@
 ;; hyperlinked text.
 
 ;; Although it is still too early to guarantee, I hope that the current
-;; configuration scheme will remain fixed, and subclass extensions should require
-;; little change for the future, except as a result of changes to address the
-;; issues described in the next paragraph.
+;; configuration scheme will remain fixed, and subclass extensions should
+;; require little change for the future, except as a result of changes to
+;; address the issues described in the next paragraph.
 
 ;; Generally, the implementation of lentic uses Emacs native change hooks and
 ;; transfers only the changed text between the two buffers. Some
@@ -155,6 +160,7 @@
 ;; copies the whole buffer after every keypress; this is much easier to
 ;; write new configurations for, and is still reasonable performant to 3-400
 ;; line buffers.
+
 
 ;;; Code:
 
@@ -391,7 +397,7 @@ see `lentic-init' for details."
 ;; #+begin_src emacs-lisp
 (defmacro lentic-when-lentic (&rest body)
   "Evaluate BODY when in a lentic."
-  (declare (debug let))
+  (declare (debug t))
   `(when (and
           lentic-config
           (lentic-that
@@ -484,21 +490,27 @@ repeated errors.")
          (when (buffer-file-name)
            (save-buffer)))))))
 
+(defvar lentic-kill-retain nil
+  "If non-nil retain files even if requested to delete on exit.")
+
 (defun lentic-kill-buffer-hook ()
   (lentic-when-lentic
-   ;; remove files
-   (when
-       (and (oref lentic-config :delete-on-exit)
-            ;; might not exist if we not saved yet!
-            (file-exists-p buffer-file-name)
-            ;; if we are cloning in batch, we really do not want to kill
-            ;; everything at the end
-            (not noninteractive))
-     (delete-file (buffer-file-name)))
-   ;; kill lentic-buffers
-   (when (oref lentic-config :creator)
-     (kill-buffer
-      (lentic-that lentic-config)))))
+    (progn
+      ;; remove files
+      (when
+          (and (oref lentic-config :delete-on-exit)
+               ;; might not exist if we not saved yet!
+               (file-exists-p buffer-file-name)
+               ;; if we are cloning in batch, we really do not want to kill
+               ;; everything at the end
+               (not noninteractive)
+               ;; or we have blocked this anyway
+               (not lentic-kill-retain))
+        (delete-file (buffer-file-name)))
+      ;; kill lentic-buffers
+      (when (oref lentic-config :creator)
+        (kill-buffer
+         (lentic-that lentic-config))))))
 
 (defun lentic-kill-emacs-hook ()
   (-map
@@ -539,7 +551,6 @@ ERR is the error. HOOK is the hook type."
     (princ "The following is debugging information\n\n")
     (princ (error-message-string err)))
   (select-window (get-buffer-window "*lentic-fail*")))
-
 
 (defun lentic-ensure-init ()
   "Ensure that the `lentic-init' has been run."
@@ -757,6 +768,3 @@ Return the lentic contents without properties."
 
 ;;; lentic.el ends here
 ;; #+END_SRC
-
-
-;; #+INCLUDE: "./lentic-block.org" :minlevel 1

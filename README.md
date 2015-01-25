@@ -3,9 +3,21 @@ otherwise operate independently. This allows multi-modal editing, both with
 identical text, or with related but different text. It's somewhat similar to
 Emacs indirect buffers but more powerful.
 
-For more details see lentic.el
+While lentic could be used for many purposes, the original motivation is to
+enable a literate programming environment. The lentic documentation is
+self-hosting -- the source code contains all of the documentation. It can be
+generated and viewed using the menu items (Edit->Lentic->Read Doc), or it can
+be viewed at
+http://homepages.cs.ncl.ac.uk/phillip.lord/lentic/lenticular.html.
 
 Previously, lentic was known as linked-buffer.
+
+## Contributions
+
+I welcome contributions to lentic. I would like to keep control of the
+copyright. If you wish to directly contribute code, can you please tell me if
+you are have completed
+
 
 ## ChangeLog
 
@@ -14,6 +26,7 @@ Previously, lentic was known as linked-buffer.
 #### New Features
 
 - haskell->latex support added
+- Full Documentation System added
 
 #### Bug Fix
 

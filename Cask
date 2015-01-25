@@ -5,9 +5,10 @@
 
 (package-file "lentic.el")
 
-(files "lentic*.el" "dir" "*info")
+(files "lentic*.el" "dir" "*info" "lenticular.org")
 
 (development
  (depends-on "f")
  (depends-on "ert-runner")
- (depends-on "commander"))
+ (depends-on "commander")
+ (depends-on "htmlize"))

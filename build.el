@@ -4,6 +4,7 @@
 (require 'lentic-org)
 (require 'lentic-org)
 (require 'ox-publish)
+(require 'ox-texinfo)
 (require 'commander)
 
 (toggle-debug-on-error)
@@ -43,8 +44,19 @@
 
 (defun build/gen-texinfo ()
   (message "about to publish")
-  (org-publish "texinfo"))
+  (with-current-buffer
+      (find-file-noselect "lenticular.org")
+    (org-texinfo-export-to-texinfo)))
+
+(defun build/gen-html ()
+  (with-current-buffer
+      (find-file-noselect "lenticular.org")
+    (let ((org-export-htmlize-generate-css 'css))
+      (org-html-export-to-html))))
+
+
 
 (commander
  (command "gen-org" "Generate org from el" build/gen-org)
- (command "gen-texinfo" "Generate texinfo from org" build/gen-texinfo))
+ (command "gen-texinfo" "Generate texinfo from org" build/gen-texinfo)
+ (command "gen-html" "Generate HTML from org" build/gen-html))

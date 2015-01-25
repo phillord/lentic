@@ -32,6 +32,7 @@
 ;; ** Preliminaries
 
 (require 'lentic)
+(require 'lentic-doc)
 
 ;; ** Window and Buffer Functions
 
@@ -114,7 +115,6 @@ A and B are the buffers."
    (split-window-right)
    (lentic-create lentic-config)))
 
-
 ;; ** Minor Mode
 
 
@@ -140,6 +140,7 @@ A and B are the buffers."
   :lighter "lb"
   :keymap lentic-mode-map)
 
+;;;###autoload
 (easy-menu-change
  '("Edit")
  "Lentic"
@@ -152,7 +153,10 @@ A and B are the buffers."
    ["Insert File Local" lentic-mode-insert-file-local
     :active (not lentic-config)]
    ["Move Here" lentic-mode-move-lentic-window :active lentic-config]
-   ["Swap" lentic-mode-swap-lentic-window :active lentic-config]))
+   ["Swap" lentic-mode-swap-lentic-window :active lentic-config]
+   ["Read Doc (eww)" lentic-doc-eww-view]
+   ["Read Doc (external)" lentic-doc-external-view]
+   ))
 
 ;;;###autoload
 (defun lentic-mode-insert-file-local (init-function)

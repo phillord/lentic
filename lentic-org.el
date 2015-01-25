@@ -454,7 +454,3 @@
 ;;; lentic-org.el ends here
 ;; #+END_SRC
 
-
-;; # Local Variables:
-;; # lentic-init: lentic-orgel-org-init
-;; # End:
