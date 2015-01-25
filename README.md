@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/phillord/lentic.svg?branch=master)](https://travis-ci.org/phillord/lentic)
+
 Lentic allows two buffers to share the same or similar content but
 otherwise operate independently. This allows multi-modal editing, both with
 identical text, or with related but different text. It's somewhat similar to
