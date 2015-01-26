@@ -6,6 +6,7 @@
 
 ;; Author: Phillip Lord <phillip.lord@newcastle.ac.uk>
 ;; Maintainer: Phillip Lord <phillip.lord@newcastle.ac.uk>
+
 ;; The contents of this file are subject to the GPL License, Version 3.0.
 ;;
 ;; Copyright (C) 2014, Phillip Lord, Newcastle University
