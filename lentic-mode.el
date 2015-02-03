@@ -31,8 +31,10 @@
 
 ;; ** Preliminaries
 
+;; #+begin_src emacs-lisp
 (require 'lentic)
 (require 'lentic-doc)
+;; #+end_src
 
 ;; ** Window and Buffer Functions
 
@@ -114,9 +116,9 @@ A and B are the buffers."
   (set-window-buffer
    (split-window-right)
    (lentic-create lentic-config)))
+;; #+end_src
 
 ;; ** Minor Mode
-
 
 ;; #+begin_src emacs-lisp
 ;;;###autoload
@@ -135,9 +137,49 @@ A and B are the buffers."
 (define-key lentic-mode-map
   (kbd "C-c ,h") 'lentic-mode-move-lentic-window)
 
+(define-key lentic-mode-map
+  (kbd "C-c ,b") 'lentic-mode-split-window-below)
+
+(define-key lentic-mode-map
+  (kbd "C-c ,t") 'lentic-mode-split-window-right)
+
+(define-key lentic-mode-map
+  (kbd "C-c ,f") 'lentic-mode-insert-file-local)
+
+(define-key lentic-mode-map
+  (kbd "C-c ,c") 'lentic-mode-create-in-selected-window)
+
+(defcustom lentic-mode-line-lighter "Lentic"
+  "Default mode lighter for lentic"
+  :group 'lentic
+  :type 'string)
+
+(defvar-local lentic-mode-line (format " %s[]" lentic-mode-line-lighter))
+
+(defun lentic-mode-update-mode-line ()
+  (setq lentic-mode-line
+        (format " %s[%s]"
+                lentic-mode-line-lighter
+                (if lentic-config
+                    (lentic-mode-line-string lentic-config)
+                  "")))
+  (force-mode-line-update))
+
+(defun lentic-mode-buffer-list-update-hook ()
+  (-map
+   (lambda (b)
+     (with-current-buffer
+         b
+       (lentic-mode-update-mode-line)))
+   (buffer-list)))
+
+(add-hook 'buffer-list-update-hook
+         'lentic-mode-buffer-list-update-hook)
+
 ;;;###autoload
 (define-minor-mode lentic-mode
-  :lighter "lb"
+  "Documentation"
+  :lighter lentic-mode-line
   :keymap lentic-mode-map)
 
 ;;;###autoload
@@ -178,32 +220,14 @@ A and B are the buffers."
                 " Variables:\nlentic-init: %s\nEnd:\n") init-function))
       (comment-region start (point)))))
 
-(defvar lentic-start-mode-map (make-sparse-keymap))
-
-(define-key lentic-start-mode-map
-  (kbd "C-c ,b") 'lentic-mode-split-window-below)
-
-(define-key lentic-start-mode-map
-  (kbd "C-c ,t") 'lentic-mode-split-window-right)
-
-(define-key lentic-start-mode-map
-  (kbd "C-c ,f") 'lentic-mode-insert-file-local)
-
-(define-key lentic-start-mode-map
-  (kbd "C-c ,c") 'lentic-mode-create-in-selected-window)
-
 ;;;###autoload
-(define-minor-mode lentic-start-mode
-  :lighter ""
-  :keymap lentic-start-mode-map)
+(define-globalized-minor-mode global-lentic-mode
+  lentic-mode
+  lentic-mode-on)
 
-;;;###autoload
-(define-globalized-minor-mode global-lentic-start-mode
-  lentic-start-mode
-  lentic-start-on)
+(defun lentic-mode-on ()
+  (lentic-mode 1))
 
-(defun lentic-start-on ()
-  (lentic-start-mode 1))
 ;; #+end_src
 
 (provide 'lentic-mode)

@@ -82,13 +82,13 @@
 
 ;; lentic can be installed through MELPA/Marmalade then add
 
-;; (global-lentic-start-mode)
+;; (global-lentic-mode)
 
 ;; to your .emacs.
 
 ;; The main user entry points are accessible through the lentic edit menu, or
-;; through `global-lentic-start-mode' which adds keybindings to tools to create a
-;; new lentic buffer. `lentic-mode-create-in-selected-window' will create a
+;; through `global-lentic-mode' which adds keybindings to create and manipulate
+;; new lentic buffers. `lentic-mode-create-in-selected-window' will create a
 ;; lentic-buffer swap it to the current window, while
 ;; `lentic-mode-split-window-below' will split the current window and create a
 ;; lentic buffer.
@@ -263,6 +263,15 @@ by which linking happens.")
 or create it if it does not exist."
   (or (lentic-that conf)
       (lentic-create conf)))
+
+(defmethod lentic-mode-line-string ((conf lentic-configuration))
+  (when (slot-boundp conf :that-buffer)
+    (let ((that (oref conf :that-buffer)))
+      (if
+          (and that
+               (buffer-live-p that))
+          "on"
+        ""))))
 
 ;; #+end_src
 
@@ -509,8 +518,8 @@ repeated errors.")
         (delete-file (buffer-file-name)))
       ;; kill lentic-buffers
       (when (oref lentic-config :creator)
-        (kill-buffer
-         (lentic-that lentic-config))))))
+          (kill-buffer
+           (lentic-that lentic-config))))))
 
 (defun lentic-kill-emacs-hook ()
   (-map
@@ -719,6 +728,12 @@ same top-left location. Update details depend on CONF."
              (goto-char from-point)
              (set-window-start window from-window-start))))
        (get-buffer-window-list (lentic-that conf))))))
+
+;; put this here so we don't have to require lentic-mode to ensure that the
+;; mode line is updated.
+(defun lentic-update-display ()
+  (when (fboundp 'lentic-mode-update-mode-line)
+    (lentic-mode-update-mode-line)))
 ;; #+end_src
 
 

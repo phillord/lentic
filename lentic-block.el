@@ -69,16 +69,25 @@
                   :documentation
                   "Demarcation for the start of the commenting region")
    (comment-stop :initarg :comment-stop
-                :documentation
+                 :documentation
                 "Demarcaction for the end of the commenting region.")
    (case-fold-search :initarg :case-fold-search
-                      :documentation
-                      "Should match be case sensitive"
-                      :initform :default))
+                     :documentation
+                     "Should match be case sensitive"
+                     :initform :default)
+   (valid :initarg :valid
+          :documentation "True if markers in the buffer are valid"
+          :initform t))
   :documentation "Base configuration for blocked lentics.
 A blocked lentic is one where blocks of the buffer have a
 start of line block comment in one buffer but not the other."
   :abstract t)
+
+(defmethod lentic-mode-line-string ((conf lentic-block-configuration))
+  (if (not
+       (oref conf :valid))
+      "invalid"
+    (call-next-method conf)))
 
 (defmethod lentic-blk-comment-start-regexp
   ((conf lentic-block-configuration))
@@ -195,10 +204,17 @@ an implicit stop."
           (car match-block))
          (match-end
           (cadr match-block)))
-    (unless
+    (if
         (= (length match-start)
            (length match-end))
+        (unless
+            (oref conf :valid)
+          (oset conf :valid t)
+          (lentic-update-display))
       (lentic-log "delimiters do not match")
+      (when (oref conf :valid)
+        (oset conf :valid nil)
+        (lentic-update-display))
       (signal 'unmatched-delimiter-error
               (list buffer)))
     (with-current-buffer buffer
@@ -442,5 +458,4 @@ between the two buffers; we don't care which one has comments."
 (provide 'lentic-block)
 
 ;;; lentic-block.el ends here
-
 ;; #+end_src

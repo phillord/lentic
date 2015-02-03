@@ -31,6 +31,13 @@ completed the relevant paper with the FSF.
 - Full Documentation System added
 - Lentic buffers can be auto-killed now
 - Rot13 added after many requests
+- Mode lighter now shows when a lentic buffer exists.
+- lentic-block shows invalid states in the mode-line
+
+#### Breaking Changes
+
+lentic-start-mode has now gone, and been combined with lentic-mode. A new
+global-lentic-mode has been introduced which you should use instead.
 
 #### Bug Fix
 
