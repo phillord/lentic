@@ -3,6 +3,7 @@
 (require 'lentic-asciidoc)
 (require 'lentic-org)
 (require 'lentic-delayed)
+(require 'lentic-rot13)
 (require 'f)
 
 
@@ -140,6 +141,13 @@
     'lentic-org-clojure-init
     "org-clojure.org" "org-clojure.clj"
     )))
+
+(ert-deftest lentic-rot13 ()
+  (should
+   (lentic-test-clone-equal
+    'lentic-rot13-init
+    "abc.txt" "rot13-abc.txt"))
+  )
 
 
 ;; incremental testing

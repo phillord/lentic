@@ -29,6 +29,8 @@ completed the relevant paper with the FSF.
 
 - haskell->latex support added
 - Full Documentation System added
+- Lentic buffers can be auto-killed now
+- Rot13 added after many requests
 
 #### Bug Fix
 
