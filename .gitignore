@@ -12,7 +12,8 @@ auto
 /org
 /lentic-pkg.el
 /local-lentic-autoloads.el
-/lentic*org
+/lentic.org
+/lentic-*.org
 /lentic-autoloads.el
 /examples/lentic-orgel-org-big.org
 /examples/block-comment.tex

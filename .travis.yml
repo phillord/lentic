@@ -13,4 +13,4 @@ env:
 #  - EVM_EMACS=emacs-git-snapshot
 script:
   - emacs --version
-  - make test
+  - make travis

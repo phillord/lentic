@@ -1,0 +1,94 @@
+
+#+TITLE: Lenticular Text For Emacs
+#+AUTHOR: Phillip Lord
+
+#+INFOJS_OPT: view:info toc:nil
+
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="lenticular.css" />
+
+* Introduction
+
+This package implements lenticular text: simultaneous editing and viewing of
+the same (or closely related) text in two or more buffers. While lentic has
+many potential uses it also enables a form of literate programming. This is
+the literate documentation for lentic.
+
+Documentation for each package is organised according to approximate usage in
+documentation terms. So the core package (lentic) comes first, then that
+associated with the mode, and then a package which is useless but good for
+understanding how to configure lentic for new environments.
+
+** Caveat
+
+The general idea of using lentic to document itself is a good one; I think the
+general principle of dogfooding making sense. It has a disadvantage, though.
+At the moment, lentic is not finished, nor is the transformation that I am
+using to generate the documentation. So, the output is currently not ideal;
+this makes it both harder to read than ideal, nor the best advert for lentic.
+
+It will improve!
+
+
+* Lentic
+
+lentic.el is the central point of this package. It provides the base
+configuration options, the hooks into emacs change notification and the
+default transformation (which copies text exactly).
+
+#+include: "lentic.org"  :minlevel 2
+
+* Lentic Mode
+
+lentic-mode.el provides end-user functions for creating and manipulating
+lentic buffers.
+
+#+include: "lentic-mode.org" :minlevel 2
+
+
+* Lentic Rot13
+
+lentic-rot13.el is entirely useless for practical purposes but demonstrates
+how new lenticular transformations can be configured.
+
+#+include: "lentic-rot13.org" :minlevel 2
+
+* Lentic Block
+
+Lentic Block provides configurations where blocks of the buffer are
+commented in one buffer and not in the others. There are quite a few
+extensions of this configuration, including the one that is used to
+document this file.
+
+#+include: "lentic-block.org" :minlevel 2
+
+* Lentic Asciidoc
+
+A lentic block configuration for use with asciidoc.
+
+#+include: "lentic-asciidoc.org" :minlevel 2
+
+* Lentic Latex
+
+A lentic block configuration for use with latex.
+
+#+include: "lentic-latex-code.org" :minlevel 2
+
+* Lentic Org
+
+A lentic block configuration for use with org. This includes a more
+specialised and complex transformation between Emacs-Lisp and Org.
+
+#+include: "lentic-org.org" :minlevel 2
+
+* Lentic Dev
+
+Tools for developers of new configurations.
+
+#+include: "lentic-dev.org" :minlevel 2
+
+* Lentic Delayed
+
+A slightly useful package for cloning in the idle cycle.
+
+#+include: "lentic-delayed.org" :minlevel 2
+
