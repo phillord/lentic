@@ -23,6 +23,8 @@ completed the relevant paperwork with the FSF.
 
 ## ChangeLog
 
+### 0.7.1
+
 ### 0.7
 
 #### New Features
