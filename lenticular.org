@@ -92,3 +92,10 @@ A slightly useful package for cloning in the idle cycle.
 
 #+include: "lentic-delayed.org" :minlevel 2
 
+* Lentic Doc
+
+Lentic has a self-hosting documentation system which is defined here.
+
+#+include "lentic-doc.org" :minlevel 2
+
+

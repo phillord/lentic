@@ -84,7 +84,15 @@
 
 ;; #+end_src
 
-;; Lentic buffers have a bi-directional link between them.
+;; Lentic buffers have a bi-directional link between them. So, while /this/
+;; buffer may create /that/ buffer, after the initial creation, the two are
+;; equivalent lenticular views of each other. In terms of lentic, therefore, at
+;; creation time, we need to be able to /invert/ the configuration of /this/
+;; buffer to create a configuration for /that/ buffer which defines the
+;; transformation from /that/ to /this/.
+
+;; In this case, the rot13 transformation is symmetrical, so the conversion from
+;; /that/ to /this/ uses an object of the same class as from /this/ to /that/.
 
 ;; #+begin_src emacs-lisp
 (defmethod lentic-invert ((conf lentic-rot13-configuration))
@@ -93,6 +101,10 @@
    :this-buffer (lentic-that conf)
    :that-buffer (lentic-this conf)))
 ;; #+end_src
+
+;; And, finally, we need to create a function which will construct a new object.
+;; This has to be no-args because it is added as a symbol to `lentic-config'. It
+;; is this function which creates the configuration for initial buffer.
 
 ;; #+begin_src emacs-lisp
 (defun lentic-rot13-init ()
