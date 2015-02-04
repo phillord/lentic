@@ -18,7 +18,7 @@ Previously, lentic was known as linked-buffer.
 
 I welcome contributions to lentic. I would like to contribute lentic to ELPA
 or the Emacs core in the future, so would prefer that contributors has
-completed the relevant paper with the FSF.
+completed the relevant paperwork with the FSF.
 
 
 ## ChangeLog
@@ -42,6 +42,7 @@ global-lentic-mode has been introduced which you should use instead.
 #### Bug Fix
 
 - "swap" menu item now functional
+- lentic-mode actually does something now.
 
 ### 0.6.1
 
