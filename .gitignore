@@ -1,3 +1,4 @@
+*~
 auto
 /test/block-comment.tex
 /test/markdown-el.html
@@ -22,4 +23,5 @@ auto
 /examples/block-comment-delayed.tex
 /examples/clj-adoc.adoc
 /examples/owl.tex
+/examples/literate-haskell.tex
 Makefile-local
