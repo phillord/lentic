@@ -31,18 +31,25 @@
 ;;; Code:
 
 ;; #+begin_src emacs-lisp
+(require 'lentic)
 (require 'lentic-block)
 (require 'm-buffer)
+(require 'f)
+
+(defun lentic-asciidoc-oset (conf)
+  (lentic-m-oset
+   conf
+   :this-buffer (current-buffer)
+   :comment ";; "))
 
 (defun lentic-asciidoc-commented-new ()
-  (lentic-commented-asciidoc-configuration
-   "lb-commented-clojure asciidoc"
-   :this-buffer (current-buffer)
-   :lentic-file
-   (concat
-    (file-name-sans-extension
-           (buffer-file-name)) ".adoc")
-   :comment ";; "))
+  (lentic-asciidoc-oset
+   (lentic-commented-asciidoc-configuration
+    "lb-commented-clojure asciidoc"
+    :lentic-file
+    (concat
+     (file-name-sans-extension
+      (buffer-file-name)) ".adoc"))))
 
 (defun lentic-clojure-asciidoc-init ()
   (lentic-asciidoc-commented-new))
@@ -51,14 +58,13 @@
              'lentic-clojure-asciidoc-init)
 
 (defun lentic-asciidoc-uncommented-new ()
-  (lentic-uncommented-asciidoc-configuration
-   "lb-uncommented-clojure-asciidoc"
-   :this-buffer (current-buffer)
-   :lentic-file
-   (concat
-    (file-name-sans-extension
-     (buffer-file-name)) ".clj")
-   :comment ";; "))
+  (lentic-asciidoc-oset
+   (lentic-uncommented-asciidoc-configuration
+    "lb-uncommented-clojure-asciidoc"
+    :lentic-file
+    (concat
+     (file-name-sans-extension
+      (buffer-file-name)) ".clj"))))
 
 ;;;###autoload
 (defun lentic-asciidoc-clojure-init ()
@@ -145,17 +151,13 @@ This should remove other \"....\" matches.
 
 (defmethod lentic-invert
   ((conf lentic-commented-asciidoc-configuration))
-  (let ((rtn
-         (lentic-asciidoc-uncommented-new)))
-    (oset rtn :that-buffer (lentic-this conf))
-    rtn))
+  (lentic-m-oset (lentic-asciidoc-uncommented-new)
+                 :that-buffer (lentic-this conf)))
 
 (defmethod lentic-invert
   ((conf lentic-uncommented-asciidoc-configuration))
-  (let ((rtn
-         (lentic-asciidoc-commented-new)))
-    (oset rtn :that-buffer (lentic-this conf))
-    rtn))
+  (lentic-m-oset (lentic-asciidoc-commented-new)
+                 :that-buffer (lentic-this conf)))
 
 (provide 'lentic-asciidoc)
 ;;; lentic-asciidoc.el ends here

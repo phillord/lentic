@@ -273,6 +273,24 @@ or create it if it does not exist."
           "on"
         ""))))
 
+(defun lentic-m-oset (obj &rest plist)
+  "On OBJ set all properties in PLIST.
+Returns OBJ. See also `lentic-a-oset'"
+  (lentic-a-oset obj plist))
+
+(defun lentic-a-oset (obj plist)
+  "On OBJ, set all properties in PLIST.
+This is a utility function which just does the same as oset, but
+for lots of things at once. Returns OBJ."
+  (-map
+   (lambda (n)
+     (eieio-oset
+      obj
+      (car n)
+      (cadr n)))
+   (-partition 2 plist))
+  obj)
+
 ;; #+end_src
 
 ;; ** Default Configuration

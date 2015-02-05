@@ -41,17 +41,22 @@
 ;; #+begin_src emacs-lisp
 (require 'lentic-block)
 
-(defun lentic-clojure-to-latex-new ()
-  (lentic-commented-block-configuration
-   "lb-commented clojure latex"
+(defun lentic-latex-clojure-oset (conf)
+  (lentic-m-oset
+   conf
    :this-buffer (current-buffer)
-   :lentic-file
-   (concat
-    (file-name-sans-extension
-     (buffer-file-name)) ".tex")
    :comment ";; "
    :comment-start "\\\\end{code}"
    :comment-stop "\\\\begin{code}"))
+
+(defun lentic-clojure-to-latex-new ()
+  (lentic-latex-clojure-oset
+   (lentic-commented-block-configuration
+    "lb-commented clojure latex"
+    :lentic-file
+    (concat
+     (file-name-sans-extension
+      (buffer-file-name)) ".tex"))))
 
 ;;;###autoload
 (defun lentic-clojure-latex-init ()
@@ -62,16 +67,13 @@
 
 
 (defun lentic-latex-to-clojure-new ()
-  (lentic-uncommented-block-configuration
-   "lb-commented latex clojure"
-   :this-buffer (current-buffer)
-   :lentic-file
-   (concat
-    (file-name-sans-extension
-     (buffer-file-name)) ".clj")
-   :comment ";; "
-   :comment-start "\\\\end{code}"
-   :comment-stop "\\\\begin{code}"))
+  (lentic-latex-clojure-oset
+   (lentic-uncommented-block-configuration
+    "lb-commented latex clojure"
+    :lentic-file
+    (concat
+     (file-name-sans-extension
+      (buffer-file-name)) ".clj"))))
 
 ;;;###autoload
 (defun lentic-latex-clojure-init ()

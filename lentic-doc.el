@@ -32,7 +32,6 @@
 (require 'ox-html)
 (require 'browse-url)
 (require 'lentic)
-(require 'f)
 ;; #+end_src
 
 ;; ** Orgify Package

@@ -71,42 +71,38 @@
 ;; the emacs-lisp mode lentic.
 
 ;; #+BEGIN_SRC emacs-lisp
-(defun lentic-org-to-el-new ()
-  (lentic-uncommented-block-configuration
-   "lb-org-to-el"
+(defun lentic-org-oset (conf)
+  (lentic-m-oset
+   conf
    :this-buffer (current-buffer)
-   :lentic-file
-   (concat
-    (file-name-sans-extension
-     (buffer-file-name))
-    ".el")
    :comment ";; "
    :comment-stop "#\\\+BEGIN_SRC emacs-lisp"
    :comment-start "#\\\+END_SRC"))
 
 ;;;###autoload
 (defun lentic-org-el-init ()
-  (lentic-org-to-el-new))
+  (lentic-org-oset
+   (lentic-uncommented-block-configuration
+    "lb-org-to-el"
+    :lentic-file
+    (concat
+     (file-name-sans-extension
+      (buffer-file-name))
+     ".el"))))
 
 (add-to-list 'lentic-init-functions
              'lentic-org-el-init)
 
-(defun lentic-el-to-org-new ()
-  (lentic-commented-block-configuration
-   "lb-el-to-org"
-   :this-buffer (current-buffer)
-   :lentic-file
-   (concat
-    (file-name-sans-extension
-     (buffer-file-name))
-    ".org")
-   :comment ";; "
-   :comment-stop "#\\\+BEGIN_SRC emacs-lisp"
-   :comment-start "#\\\+END_SRC"))
-
 ;;;###autoload
 (defun lentic-el-org-init ()
-  (lentic-el-to-org-new))
+  (lentic-org-oset
+   (lentic-commented-block-configuration
+    "lb-el-to-org"
+    :lentic-file
+    (concat
+     (file-name-sans-extension
+      (buffer-file-name))
+     ".org"))))
 
 (add-to-list 'lentic-init-functions
              'lentic-el-org-init)
@@ -303,28 +299,21 @@
 
 (defmethod lentic-invert
   ((conf lentic-org-to-orgel-configuration))
-  (let ((rtn
-         (lentic-orgel-to-org-new)))
-    (oset rtn :that-buffer
-          (lentic-this conf))
-    rtn))
-
-(defun lentic-org-to-orgel-new ()
-  (lentic-org-to-orgel-configuration
-   "lb-orgel-to-el"
-   :this-buffer (current-buffer)
-   :lentic-file
-   (concat
-    (file-name-sans-extension
-     (buffer-file-name))
-    ".el")
-   :comment ";; "
-   :comment-stop "#\\\+BEGIN_SRC emacs-lisp"
-   :comment-start "#\\\+END_SRC"))
+  (lentic-m-oset
+   (lentic-orgel-org-init)
+   :that-buffer
+   (lentic-this conf)))
 
 ;;;###autoload
 (defun lentic-org-orgel-init ()
-  (lentic-org-to-orgel-new))
+  (lentic-org-oset
+   (lentic-org-to-orgel-configuration
+    "lb-orgel-to-el"
+    :lentic-file
+    (concat
+     (file-name-sans-extension
+      (buffer-file-name))
+     ".el"))))
 
 (add-to-list 'lentic-init-functions
              'lentic-org-orgel-init)
@@ -364,52 +353,37 @@
 
 (defmethod lentic-invert
   ((conf lentic-orgel-to-org-configuration))
-  (let ((rtn
-         (lentic-org-to-orgel-new)))
-    (oset rtn :delete-on-exit t)
-    (oset rtn :that-buffer (lentic-this conf))
-    rtn))
-
-(defun lentic-orgel-to-org-new ()
-  (lentic-orgel-to-org-configuration
-   "lb-orgel-to-org"
-   :this-buffer (current-buffer)
-   ;; we don't really need a file and could cope without, but org mode assumes
-   ;; that the buffer is file name bound when it exports. As it happens, this
-   ;; also means that file saving is possible which in turn saves the el file
-   :lentic-file
-   (concat
-    (file-name-sans-extension
-     (buffer-file-name))
-    ".org")
-   :comment ";; "
-   :comment-stop "#\\\+BEGIN_SRC emacs-lisp"
-   :comment-start "#\\\+END_SRC"))
+  (lentic-m-oset
+   (lentic-org-orgel-init)
+   :delete-on-exit t
+   :that-buffer (lentic-this conf)))
 
 ;;;###autoload
 (defun lentic-orgel-org-init ()
-  (lentic-orgel-to-org-new))
+  (lentic-org-oset
+   (lentic-orgel-to-org-configuration
+    "lb-orgel-to-org"
+    ;; we don't really need a file and could cope without, but org mode assumes
+    ;; that the buffer is file name bound when it exports. As it happens, this
+    ;; also means that file saving is possible which in turn saves the el file
+    :lentic-file
+    (concat
+     (file-name-sans-extension
+      (buffer-file-name))
+     ".org"))))
 
 (add-to-list 'lentic-init-functions
              'lentic-orgel-org-init)
 
 ;; #+END_SRC
 
-
-
-
 ;; *** org->clojure
 
 ;; #+BEGIN_SRC emacs-lisp
-(defun lentic-org-to-clojure-new ()
-  (lentic-uncommented-block-configuration
-   "lb-org-to-clojure"
+(defun lentic-org-clojure-oset (conf)
+  (lentic-m-oset
+   conf
    :this-buffer (current-buffer)
-   :lentic-file
-   (concat
-    (file-name-sans-extension
-     (buffer-file-name))
-    ".clj")
    :comment ";; "
    :comment-stop "#\\\+BEGIN_SRC clojure"
    :comment-start "#\\\+END_SRC"
@@ -417,27 +391,30 @@
    ;; will be ignored. Probably we should count instead!
    :case-fold-search nil))
 
+;;;###autoload
 (defun lentic-org-clojure-init ()
-  (lentic-org-to-clojure-new))
+  (lentic-org-clojure-oset
+   (lentic-uncommented-block-configuration
+    "lb-org-to-clojure"
+    :lentic-file
+    (concat
+     (file-name-sans-extension
+      (buffer-file-name))
+     ".clj"))))
 
 (add-to-list 'lentic-init-functions
              'lentic-org-clojure-init)
 
-(defun lentic-clojure-to-org-new ()
-  (lentic-commented-block-configuration
-   "lb-clojure-to-org"
-   :this-buffer (current-buffer)
-   :lentic-file
-   (concat
-    (file-name-sans-extension
-     (buffer-file-name))
-    ".org")
-   :comment ";; "
-   :comment-stop "#\\\+BEGIN_SRC clojure"
-   :comment-start "#\\\+END_SRC"))
-
+;;;###autoload
 (defun lentic-clojure-org-init ()
-  (lentic-clojure-to-org-new))
+  (lentic-org-clojure-oset
+   (lentic-commented-block-configuration
+    "lb-clojure-to-org"
+    :lentic-file
+    (concat
+     (file-name-sans-extension
+      (buffer-file-name))
+     ".org"))))
 
 (add-to-list 'lentic-init-functions
              'lentic-clojure-org-init)
@@ -454,4 +431,3 @@
 (provide 'lentic-org)
 ;;; lentic-org.el ends here
 ;; #+END_SRC
-
