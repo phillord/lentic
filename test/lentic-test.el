@@ -83,7 +83,7 @@
 
 (ert-deftest lentic-conf ()
   (should
-   (equal 'normal-mode
+   (equal nil
           (oref
            (lentic-default-configuration "bob")
            :lentic-mode))))

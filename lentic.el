@@ -214,7 +214,7 @@ of mode in the current buffer.")
 ;; #+begin_src emacs-lisp
 ;;
 ;; Base Configuration:
-;;
+
 (defclass lentic-configuration ()
   ((this-buffer
     :initarg :this-buffer)
@@ -306,7 +306,7 @@ for lots of things at once. Returns OBJ."
     :initform nil
     :initarg :lentic-file)
    (lentic-mode
-    :initform 'normal-mode
+    :initform nil
     :initarg :lentic-mode))
   "Configuration which maintains two lentics with the same contents.")
 
@@ -332,7 +332,9 @@ created."
            (format "*lentic: %s*"
                    (buffer-name
                     this-buffer))))
-         (sec-mode (oref conf :lentic-mode))
+         (sec-mode
+          (or (oref conf :lentic-mode)
+              major-mode))
          (sec-file (oref conf :lentic-file)))
     (oset conf :creator t)
     ;; make sure this-buffer knows about that-buffer
@@ -619,7 +621,6 @@ rest is currently just ignored."
     start stop length-before)
    (lentic-update-contents lentic-config
                            start stop length-before)))
-
 
 ;; convert the start position and store it. we need to do this before
 ;; the change so that we can use the value during clone. after the
