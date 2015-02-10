@@ -341,34 +341,40 @@ between the two buffers; we don't care which one has comments."
                              "start")
                            (when stop-in-comment
                              "stop")))
-    ;; now clone the buffer
-    (call-next-method conf start stop length-before
-                      start-converted stop-converted)
-    ;; remove the line comments in the to buffer
-    ;; if the delimitors are unmatched, then we can do nothing other than clone.
-    (condition-case e
-        (lentic-blk-uncomment-buffer
-         conf
-         ;; the buffer at this point has been copied over, but is in an
-         ;; inconsistent state (because it may have comments that it should
-         ;; not). Still, the convertor should still work because it counts from
-         ;; the end
-         (lentic-convert
-          conf
-          ;; point-min if we know nothing else
-          (or start (point-min)))
-         (lentic-convert
-          conf
-          ;; if we have a stop
-          (if stop
-              ;; take stop (if we have got longer) or
-              ;; start length before (if we have got shorter)
-              (max stop
-                   (+ start length-before))
-            (point-max)))
-         (lentic-that conf))
-      (unmatched-delimiter-error
-       nil))))
+    ;; now clone the buffer, recording the return value unless either the
+    ;; start or the stop is in comment, in which case we need a nil.
+    (let* ((clone-return
+            (call-next-method conf start stop length-before
+                              start-converted stop-converted))
+           (clone-return
+            (unless (or start-in-comment stop-in-comment)
+              clone-return)))
+      ;; remove the line comments in the to buffer
+      ;; if the delimitors are unmatched, then we can do nothing other than clone.
+      (condition-case e
+          (lentic-blk-uncomment-buffer
+           conf
+           ;; the buffer at this point has been copied over, but is in an
+           ;; inconsistent state (because it may have comments that it should
+           ;; not). Still, the convertor should still work because it counts from
+           ;; the end
+           (lentic-convert
+            conf
+            ;; point-min if we know nothing else
+            (or start (point-min)))
+           (lentic-convert
+            conf
+            ;; if we have a stop
+            (if stop
+                ;; take stop (if we have got longer) or
+                ;; start length before (if we have got shorter)
+                (max stop
+                     (+ start length-before))
+              (point-max)))
+           (lentic-that conf))
+        (unmatched-delimiter-error
+         nil))
+      clone-return)))
 
 (defmethod lentic-invert
   ((conf lentic-commented-block-configuration))
@@ -395,7 +401,7 @@ between the two buffers; we don't care which one has comments."
 (defmethod lentic-clone
   ((conf lentic-uncommented-block-configuration)
    &optional start stop length-before start-converted stop-converted)
-  "Update the contents in the lentic with comments."
+  "Update the contents in the lentic without comments."
   ;;(lentic-log "blk-clone-comment conf):(%s)" conf)
   (let*
       ((start-at-bolp
@@ -412,30 +418,35 @@ between the two buffers; we don't care which one has comments."
         (lentic-log "In comment: %s"
                            (when start-at-bolp
                              "start")))
-    (call-next-method conf start stop length-before
-                      start-converted stop-converted)
-    (condition-case e
-        (lentic-blk-comment-buffer
-         conf
-         ;; the buffer at this point has been copied over, but is in an
-         ;; inconsistent state (because it may have comments that it should
-         ;; not). Still, the convertor should still work because it counts from
-         ;; the end
-         (lentic-convert
-          conf
-          ;; point-min if we know nothing else
-          (or start (point-min)))
-         (lentic-convert
-          conf
-          ;; if we have a stop
-          (if stop
-              ;; take stop (if we have got longer) or
-              ;; start length before (if we have got shorter)
-              (max stop
-                   (+ start length-before))
-            (point-max)))
-         (lentic-that conf))
-      (unmatched-delimiter-error nil))))
+    (let* ((clone-return
+           (call-next-method conf start stop length-before
+                             start-converted stop-converted))
+           (clone-return
+            (unless start-at-bolp
+              clone-return)))
+      (condition-case e
+          (lentic-blk-comment-buffer
+           conf
+           ;; the buffer at this point has been copied over, but is in an
+           ;; inconsistent state (because it may have comments that it should
+           ;; not). Still, the convertor should still work because it counts from
+           ;; the end
+           (lentic-convert
+            conf
+            ;; point-min if we know nothing else
+            (or start (point-min)))
+           (lentic-convert
+            conf
+            ;; if we have a stop
+            (if stop
+                ;; take stop (if we have got longer) or
+                ;; start length before (if we have got shorter)
+                (max stop
+                     (+ start length-before))
+              (point-max)))
+           (lentic-that conf))
+        (unmatched-delimiter-error nil))
+      clone-return)))
 
 (defmethod lentic-invert
   ((conf lentic-uncommented-block-configuration))

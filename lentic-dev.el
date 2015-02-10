@@ -77,7 +77,31 @@ Using this function is the easiest way to test an new
 painful for debugging. Set variable `lentic-emergency' to
 true to disable command loop functionality."
   (interactive)
-  (lentic-post-command-hook-1))
+  (lentic-post-command-hook-1 (current-buffer) '()))
+
+;;;###autoload
+(defun lentic-dev-after-save-hook ()
+  (interactive)
+  (let ((lentic-emergency nil))
+    (lentic-mode-after-save-hook)))
+
+;;;###autoload
+(defun lentic-dev-mode-buffer-list-update-hook ()
+  (interactive)
+  (let ((lentic-emergency nil))
+    (lentic-mode-buffer-list-update-hook)))
+
+;;;###autoload
+(defun lentic-dev-kill-buffer-hook ()
+  (interactive)
+  (let ((lentic-emergency nil))
+    (lentic-kill-buffer-hook)))
+
+;;;###autoload
+(defun lentic-dev-kill-emacs-hook ()
+  (interactive)
+  (let ((lentic-emergency nil))
+    (lentic-kill-emacs-hook)))
 
 ;;;###autoload
 (defun lentic-dev-reinit ()
@@ -86,7 +110,6 @@ This can help if you have change the config object and need
 to make sure there is a new one."
   (interactive)
   (funcall lentic-init))
-
 
 ;; #+end_src
 

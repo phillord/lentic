@@ -1,1 +1,1 @@
---load lentic.el lentic-block.el lentic-latex-code lentic-asciidoc lentic-org lentic-delayed lentic-rot13 test/lentic-test.el
+--load lentic.el lentic-block.el lentic-latex-code.el lentic-asciidoc.el lentic-org.el lentic-rot13.el test/lentic-test.el
