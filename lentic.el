@@ -306,7 +306,7 @@ for lots of things at once. Returns OBJ."
     :initform nil
     :initarg :lentic-file)
    (lentic-mode
-    :initform 'normal-mode
+    :initform nil
     :initarg :lentic-mode))
   "Configuration which maintains two lentics with the same contents.")
 
@@ -332,7 +332,9 @@ created."
            (format "*lentic: %s*"
                    (buffer-name
                     this-buffer))))
-         (sec-mode (oref conf :lentic-mode))
+         (sec-mode
+          (or (oref conf :lentic-mode)
+              major-mode))
          (sec-file (oref conf :lentic-file)))
     (oset conf :creator t)
     ;; make sure this-buffer knows about that-buffer
