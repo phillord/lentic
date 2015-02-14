@@ -36,6 +36,36 @@
 (require 'lentic-doc)
 ;; #+end_src
 
+;; ** Utility
+(defun lentic-mode-lentic-list (buffer)
+  "Return a list of all lentics for BUFFER.
+Lentics are listed in an undefined order."
+  (lentic-mode--lentic-list-1 buffer nil))
+
+(defun lentic-mode--lentic-list-1 (buffer seen-buffer)
+  (when buffer
+    (with-current-buffer buffer
+      (lentic-when-lentic
+       (setq seen-buffer (cons buffer seen-buffer))
+       (-map
+        (lambda (config)
+          (unless (-contains? seen-buffer (lentic-that config))
+            (lentic-mode--lentic-list-1
+             (lentic-that config)
+             seen-buffer)))
+        (lentic-config))))))
+
+(defun lentic-mode-buffer-list (buffer &optional frame)
+  "Returns a list of all lentics for BUFFER.
+Lentics are listed in the same order as in fundamental
+`buffer-list'. or the frame local if FRAME is specified."
+  (let ((lentic-list
+         (lentic-mode-lentic-list buffer)))
+    (-filter
+     (lambda (b)
+       (-contains? lentic-list b))
+     (buffer-list frame))))
+
 ;; ** Window and Buffer Functions
 
 ;; #+begin_src emacs-lisp
@@ -51,7 +81,8 @@ then the current-buffer will be moved into that window. See also
          (point)))
     (lentic-mode-swap-buffer-windows
      (current-buffer)
-     (lentic-that lentic-config))
+     (lentic-that
+      (car lentic-config)))
     (set-window-start
      (selected-window)
      before-window-start)
@@ -65,7 +96,8 @@ See also `lentic-mode-move-lentic-window'."
   (interactive)
   (lentic-mode-swap-buffer-windows
    (current-buffer)
-   (lentic-that lentic-config))
+   (lentic-that
+    (car lentic-config)))
   (when (window-live-p
          (get-buffer-window
           (current-buffer)))
@@ -85,6 +117,7 @@ A and B are the buffers."
       (set-window-buffer
        window-b a))))
 
+;;;###autoload
 (defun lentic-mode-create-in-selected-window ()
   "Create a lentic buffer and move it to the current window."
   (interactive)
@@ -92,30 +125,30 @@ A and B are the buffers."
          (window-start (get-buffer-window)))
         (before-window-point
          (point)))
-    (lentic-ensure-init)
     (set-window-buffer
      (selected-window)
-     (lentic-create lentic-config))
+     (-take 1
+            (lentic-init-all-create lentic-config)))
     (set-window-start
      (selected-window)
      before-window-start)
     (goto-char before-window-point)))
 
+;;;###autoload
 (defun lentic-mode-split-window-below ()
   "Create a lentic buffer in a new window below."
   (interactive)
-  (lentic-ensure-init)
   (set-window-buffer
    (split-window-below)
-   (lentic-create lentic-config)))
+   (car (lentic-init-all-create))))
 
+;;;###autoload
 (defun lentic-mode-split-window-right ()
   "Create a lentic buffer in a new window right."
   (interactive)
-  (lentic-ensure-init)
   (set-window-buffer
    (split-window-right)
-   (lentic-create lentic-config)))
+   (car (lentic-init-all-create))))
 ;; #+end_src
 
 ;; ** Minor Mode
@@ -161,20 +194,27 @@ A and B are the buffers."
         (format " %s[%s]"
                 lentic-mode-line-lighter
                 (if lentic-config
-                    (lentic-mode-line-string lentic-config)
+                    (s-join ","
+                     (-map
+                      (lambda (conf)
+                        (lentic-mode-line-string conf))
+                      lentic-config))
                   "")))
   (force-mode-line-update))
 
 (defun lentic-mode-buffer-list-update-hook ()
-  (-map
-   (lambda (b)
-     (with-current-buffer
-         b
-       (lentic-mode-update-mode-line)))
-   (buffer-list)))
+  (if lentic-emergency
+      (setq lentic-mode-line
+            (format " %s[Emergency]" lentic-mode-line-lighter))
+    (-map
+     (lambda (b)
+       (with-current-buffer
+           b
+         (lentic-mode-update-mode-line)))
+     (buffer-list))))
 
 (add-hook 'buffer-list-update-hook
-         'lentic-mode-buffer-list-update-hook)
+          'lentic-mode-buffer-list-update-hook)
 
 ;;;###autoload
 (define-minor-mode lentic-mode

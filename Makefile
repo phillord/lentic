@@ -7,7 +7,7 @@ install:
 	cask install
 
 test:
-	cask exec ert-runner
+	cask exec ert-runner $(TESTS)
 
 org:
 	cask exec emacs --debug --script build.el -- gen-org

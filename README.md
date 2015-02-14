@@ -23,7 +23,25 @@ completed the relevant paperwork with the FSF.
 
 ## ChangeLog
 
-### 0.7.1
+### 0.8
+
+This buffer introduces multiple lentic buffers. This is important because
+lentic has more than one use -- both for maintaining two syntactic views (for
+example for literate programming) and for maintaining two identical persistent
+views (for example, for editing a file in two places at once). It's now
+possible to do both of these at the same time.
+
+This necessitates a change to the return value of lentic-clone to enable the
+percolation of changes between several buffers. In this default usage of two
+lentic buffers this will have no effect.
+
+#### New Features
+
+- Multiple lentic buffers are now possible.
+
+#### Breaking Changes
+
+- The return value of lentic-clone has now changed.
 
 ### 0.7
 

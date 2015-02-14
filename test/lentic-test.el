@@ -2,7 +2,6 @@
 (require 'lentic-latex-code)
 (require 'lentic-asciidoc)
 (require 'lentic-org)
-(require 'lentic-delayed)
 (require 'lentic-rot13)
 (require 'f)
 
@@ -61,22 +60,32 @@
                    (buffer-string))))
       nil)))
 
+(defun lentic-test-clone-with-cleanup (file init)
+  (unwind-protect
+      (lentic-batch-clone-with-config (lentic-test-file file) init)
+    (let ((this (get-file-buffer (lentic-test-file file))))
+      (when this
+        (with-current-buffer this
+          (let ((this (lentic-that (car lentic-config))))
+            (kill-buffer that)))
+        (kill-buffer this)))))
+
 (defun lentic-test-clone-equal (init file cloned-file)
   (let ((cloned-file
          (f-read
           (lentic-test-file cloned-file)))
         (cloned-results
-         (lentic-batch-clone-with-config
-          (lentic-test-file file) init)))
+         (lentic-test-clone-with-cleanup
+          file init)))
     (lentic-test-equal-loudly cloned-file cloned-results)))
 
 (defun lentic-test-clone-equal-generate
   (init file cloned-file)
   "Generates the test file for `lentic-batch-clone-equal'."
   (f-write
-   (lentic-batch-clone-with-config
+   (lentic-test-clone-with-cleanup
     (lentic-test-file file) init)
-   'utf-8
+   o'utf-8
    (concat lentic-test-dir cloned-file))
   ;; return nil, so if we use this in a test by mistake, it will crash out.
   nil)
@@ -91,15 +100,16 @@
 (ert-deftest lentic-simple ()
   (should
    (equal "simple\n"
-          (lentic-batch-clone-with-config
-           (lentic-test-file "simple-contents.txt")
+          (lentic-test-clone-with-cleanup
+           "simple-contents.txt"
            'lentic-default-init))))
 
 (ert-deftest lentic-clojure-latex ()
   (should
    (lentic-test-clone-equal
     'lentic-clojure-latex-init
-    "block-comment.clj" "block-comment-out.tex")))
+    "block-comment.clj"
+    "block-comment-out.tex")))
 
 
 (ert-deftest lentic-asciidoc-clojure ()
@@ -146,8 +156,25 @@
   (should
    (lentic-test-clone-equal
     'lentic-rot13-init
-    "abc.txt" "rot13-abc.txt"))
-  )
+    "abc.txt" "rot13-abc.txt")))
+
+(ert-deftest three-way ()
+  (should
+   (with-current-buffer
+       (find-file-noselect
+        (lentic-test-file "block-comment.clj"))
+     (setq lentic-init
+           '(lentic-clojure-latex-init
+             lentic-default-init))
+     (lentic-init-all-create)
+     (let ((tex
+            (get-buffer "block-comment.tex"))
+           (clj
+            (get-buffer "*lentic: block-comment.clj*")))
+       (kill-buffer tex)
+       (kill-buffer clj)
+       (and clj tex)))))
+
 
 
 ;; incremental testing
@@ -172,10 +199,10 @@ results."
           (with-current-buffer
               (setq this
                     (find-file-noselect filename))
-            (setq lentic-init init)
+            (setq lentic-init (-list init))
             (progn
               (setq that
-                    (lentic-init-create))
+                    (car (lentic-init-all-create)))
               (funcall f-this)
               (with-current-buffer
                   that
@@ -196,8 +223,7 @@ results."
 
         ;; unwind forms
         (when this (kill-buffer this))
-        (when that (kill-buffer that))))
-    ))
+        (when that (kill-buffer that))))))
 
 (defun lentic-test-clone-and-change-equal
   (init file cloned-file
@@ -360,18 +386,21 @@ This mostly checks my test machinary."
     t)))
 
 ;; ** delayed init
-(ert-deftest lentic-simple-delayed ()
-  (should
-   (equal
-    (concat "x" abc-txt)
-    (lentic-test-clone-and-change-with-config
-     (lentic-test-file "abc.txt")
-     'lentic-delayed-default-init
-     (lambda ()
-       (goto-char (point-min))
-       (insert "x")
-       ;; run timer by ourselves.
-       (lentic-delayed-timer-function))))))
+
+;; Probably time to deprecate this package now
+
+;; (ert-deftest lentic-simple-delayed ()
+;;   (should
+;;    (equal
+;;     (concat "x" abc-txt)
+;;     (lentic-test-clone-and-change-with-config
+;;      (lentic-test-file "abc.txt")
+;;      'lentic-delayed-default-init
+;;      (lambda ()
+;;        (goto-char (point-min))
+;;        (insert "x")
+;;        ;; run timer by ourselves.
+;;        (lentic-delayed-timer-function))))))
 
 ;; tests for lots of types of change and whether they break the incremental
 ;; updates.
