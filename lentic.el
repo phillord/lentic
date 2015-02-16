@@ -461,35 +461,45 @@ see `lentic-init' for details."
            lentic-config))
      ,@body))
 
+(defmacro lentic-when-buffer (buffer &rest body)
+  (declare (debug t)
+           (indent 1))
+  `(when (and ,buffer
+              (buffer-live-p ,buffer))
+     ,@body))
+
 (defmacro lentic-when-with-current-buffer (buffer &rest body)
   (declare (debug t)
            (indent 1))
-  `(when (and buffer
-              (buffer-live-p buffer))
-     (with-current-buffer
-         buffer
+  `(lentic-when-buffer
+    ,buffer
+    (with-current-buffer
+        buffer
+      ,@body)))
+
+(defmacro lentic-with-lentic-buffer (buffer &rest body)
+  (declare (debug t)
+           (indent 1))
+  `(lentic-when-with-current-buffer
+       buffer
+     (when lentic-config
        ,@body)))
 
 (defun lentic-each (buffer fn &optional seen-buffer)
   "Starting at buffer, call fn on every lentic-buffer in the
 excluding buffer. fn should take a single argument which is the
 buffer."
-  ;; when buffer is sane
-  (when (and buffer
-             (buffer-live-p buffer))
-    ;; and is lentic
-    (with-current-buffer buffer
-      (when lentic-config
-        (setq seen-buffer (cons buffer seen-buffer))
-        (-map
-         (lambda (conf)
-           (let ((that
-                  (lentic-that conf)))
-             (when (and (not (-contains? seen-buffer that))
-                        (buffer-live-p that))
-               (funcall fn that)
-               (lentic-each that fn seen-buffer))))
-         lentic-config)))))
+  (lentic-with-lentic-buffer buffer
+    (setq seen-buffer (cons buffer seen-buffer))
+    (-map
+     (lambda (conf)
+       (let ((that
+              (lentic-that conf)))
+         (when (and (not (-contains? seen-buffer that))
+                    (buffer-live-p that))
+           (funcall fn that)
+           (lentic-each that fn seen-buffer))))
+     lentic-config)))
 
 (defun lentic-ensure-hooks ()
   "Ensures that the hooks that this mode requires are in place."
@@ -602,20 +612,17 @@ repeated errors.")
 
 (defun lentic-kill-emacs-hook ()
   (-map
-   (lambda (b)
-     (with-current-buffer
-         b
-       (when
-           lentic-config
-         ;; delete if any delete-on-exit
-         (-map
-          (lambda (conf)
-            (and
-             (oref conf :delete-on-exit)
-             (file-exists-p buffer-file-name)
-             (not noninteractive)
-             (delete-file (buffer-file-name))))
-          lentic-config))))
+   (lambda (buffer)
+     (lentic-with-lentic-buffer
+         buffer
+       (-map
+        (lambda (conf)
+          (and
+           (oref conf :delete-on-exit)
+           (file-exists-p buffer-file-name)
+           (not noninteractive)
+           (delete-file (buffer-file-name))))
+        lentic-config)))
    (buffer-list)))
 
 (defun lentic-post-command-hook ()
@@ -623,27 +630,30 @@ repeated errors.")
   (unless lentic-emergency
     (condition-case err
         (progn
-          (lentic-post-command-hook-1 (current-buffer)))
+          ;; we test for this later anyway, but this makes it easier to debug.
+          (when lentic-config
+            (lentic-post-command-hook-1 (current-buffer))))
       (error
        (lentic-hook-fail err "post-command-hook")))))
 
 (defun lentic-post-command-hook-1 (buffer &optional seen-buffer)
   "Update point according to config."
-  (lentic-when-with-current-buffer
+  (lentic-with-lentic-buffer
       buffer
-    ;; only if at least one config is live
-    (when lentic-config
-      ;; now we have seen this buffer don't look again
-      (setq seen-buffer (cons buffer seen-buffer))
-      ;; for all configurations
-      (-map
-       (lambda (config)
+    ;; now we have seen this buffer don't look again
+    (setq seen-buffer (cons buffer seen-buffer))
+    ;; for all configurations
+    (-map
+     (lambda (config)
+       (let ((that (lentic-that config)))
          ;; check for the termination condition
-         (unless (-contains? seen-buffer (lentic-that config))
-           ;; then update and recurse
-           (lentic-update-point config)
-           (lentic-post-command-hook-1 (lentic-that config) seen-buffer)))
-       lentic-config))))
+         (unless (-contains? seen-buffer that)
+           (lentic-when-buffer
+               that
+             ;; then update and recurse
+             (lentic-update-point config))
+           (lentic-post-command-hook-1 (lentic-that config) seen-buffer))))
+     lentic-config)))
 
 (defun lentic-hook-fail (err hook)
   "Give an informative message when we have to fail.
@@ -654,7 +664,7 @@ ERR is the error. HOOK is the hook type."
   (with-output-to-temp-buffer "*lentic-fail*"
     (princ "There has been an error in lentic-mode.\n")
     (princ "The following is debugging information\n\n")
-    (princ (format "Hook: %s" hook))
+    (princ (format "Hook: %s\n" hook))
     (princ (error-message-string err)))
   (select-window (get-buffer-window "*lentic-fail*")))
 
@@ -708,25 +718,23 @@ Errors are handled. REST is currently just ignored."
             length-before &optional seen-buffer)
   "run change update according to `lentic-config'.
 rest is currently just ignored."
-  (when buffer
-    (with-current-buffer buffer
-      (lentic-when-lentic
-       (setq seen-buffer (cons buffer seen-buffer))
-       (-map
-        (lambda (config)
-          (unless (-contains? seen-buffer (lentic-that config))
-            (let ((updates
-                   (or
-                    (lentic-update-contents config
-                                            start stop length-before)
-                    '(nil nil nil))))
-              (lentic-after-change-function-1
-               (lentic-that config)
-               (nth 0 updates)
-               (nth 1 updates)
-               (nth 2 updates)
-               seen-buffer))))
-        lentic-config)))))
+  (lentic-with-lentic-buffer buffer
+    (setq seen-buffer (cons buffer seen-buffer))
+    (-map
+     (lambda (config)
+       (unless (-contains? seen-buffer (lentic-that config))
+         (let ((updates
+                (or
+                 (lentic-update-contents config
+                                         start stop length-before)
+                 '(nil nil nil))))
+           (lentic-after-change-function-1
+            (lentic-that config)
+            (nth 0 updates)
+            (nth 1 updates)
+            (nth 2 updates)
+            seen-buffer))))
+     lentic-config)))
 
 ;; convert the start position and store it. we need to do this before
 ;; the change so that we can use the value during clone. after the
@@ -744,32 +752,30 @@ rest is currently just ignored."
        (lentic-hook-fail err "before change")))))
 
 (defun lentic-before-change-function-1 (buffer start stop &optional seen-buffer)
-  (when buffer
-    (with-current-buffer buffer
-      (setq seen-buffer (cons buffer seen-buffer))
-      (lentic-when-lentic
-       (-map
-        (lambda (config)
-          (unless
-              (-contains? seen-buffer (lentic-that config))
-            (oset config :last-change-start start)
-            (oset config
-                  :last-change-start-converted
-                  (lentic-convert
-                   config
-                   start))
-            (oset config :last-change-stop stop)
-            (oset config
-                  :last-change-stop-converted
-                  (lentic-convert
-                   config
-                   stop))
-            (lentic-before-change-function-1
-             (lentic-that config)
-             (oref config :last-change-start-converted)
-             (oref config :last-change-stop-converted)
-             seen-buffer)))
-        lentic-config)))))
+  (lentic-with-lentic-buffer buffer
+    (setq seen-buffer (cons buffer seen-buffer))
+    (-map
+     (lambda (config)
+       (unless
+           (-contains? seen-buffer (lentic-that config))
+         (oset config :last-change-start start)
+         (oset config
+               :last-change-start-converted
+               (lentic-convert
+                config
+                start))
+         (oset config :last-change-stop stop)
+         (oset config
+               :last-change-stop-converted
+               (lentic-convert
+                config
+                stop))
+         (lentic-before-change-function-1
+          (lentic-that config)
+          (oref config :last-change-start-converted)
+          (oref config :last-change-stop-converted)
+          seen-buffer)))
+     lentic-config)))
 
 (defun lentic-update-contents (conf &optional start stop length-before)
   "update the contents of that-buffer with the contents of this-buffer.
