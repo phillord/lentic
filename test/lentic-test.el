@@ -66,7 +66,7 @@
     (let ((this (get-file-buffer (lentic-test-file file))))
       (when this
         (with-current-buffer this
-          (let ((this (lentic-that (car lentic-config))))
+          (let ((that (lentic-that (car lentic-config))))
             (kill-buffer that)))
         (kill-buffer this)))))
 

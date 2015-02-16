@@ -419,8 +419,8 @@ between the two buffers; we don't care which one has comments."
                            (when start-at-bolp
                              "start")))
     (let* ((clone-return
-           (call-next-method conf start stop length-before
-                             start-converted stop-converted))
+            (call-next-method conf start stop length-before
+                              start-converted stop-converted))
            (clone-return
             (unless start-at-bolp
               clone-return)))

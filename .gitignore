@@ -24,4 +24,5 @@ auto
 /examples/clj-adoc.adoc
 /examples/owl.tex
 /examples/literate-haskell.tex
+/examples/multi-orgel-org.org
 Makefile-local

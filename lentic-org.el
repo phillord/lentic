@@ -219,9 +219,9 @@
          (lentic-this conf)))
        (header-one-line
         (m-buffer-match
-          (lentic-this conf)
-          "^[*] \\(\\w*\\)$"
-          :begin (cl-cadar first-line)))
+         (lentic-this conf)
+         "^[*] \\(\\w*\\)$"
+         :begin (cl-cadar first-line)))
        (special-lines
         (-concat first-line header-one-line)))
     ;; check whether we are in a special line -- if so widen the change extent
@@ -257,33 +257,41 @@
               (m-buffer-at-line-end-position
                (lentic-that conf)
                stop-converted)
-            stop-converted)))
-      (call-next-method conf start stop length-before
-                        start-converted stop-converted)
-      (let ((first-line-end-match
-             (cl-cadar
-              (m-buffer-match-first-line
-               (lentic-that conf)))))
-        (m-buffer-replace-match
-         (m-buffer-match
-          (lentic-that conf)
-          ;; we can be in one of two states depending on whether we have made a new
-          ;; clone or an incremental change
-          "^;; \\(;;;\\|# #\\)"
-          :end first-line-end-match)
-         ";;;")
-        ;; replace big headers, in either of their two states
-        (m-buffer-replace-match
-         (m-buffer-match
-          (lentic-that conf)
-          "^;; [*] \\(\\w*\\)$"
-          :begin first-line-end-match)
-         ";;; \\1:")
-        (m-buffer-replace-match
-         (m-buffer-match (lentic-that conf)
-                         "^;; ;;; \\(\\w*:\\)$"
-                         :begin first-line-end-match)
-         ";;; \\1")))))
+            stop-converted))
+         (clone-return
+          (call-next-method conf start stop length-before
+                            start-converted stop-converted))
+         (first-line-end-match
+          (cl-cadar
+           (m-buffer-match-first-line
+            (lentic-that conf))))
+         ;; can't just use or here because we need non-short circuiting
+         (c1
+          (m-buffer-replace-match
+           (m-buffer-match
+            (lentic-that conf)
+            ;; we can be in one of two states depending on whether we have made a new
+            ;; clone or an incremental change
+            "^;; \\(;;;\\|# #\\)"
+            :end first-line-end-match)
+           ";;;"))
+         ;; replace big headers, in either of their two states
+         (c2
+          (m-buffer-replace-match
+           (m-buffer-match
+            (lentic-that conf)
+            "^;; [*] \\(\\w*\\)$"
+            :begin first-line-end-match)
+           ";;; \\1:"))
+         (c3
+          (m-buffer-replace-match
+           (m-buffer-match (lentic-that conf)
+                           "^;; ;;; \\(\\w*:\\)$"
+                           :begin first-line-end-match)
+           ";;; \\1")))
+      (if (or start-in-special stop-in-special c1 c2 c3)
+          nil
+        clone-return))))
 
 (defmethod lentic-convert
   ((conf lentic-org-to-orgel-configuration)
@@ -335,21 +343,30 @@
   ((conf lentic-orgel-to-org-configuration)
    &optional start stop length-before start-converted stop-converted)
   ;; do everything else to the buffer
-  (call-next-method conf start stop length-before
-                    start-converted stop-converted)
-  (m-buffer-replace-match
-   (m-buffer-match
-    (lentic-that conf)
-    ";;; "
-    :end
-    (cl-cadar
-     (m-buffer-match-first-line
-      (lentic-that conf))))
-   "# # ")
-  (m-buffer-replace-match
-   (m-buffer-match (lentic-that conf)
-                   "^;;; \\(\\\w*\\):")
-   "* \\1"))
+  (let* ((clone-return
+          (call-next-method conf start stop length-before
+                            start-converted stop-converted))
+         (m1
+          (m-buffer-replace-match
+           (m-buffer-match
+            (lentic-that conf)
+            ";;; "
+            :end
+            (cl-cadar
+             (m-buffer-match-first-line
+              (lentic-that conf))))
+           "# # "))
+         (m2
+          (m-buffer-replace-match
+           (m-buffer-match (lentic-that conf)
+                           "^;;; \\(\\\w*\\):")
+           "* \\1")))
+    (unless
+        ;; update some stuff
+        (or m1 m2)
+      ;; and return clone-return unless we have updated stuff in which case
+      ;; return nil
+      clone-return)))
 
 (defmethod lentic-invert
   ((conf lentic-orgel-to-org-configuration))
