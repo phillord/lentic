@@ -118,8 +118,8 @@ A and B are the buffers."
        window-b a))))
 
 ;;;###autoload
-(defun lentic-mode-create-in-selected-window ()
-  "Create a lentic buffer and move it to the current window."
+(defun lentic-mode-move-in-selected-window ()
+  "Move the lentic buffer into the current window, creating if necessary."
   (interactive)
   (let ((before-window-start
          (window-start (get-buffer-window)))
@@ -136,7 +136,7 @@ A and B are the buffers."
 
 ;;;###autoload
 (defun lentic-mode-split-window-below ()
-  "Create a lentic buffer in a new window below."
+  "Move lentic buffer to the window below, creating if needed."
   (interactive)
   (set-window-buffer
    (split-window-below)
@@ -144,11 +144,28 @@ A and B are the buffers."
 
 ;;;###autoload
 (defun lentic-mode-split-window-right ()
-  "Create a lentic buffer in a new window right."
+  "Move lentic buffer to the window right, creating if needed."
   (interactive)
   (set-window-buffer
    (split-window-right)
    (car (lentic-init-all-create))))
+
+(defun lentic-mode-create-new-view ()
+  (let* ((conf (lentic-default-init))
+         (_ (oset conf
+                  :sync-point nil))
+         (that (lentic-create conf)))
+    (setq lentic-config
+          (cons conf lentic-config))
+    that))
+
+;;;###autoload
+(defun lentic-mode-create-new-view-in-selected-window ()
+  (interactive)
+  (set-window-buffer
+   (selected-window)
+   (lentic-mode-create-new-view)))
+
 ;; #+end_src
 
 ;; ** Minor Mode
@@ -181,6 +198,9 @@ A and B are the buffers."
 
 (define-key lentic-mode-map
   (kbd "C-c ,c") 'lentic-mode-create-in-selected-window)
+
+(define-key lentic-mode-map
+  (kbd "C-c ,v") 'lentic-mode-create-new-view-in-selected-window)
 
 (defcustom lentic-mode-line-lighter "Lentic"
   "Default mode lighter for lentic"
@@ -226,7 +246,7 @@ A and B are the buffers."
 (easy-menu-change
  '("Edit")
  "Lentic"
- '(["Create Here" lentic-mode-create-in-selected-window
+ '(["Move Here" lentic-mode-move-in-selected-window
     :active (not lentic-config)]
    ["Split Below" lentic-mode-split-window-below
     :active (not lentic-config)]

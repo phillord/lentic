@@ -161,7 +161,6 @@
 ;; write new configurations for, and is still reasonable performant to 3-400
 ;; line buffers.
 
-
 ;;; Code:
 
 ;; ** State
@@ -253,7 +252,7 @@ by which linking happens.")
 (defgeneric lentic-create (conf))
 (defgeneric lentic-convert (conf location))
 (defgeneric lentic-invert (conf that-buffer))
-
+(defgeneric lentic-coexist? (this-conf that-conf))
 
 (defmethod lentic-this ((conf lentic-configuration))
   (oref conf :this-buffer))
@@ -362,14 +361,25 @@ created."
             (list (lentic-invert conf))))
     that-buffer))
 
+(defmethod lentic-coexist? ((this-conf lentic-default-configuration)
+                            that-conf)
+  "For this configuration, return true if that-conf can be allowed to coexist,
+or false if not."
+  (not
+   (and (oref this-conf :lentic-file)
+        (oref that-conf :lentic-file)
+        (f-equal? (oref this-conf :lentic-file)
+                  (oref that-conf :lentic-file)))))
+
 (defmethod lentic-invert ((conf lentic-default-configuration))
-  (lentic-default-configuration
-   (lentic-config-name (lentic-that conf))
+  (clone
+   conf
    :this-buffer (lentic-that conf)
-   :that-buffer (lentic-this conf)))
+   :that-buffer (lentic-this conf)
+   :sync-point (oref conf :sync-point)))
 
 (defmethod lentic-convert ((conf lentic-default-configuration)
-                                  location)
+                           location)
   "For this configuration, convert location to an equivalent location in
 the lentic."
   location)
@@ -496,7 +506,7 @@ buffer."
        (let ((that
               (lentic-that conf)))
          (when (and (not (-contains? seen-buffer that))
-                    (buffer-live-p that))
+                  (buffer-live-p that))
            (funcall fn that)
            (lentic-each that fn seen-buffer))))
      lentic-config)))
@@ -574,17 +584,32 @@ repeated errors.")
 
 (defun lentic-after-save-hook ()
   (unless lentic-emergency
-    (lentic-each
-     (current-buffer)
-     (lambda (buffer)
-       (with-current-buffer
-           buffer
-         (save-buffer))))))
+    (condition-case err
+        (lentic-after-save-hook-1)
+      (error
+       (lentic-hook-fail err "after-save-hook")))))
+
+(defun lentic-after-save-hook-1 ()
+  (lentic-each
+   (current-buffer)
+   (lambda (buffer)
+     (with-current-buffer
+         buffer
+       (save-buffer)))))
 
 (defvar lentic-kill-retain nil
   "If non-nil retain files even if requested to delete on exit.")
 
 (defun lentic-kill-buffer-hook ()
+  (unless lentic-emergency
+    (condition-case err
+        (lentic-kill-buffer-hook-1)
+      (error
+       (lentic-hook-fail err "kill-buffer-hook")))))
+
+(defvar lentic--killing-p nil)
+
+(defun lentic-kill-buffer-hook-1 ()
   (lentic-when-lentic
    (when
        (and
@@ -601,16 +626,26 @@ repeated errors.")
      (delete-file (buffer-file-name)))
    ;; if we were the creator buffer, blitz the lentics (which causes their
    ;; files to delete also).
-   (when
-       (--any?
-        (oref it :creator)
-        lentic-config)
-     (lentic-each
-      (current-buffer)
-      (lambda (buffer)
-        (kill-buffer buffer))))))
+   (let ((lentic-killing-p t))
+     (when
+         (and
+          (not lentic-killing-p)
+          (--any?
+           (oref it :creator)
+           lentic-config))
+       (lentic-each
+        (current-buffer)
+        (lambda (buffer)
+          (kill-buffer buffer)))))))
 
 (defun lentic-kill-emacs-hook ()
+  (unless lentic-emergency
+    (condition-case err
+        (lentic-kill-emacs-hook-1)
+      (error
+       (lentic-hook-fail err "kill-emacs-hook")))))
+
+(defun lentic-kill-emacs-hook-1 ()
   (-map
    (lambda (buffer)
      (lentic-with-lentic-buffer
@@ -670,31 +705,34 @@ ERR is the error. HOOK is the hook type."
 
 (defun lentic-ensure-init ()
   "Ensure that the `lentic-init' has been run."
-  (unless (and lentic-config
-               (-any?
-                (lambda (conf)
-                  (and
-                   (slot-boundp conf :that-buffer)
-                   (buffer-live-p
-                    (lentic-that conf))))
-                lentic-config))
-    (setq lentic-config
+  (setq lentic-config
+        ;; and attach to lentic-config
+        (-concat
+         lentic-config
+         ;; return only those that can co-exist
+         (-filter
+          (lambda (this-conf)
+            (-all?
+             (lambda (that-conf)
+               (lentic-coexist? this-conf that-conf))
+             lentic-config))
           (-map
            (lambda (init)
+             ;; instantiate a new conf object (but do not create the buffer)
              (funcall init))
-           (-list lentic-init)))))
-
-(defun lentic-init-create (conf)
-  "Create the lentic for CONF."
-  (lentic-ensure-init)
-  (lentic-create conf))
+           (-list lentic-init))))))
 
 (defun lentic-init-all-create ()
   "Create all lentics fo the current buffer."
   (lentic-ensure-init)
   (-map
    (lambda (conf)
-     (lentic-create conf))
+     (if (and
+          (slot-boundp conf :that-buffer)
+          (buffer-live-p
+           (lentic-that conf)))
+         (lentic-that conf)
+       (lentic-create conf)))
    (-list lentic-config)))
 
 (defvar lentic-emergency-last-change nil)
@@ -722,7 +760,9 @@ rest is currently just ignored."
     (setq seen-buffer (cons buffer seen-buffer))
     (-map
      (lambda (config)
-       (unless (-contains? seen-buffer (lentic-that config))
+       (unless
+           (or (-contains? seen-buffer (lentic-that config))
+               (not (buffer-live-p (lentic-that config))))
          (let ((updates
                 (or
                  (lentic-update-contents config
