@@ -125,7 +125,7 @@ as a prefix. "
 (defun lentic-doc-external-view ()
   (interactive)
   (lentic-doc-ensure-doc)
-  (browse-url-of-file lentic-doc-file))
+  (browse-url-default-browser lentic-doc-file))
 
 
 (provide 'lentic-doc)
