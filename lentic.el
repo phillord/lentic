@@ -176,7 +176,7 @@
 (require 'm-buffer)
 (require 'm-buffer-at)
 
-(defvar lentic-init 'lentic-default-init
+(defvar lentic-init nil
   "Function that initializes a lentic.
 This should set up `lentic-config' appropriately.")
 
@@ -720,7 +720,9 @@ ERR is the error. HOOK is the hook type."
            (lambda (init)
              ;; instantiate a new conf object (but do not create the buffer)
              (funcall init))
-           (-list lentic-init))))))
+           (if (not lentic-init)
+               '(lentic-default-init)
+             (-list lentic-init)))))))
 
 (defun lentic-init-all-create ()
   "Create all lentics fo the current buffer."
