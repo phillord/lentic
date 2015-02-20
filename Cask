@@ -11,4 +11,5 @@
  (depends-on "f")
  (depends-on "ert-runner")
  (depends-on "commander")
- (depends-on "htmlize"))
+ (depends-on "htmlize")
+ (depends-on "load-relative"))

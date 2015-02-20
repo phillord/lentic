@@ -5,16 +5,23 @@
 (require 'lentic-rot13)
 (require 'f)
 
+(require 'load-relative)
 
 (defvar lentic-test-dir
-  (concat
-   (file-name-directory
-    (find-lisp-object-file-name 'lentic-init 'defvar))
+  (f-join
+   (f-parent
+    (f-dirname (__FILE__)))
    "dev-resources/"))
+
+;; (defvar lentic-test-dir
+;;   (concat
+;;    (file-name-directory
+;;     (find-lisp-object-file-name 'lentic-init 'defvar))
+;;    "dev-resources/"))
 
 (defun lentic-test-file (filename)
   (let ((file
-         (concat lentic-test-dir filename)))
+         (f-join lentic-test-dir filename)))
     (when (not (file-exists-p file))
       (error "Test File does not exist: %s" file))
     file))
