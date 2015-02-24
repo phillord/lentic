@@ -43,17 +43,12 @@ Lentics are listed in an undefined order."
   (lentic-mode--lentic-list-1 buffer nil))
 
 (defun lentic-mode--lentic-list-1 (buffer seen-buffer)
-  (when buffer
-    (with-current-buffer buffer
-      (lentic-when-lentic
-       (setq seen-buffer (cons buffer seen-buffer))
-       (-map
-        (lambda (config)
-          (unless (-contains? seen-buffer (lentic-that config))
-            (lentic-mode--lentic-list-1
-             (lentic-that config)
-             seen-buffer)))
-        (lentic-config))))))
+  (let ((buffers))
+    (lentic-each
+     buffer
+     (lambda (b)
+       (setq buffers (cons b buffers))))
+    buffers))
 
 (defun lentic-mode-buffer-list (buffer &optional frame)
   "Returns a list of all lentics for BUFFER.
@@ -66,44 +61,96 @@ Lentics are listed in the same order as in fundamental
        (-contains? lentic-list b))
      (buffer-list frame))))
 
+(defun lentic-mode-find-next-lentic-buffer (buffer &optional frame)
+  (car
+   (--drop-while
+    (eq buffer it)
+    (lentic-mode-buffer-list
+     buffer (or frame (selected-frame))))))
+
+(defun lentic-mode-find-next-visible-lentic-buffer (buffer &optional frame)
+  (car
+   (--drop-while
+    (or (eq buffer it)
+        (not (get-buffer-window it frame)))
+    (lentic-mode-buffer-list
+     buffer (or frame (selected-frame))))))
+
+(defun lentic-mode-find-next-non-visible-lentic-buffer (buffer &optional frame)
+  (car
+   (--drop-while
+    (or (eq buffer it)
+        (get-buffer-window it frame))
+    (lentic-mode-buffer-list
+     buffer (or frame (selected-frame))))))
+
 ;; ** Window and Buffer Functions
 
 ;; #+begin_src emacs-lisp
-(defun lentic-mode-move-lentic-window ()
-  "Move the lentic buffer into the current window.
-If the lentic is currently being displayed in another window,
-then the current-buffer will be moved into that window. See also
-`lentic-mode-swap-buffer-windows'."
-  (interactive)
-  (let ((before-window-start
-         (window-start (get-buffer-window)))
-        (before-window-point
-         (point)))
-    (lentic-mode-swap-buffer-windows
-     (current-buffer)
-     (lentic-that
-      (car lentic-config)))
+(defun lentic-mode-show-buffer-in-window (before-buffer new-buffer)
+  (let* ((buffer-window (get-buffer-window before-buffer))
+         (before-window-start
+          (window-start buffer-window))
+         (before-window-point
+          (m-buffer-at-point before-buffer)))
+    (set-window-buffer
+     buffer-window
+     new-buffer)
     (set-window-start
-     (selected-window)
+     buffer-window
      before-window-start)
-    (goto-char before-window-point)))
+    (goto-char before-window-point)
+    (bury-buffer before-buffer)))
 
-(defun lentic-mode-swap-lentic-window ()
-  "Swap the window of the buffer and lentic.
-If both are current displayed, swap the windows they
-are displayed in, which keeping current buffer.
-See also `lentic-mode-move-lentic-window'."
+;;;###autoload
+(defun lentic-mode-create-from-init ()
   (interactive)
-  (lentic-mode-swap-buffer-windows
+  (let ((all (lentic-init-all-create)))
+    (message "Created %s buffers"
+             (length all))))
+
+
+;;;###autoload
+(defun lentic-mode-next-lentic-buffer ()
+  "Move the lentic buffer into the current window, creating if necessary."
+  (interactive)
+  (lentic-mode-show-buffer-in-window
    (current-buffer)
-   (lentic-that
-    (car lentic-config)))
-  (when (window-live-p
-         (get-buffer-window
-          (current-buffer)))
-    (select-window
-     (get-buffer-window
-      (current-buffer)))))
+   (lentic-mode-find-next-lentic-buffer (current-buffer))))
+
+;;;###autoload
+(defun lentic-mode-split-window-below ()
+  "Move lentic buffer to the window below, creating if needed."
+  (interactive)
+  (-when-let
+      (next
+       (lentic-mode-find-next-non-visible-lentic-buffer
+        (current-buffer)))
+    (set-window-buffer
+     (split-window-below)
+     next)
+    next))
+
+;;;###autoload
+(defun lentic-mode-split-window-right ()
+  "Move lentic buffer to the window right, creating if needed."
+  (interactive)
+  (-when-let
+      (next
+       (lentic-mode-find-next-non-visible-lentic-buffer
+        (current-buffer)))
+    (set-window-buffer
+     (split-window-right)
+     next)
+    next))
+
+;;;###autoload
+(defun lentic-mode-show-all-lentic ()
+  (interactive)
+  (delete-other-windows)
+  (while
+      (lentic-mode-split-window-below))
+  (balance-windows))
 
 (defun lentic-mode-swap-buffer-windows (a b)
   "Swaps the window that two buffers are displayed in.
@@ -118,37 +165,42 @@ A and B are the buffers."
        window-b a))))
 
 ;;;###autoload
-(defun lentic-mode-move-in-selected-window ()
-  "Move the lentic buffer into the current window, creating if necessary."
+(defun lentic-mode-move-lentic-window ()
+  "Move the next lentic buffer into the current window.
+If the lentic is currently being displayed in another window,
+then the current-buffer will be moved into that window. See also
+`lentic-mode-swap-buffer-windows' and `lentic-mode-next-buffer'."
   (interactive)
   (let ((before-window-start
          (window-start (get-buffer-window)))
         (before-window-point
          (point)))
-    (set-window-buffer
-     (selected-window)
-     (-take 1
-            (lentic-init-all-create lentic-config)))
+    (lentic-mode-swap-buffer-windows
+     (current-buffer)
+     (lentic-mode-find-next-visible-lentic-buffer
+      (current-buffer)))
     (set-window-start
      (selected-window)
      before-window-start)
     (goto-char before-window-point)))
 
 ;;;###autoload
-(defun lentic-mode-split-window-below ()
-  "Move lentic buffer to the window below, creating if needed."
+(defun lentic-mode-swap-lentic-window ()
+  "Swap the window of the buffer and lentic.
+If both are current displayed, swap the windows they
+are displayed in, which keeping current buffer.
+See also `lentic-mode-move-lentic-window'."
   (interactive)
-  (set-window-buffer
-   (split-window-below)
-   (car (lentic-init-all-create))))
-
-;;;###autoload
-(defun lentic-mode-split-window-right ()
-  "Move lentic buffer to the window right, creating if needed."
-  (interactive)
-  (set-window-buffer
-   (split-window-right)
-   (car (lentic-init-all-create))))
+  (lentic-mode-swap-buffer-windows
+   (current-buffer)
+   (lentic-mode-find-next-visible-lentic-buffer
+    (current-buffer)))
+  (when (window-live-p
+         (get-buffer-window
+          (current-buffer)))
+    (select-window
+     (get-buffer-window
+      (current-buffer)))))
 
 (defun lentic-mode-create-new-view ()
   (let* ((conf (lentic-default-init))
@@ -171,6 +223,7 @@ A and B are the buffers."
 ;; ** Minor Mode
 
 ;; #+begin_src emacs-lisp
+
 ;;;###autoload
 (defun lentic-mode-toggle-auto-sync-point ()
   (interactive)
@@ -180,6 +233,15 @@ A and B are the buffers."
 
 (defvar lentic-mode-map (make-sparse-keymap)
   "Keymap for lentic-minor-mode")
+
+(define-key lentic-mode-map
+  (kbd "C-c ,c") 'lentic-mode-create-from-init)
+
+(define-key lentic-mode-map
+  (kbd "C-c ,v") 'lentic-mode-create-new-view-in-selected-window)
+
+(define-key lentic-mode-map
+  (kbd "C-c ,n") 'lentic-mode-next-lentic-buffer)
 
 (define-key lentic-mode-map
   (kbd "C-c ,s") 'lentic-mode-swap-lentic-window)
@@ -197,10 +259,8 @@ A and B are the buffers."
   (kbd "C-c ,f") 'lentic-mode-insert-file-local)
 
 (define-key lentic-mode-map
-  (kbd "C-c ,c") 'lentic-mode-create-in-selected-window)
+  (kbd "C-c ,a") 'lentic-mode-show-all-lentic)
 
-(define-key lentic-mode-map
-  (kbd "C-c ,v") 'lentic-mode-create-new-view-in-selected-window)
 
 (defcustom lentic-mode-line-lighter "Lentic"
   "Default mode lighter for lentic"
@@ -246,16 +306,20 @@ A and B are the buffers."
 (easy-menu-change
  '("Edit")
  "Lentic"
- '(["Move Here" lentic-mode-move-in-selected-window
+ '(["Create All" lentic-mode-create-from-init
     :active (not lentic-config)]
+   ["Create View" lentic-mode-create-new-view-in-selected-window]
+   ["Next" lentic-mode-next-lentic-buffer
+    :active lentic-config]
    ["Split Below" lentic-mode-split-window-below
-    :active (not lentic-config)]
+    :active lentic-config]
    ["Split Right" lentic-mode-split-window-right
-    :active (not lentic-config)]
-   ["Insert File Local" lentic-mode-insert-file-local
-    :active (not lentic-config)]
-   ["Move Here" lentic-mode-move-lentic-window :active lentic-config]
-   ["Swap" lentic-mode-swap-lentic-window :active lentic-config]
+    :active lentic-config]
+   ["Show All" lentic-mode-show-all-lentic
+    :active lentic-config]
+   ["Swap" lentic-mode-swap-lentic-window
+    :active lentic-config]
+   ["Insert File Local" lentic-mode-insert-file-local]
    ["Read Doc (eww)" lentic-doc-eww-view]
    ["Read Doc (external)" lentic-doc-external-view]
    ))

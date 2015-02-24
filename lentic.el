@@ -231,6 +231,11 @@ of mode in the current buffer.")
     :initform nil
     :documentation
     "Non-nil if the file associated with this should be deleted on exit")
+   (singleton
+    :initarg :singleton
+    :initform nil
+    :documentation
+    "True if only one of these can exist.")
    (sync-point
     :initarg :sync-point
     :initform t)
@@ -258,7 +263,8 @@ by which linking happens.")
   (oref conf :this-buffer))
 
 (defmethod lentic-that ((conf lentic-configuration))
-  (oref conf :that-buffer))
+  (and (slot-boundp conf :that-buffer)
+       (oref conf :that-buffer)))
 
 (defmethod lentic-ensure-that ((conf lentic-configuration))
   "Get the lentic for this configuration
@@ -365,11 +371,13 @@ created."
                             that-conf)
   "For this configuration, return true if that-conf can be allowed to coexist,
 or false if not."
-  (not
-   (and (oref this-conf :lentic-file)
-        (oref that-conf :lentic-file)
-        (f-equal? (oref this-conf :lentic-file)
-                  (oref that-conf :lentic-file)))))
+  (and
+   (not (oref this-conf :singleton))
+   (not
+    (and (oref this-conf :lentic-file)
+         (oref that-conf :lentic-file)
+         (f-equal? (oref this-conf :lentic-file)
+                   (oref that-conf :lentic-file))))))
 
 (defmethod lentic-invert ((conf lentic-default-configuration))
   (clone
@@ -680,7 +688,8 @@ repeated errors.")
     ;; for all configurations
     (-map
      (lambda (config)
-       (let ((that (lentic-that config)))
+       (let ((that
+              (lentic-that config)))
          ;; check for the termination condition
          (unless (-contains? seen-buffer that)
            (lentic-when-buffer
