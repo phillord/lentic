@@ -1,6 +1,6 @@
 ;; -*- emacs-lisp -*-
 (source gnu)
-(source melpa)
+(source melpa-stable)
 (source marmalade)
 
 (package-file "lentic.el")
@@ -12,4 +12,4 @@
  (depends-on "ert-runner")
  (depends-on "commander")
  (depends-on "htmlize")
- (depends-on "load-relative"))
+ (depends-on "load-relative" "1.2"))
