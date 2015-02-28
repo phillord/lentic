@@ -1,0 +1,15 @@
+
+* 0.9 indirect-buffer replacement
+
+Lentic can serve as a reasoanble replacements for indirect-buffers now that it
+runs efficiently. For 0.9 there will be a "make-lentic-buffer" function that
+is a direct replacement for "make-indirect-buffer".
+
+* 0.10 Improved el->org, orgel->org
+
+Currently, the orgel->org is not very good, so I want to improve this. In
+particular, I want to support :tags: because lots of people want them. The
+block detection improvement needs changing to support many different source
+blocks types in the same buffer. Finally, the export for orgel->org is not
+ideal. At least it needs to hide "Header" (without having to use :noexport:
+everytime).

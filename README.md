@@ -1,16 +1,26 @@
-[![Build Status](https://travis-ci.org/phillord/lentic.svg?branch=master)](https://travis-ci.org/phillord/lentic)
-
 Lentic allows two buffers to share the same or similar content but
-otherwise operate independently. This allows multi-modal editing, both with
-identical text, or with related but different text. It's somewhat similar to
-Emacs indirect buffers but more powerful.
+otherwise operate independently. This can be used for several different
+purposes. Different buffers can be in the same mode, with different locations
+of point, even different text sizes -- in effect, providing multiple
+persistent views.
 
-While lentic could be used for many purposes, the original motivation is to
-enable a literate programming environment. The lentic documentation is
-self-hosting -- the source code contains all of the documentation. It can be
+It is also possible to have the different lentic buffers in different modes,
+giving a form of multi-modal editing. Switching buffers effectively switches
+modes as well.
+
+While the content of two lentic buffers must be related, it does not need to
+be syntactically identical. This allows it to be used for a form of literate
+programming -- for example, one buffer may contain valid LaTeX source with
+blocks of Lisp, while in the other the LaTeX source is commented out, giving
+an entirely valid Lisp file. The lentic documentation is self-hosting -- the
+source code contains all of the documentation written in Org-mode. It can be
 generated and viewed using the menu items (Edit->Lentic->Read Doc), or it can
 be viewed at
 http://homepages.cs.ncl.ac.uk/phillip.lord/lentic/lenticular.html.
+
+As well as the core library, this package also contains various syntactic
+transformations, and a minor-mode for manipulating lentic buffers from a user
+perspective.
 
 Previously, lentic was known as linked-buffer.
 
