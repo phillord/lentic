@@ -603,7 +603,8 @@ repeated errors.")
    (lambda (buffer)
      (with-current-buffer
          buffer
-       (save-buffer)))))
+       (when (buffer-file-name)
+         (save-buffer))))))
 
 (defvar lentic-kill-retain nil
   "If non-nil retain files even if requested to delete on exit.")
