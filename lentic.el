@@ -432,20 +432,21 @@ STOP-CONVERTED. Otherwise, this should return nil."
                 (widen)
                 (delete-region converted-start
                                converted-stop)
-                (save-excursion
-                  (goto-char converted-start)
-                  ;; so this insertion is happening at the wrong place in block
-                  ;; comment -- in fact, it's happening one too early
-                  (insert
-                   (with-current-buffer this-b
-                     ;; want to see where it goes
-                     ;; hence the property
-                     (lentic-insertion-string-transform
-                      (buffer-substring-no-properties
-                       start stop))))
-                  (list converted-start
-                        (+ converted-start (- stop start))
-                        (- converted-stop converted-start)))))))))))
+                (save-window-excursion
+                  (save-excursion
+                    (goto-char converted-start)
+                    ;; so this insertion is happening at the wrong place in block
+                    ;; comment -- in fact, it's happening one too early
+                    (insert
+                     (with-current-buffer this-b
+                       ;; want to see where it goes
+                       ;; hence the property
+                       (lentic-insertion-string-transform
+                        (buffer-substring-no-properties
+                         start stop))))
+                    (list converted-start
+                          (+ converted-start (- stop start))
+                          (- converted-stop converted-start))))))))))))
 
 ;;;###autoload
 (defun lentic-default-init ()
