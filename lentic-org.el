@@ -339,6 +339,15 @@
   (lentic-commented-block-configuration)
   ())
 
+(defmethod lentic-create
+  ((conf lentic-orgel-to-org-configuration))
+  (let ((buf
+         (call-next-method conf)))
+    (with-current-buffer
+        buf
+      (show-all))
+    buf))
+
 (defmethod lentic-clone
   ((conf lentic-orgel-to-org-configuration)
    &optional start stop length-before start-converted stop-converted)
