@@ -88,10 +88,7 @@
 
 ;; The main user entry points are accessible through the lentic edit menu, or
 ;; through `global-lentic-mode' which adds keybindings to create and manipulate
-;; new lentic buffers. `lentic-mode-create-in-selected-window' will create a
-;; lentic-buffer swap it to the current window, while
-;; `lentic-mode-split-window-below' will split the current window and create a
-;; lentic buffer.
+;; new lentic buffers. See `lentic-mode' commentary for more information.
 
 ;; By default, the lentic buffer created contains exactly the same contents as
 ;; the original buffer, but is otherwise separate; it can have a different major
@@ -109,8 +106,9 @@
 ;; lentic buffers are configurable in a large number of ways. It is possible
 ;; to control the nature of the transformation, the default buffer name that a
 ;; lentic buffer takes, and the file location (or not) of the lentic buffer.
-;; For this release of lentic currently, each buffer can have a single lentic
-;; buffer, although this restriction will be removed in later versions.
+;; Lentic now supports any number of lentic buffers, in relatively arbitrary
+;; geometries, although this requires additional support from the
+;; configuration objects.
 
 ;; Configuration of a buffer happens in one of two places. First,
 ;; `lentic-init' is run when a lentic buffer is first created. This function
@@ -136,9 +134,10 @@
 
 ;;; Status:
 
-;; This is an early release. It is generallly functional now and seems to be
-;; stable, however, there is the possibility that it will behave badly and may
-;; result in data loss. Please use with care on files with backups.
+;; This is a beta release, but is now nearly feature complete. The core lentic
+;; libraries should hopefully be fairly stable now, however, there is the
+;; possibility that it will behave badly and may result in data loss. Please
+;; use with care on files with backups.
 
 ;; Previous releases of this package were called "linked-buffer". I changed
 ;; this because I wanted a name for the general idea of text with two
@@ -147,21 +146,15 @@
 
 ;; Although it is still too early to guarantee, I hope that the current
 ;; configuration scheme will remain fixed, and subclass extensions should
-;; require little change for the future, except as a result of changes to
-;; address the issues described in the next paragraph.
-
-;; Generally, the implementation of lentic uses Emacs native change hooks and
-;; transfers only the changed text between the two buffers. Some
-;; configurations need to transfer slightly more text, and need to perform
-;; whole buffer analysis on every keypress. This mechanism is reasonably
-;; performant. On a modern machine, buffers of 4k lines can be edited without
-;; noticable lag, and profiling suggests that lentic uses less than 5% of CPU
-;; in normal usage. Lentic also supports a fall-back implementation which
-;; copies the whole buffer after every keypress; this is much easier to
-;; write new configurations for, and is still reasonable performant to 3-400
-;; line buffers.
+;; require little change for the future.
 
 ;;; Code:
+
+;; #+BEGIN_SRC emacs-lisp
+(require 'eieio)
+(require 'm-buffer)
+(require 'm-buffer-at)
+;; #+end_src
 
 ;; ** State
 
@@ -170,99 +163,216 @@
 ;; makes re-initializing the state during development as straight-forward as
 ;; possible.
 
-;; #+BEGIN_SRC emacs-lisp
+;; We start with `lentic-init' which provides the ability to define some default
+;; configuration for a buffer. These are just functions which return
+;; `lentic-configuration' objects. This is a slight step of indirection but is
+;; essentially there to allow the use of file- or dir-local variables to define
+;; the default behaviour for a given buffer. All the values have to be defined by
+;; the user as safe, so we do not want too many different values.
 
-(require 'eieio)
-(require 'm-buffer)
-(require 'm-buffer-at)
-
+;; #+begin_src emacs-lisp
 (defvar lentic-init nil
-  "Function that initializes a lentic.
-This should set up `lentic-config' appropriately.")
+  "Function that initializes lentics for this buffer.
+
+This should be one or a list of functions that each return a
+`lentic-configuration' object.")
 
 (make-variable-buffer-local 'lentic-init)
+;; #+end_src
 
-;; In future versions, this may get turned into a list so that we can have
-;; multiple lentic buffers, but it is not clear how the user interface
-;; functions such as `lentic-swap-window' would work now.
+;; The `lentic-config' variable stores all of the configuration objects for each
+;; lentic-buffer of this-buffer. Each lentic-buffer should have one configuration
+;; object and is this configuration object that controls the behaviour and
+;; updating of that lentic. As lentics are bi-directional, the `lentic-config'
+;; variable should be -- for each lentic-configuration object in this-buffer
+;; pointing to that-buffer there should be one in that-buffer pointing to
+;; this-buffer. This variable has to `permanent-local' otherwise a new mode (or
+;; typing `normal-mode') would break everything.
+
+;; #+begin_src emacs-lisp
 (defvar lentic-config nil
   "Configuration for lentic.
 
-This is object created by function lentic-configuration',
-which defines the way in which the text in the different buffers
-is kept synchronized. This configuration is resiliant to changes
-of mode in the current buffer.")
+This is a list of objects of the class `lentic-configuration'
+lentic-configuration', which defines the way in which the text in
+the different buffers is kept synchronized. This configuration is
+resiliant to changes of mode in the current buffer.")
 
 (make-variable-buffer-local 'lentic-config)
 (put 'lentic-config 'permanent-local t)
-
-(defvar lentic-init-functions nil
-  "A list of all functions that can be used as lentic-init
-  functions.")
 
 (defvar lentic-counter 0)
 (defun lentic-config-name (buffer)
   "Given BUFFER, return a name for the configuration object."
   (format "lentic \"%s:%s\"" buffer (setq lentic-counter (+ 1 lentic-counter))))
+
+(defvar lentic-init-functions nil
+  "A list of all functions that can be used as lentic-init
+functions.")
 ;; #+end_src
 
 ;; ** Base Configuration
 
 ;; This section defines the base class and generic methods for all
-;; lentic-configuration objects.
-
+;; lentic-configuration objects. Most of the properties of this class define the
+;; behaviour of the lentic-buffer -- in other words they are configuration.
+;; However, there are a few properties which store state about the last
+;; before-change event that occured which are used to percolate the changes
+;; correctly. This is a handy place to store these, but are not really
+;; end-user properties.
 
 ;; #+begin_src emacs-lisp
-;;
-;; Base Configuration:
-
 (defclass lentic-configuration ()
   ((this-buffer
-    :initarg :this-buffer)
+    :initarg :this-buffer
+    :documentation
+    "The this-buffer for this configuration. This should be the
+    current-buffer when this configuration is present in `lentic-config'." )
    (that-buffer
-    :initarg :that-buffer)
+    :initarg :that-buffer
+    :documentation
+    "The that-buffer for this configuration. The that-buffer (if
+    live) should a lentic-configuration object for this-buffer in
+    its `lentic-config'." )
    (creator
     :initarg :creator
     :initform nil
     :documentation
-    "Non-nil if this lentic-configuration was used to create a lentic view.")
+    "Non-nil if this lentic-configuration was used to create a
+    lentic view. This is used to determine the behaviour when the
+    buffer is killed: killing the creator kills all views, but killing
+    a view does not kill the creator.")
    (delete-on-exit
     :initarg :delete-on-exit
     :initform nil
     :documentation
-    "Non-nil if the file associated with this should be deleted on exit")
+    "Non-nil if the file associated with this should be deleted on exit.")
    (singleton
     :initarg :singleton
     :initform nil
     :documentation
-    "True if only one of these can exist.")
+    "Non-nil if only one lentic (and therefore object) of this type
+    can exist for a given buffer.")
    (sync-point
     :initarg :sync-point
-    :initform t)
+    :initform t
+    :documentation
+    "Non-nil if changes to the location of point in this-buffer
+    should be percolated into that-buffer.")
    (last-change-start
     :initarg :last-change-start
-    :initform nil)
+    :initform nil
+    :documentation
+    "The location of the start of the last before-change event.
+    This should only be set by lentic.")
    (last-change-start-converted
     :initarg :last-change-start-converted
-    :initform nil)
+    :initform nil
+    :documentation
+    "The location of the start of the last before-change event,
+    converted into the equivalent location in that-buffer. This
+    should only be set by lentic.")
    (last-change-stop
     :initarg :last-change-stop
-    :initform nil)
+    :initform nil
+    :documentation
+    "The location of the stop of the last before-change event.
+    This should only be set by lentic." )
    (last-change-stop-converted
     :initarg :last-change-stop-converted
-    :initform nil))
-  "Configuration object for lentic, which defines the mechanism
-by which linking happens.")
+    :initform nil
+    "The location of the stop of the last before-change event,
+    converted into the equivalent location in that-buffer. This
+    should only be set by lentic."))
+  "Configuration object for lentic which defines the behavior of
+  the lentic buffer.")
+;; #+end_src
 
-(defgeneric lentic-create (conf))
-(defgeneric lentic-convert (conf location))
-(defgeneric lentic-invert (conf that-buffer))
-(defgeneric lentic-coexist? (this-conf that-conf))
+;; We define a set of generic methods. I am not entirely sure what the purpose of
+;; generic methods are and whether I need them or not; I think it's just a place
+;; to put the documentation.
 
+;; #+begin_src emacs-lisp
+(defgeneric lentic-create (conf)
+  "Create the lentic for this configuration.
+Given a `lentic-configuration' object, create the lentic
+appropriate for that configurationuration. It is the callers
+responsibility to check that buffer has not already been
+created.")
+
+(defgeneric lentic-convert (conf location)
+  "Convert LOCATION in this-buffer to an equivalent location in
+that-buffer. LOCATION is a numeric location, rather than a
+marker. By equivalent, we mean the same semantic location as
+determined by the transformation between the buffers. It is
+possible that a given LOCATION could map to more than one
+location in the lentic buffer.")
+
+(defgeneric lentic-clone (conf)
+  "Updates that-buffer to reflect the contents in this-buffer.
+
+Updates at least the region that has been given between start and
+stop in the this-buffer, into the region start-converted and
+stop-converted in that-buffer.
+
+Returns a list of the start location in that-buffer of the
+change, the stop location in that-buffer of the change and the
+length-before in that buffer of the region changed before the
+change, if and only if the changes are exactly that suggested by
+the START, STOP, _LENGTH-BEFORE, START-CONVERTED and
+STOP-CONVERTED. Otherwise, this should return nil.")
+;; #+end_src
+
+;; We need an invert method because we can create the configuration object for a
+;; this-buffer without actually creating that-buffer. This may happen at any
+;; point in the future. So, the configuration object needs to be able to return
+;; it's own inverse. This can be a configuration object of the same class which
+;; is normal when the lentic transformation is symmetrical, or a different class
+;; which is normal whent he lentic transformation is asymmetrical.
+
+;; #+begin_src emacs-lisp
+(defgeneric lentic-invert (conf)
+  "Return a new configuration object for the lentic buffer.
+This method is called at the time that the lentic is created. It
+is the callers responsibility to ensure that this is only called
+at creation time and not subsequently. The invert function should
+only return the configuration object and NOT create the lentic
+buffer.")
+
+;; #+end_src
+
+;; `lentic-coexist?' has been created to cope with the case when a buffer has two
+;; or more default views. We may wish to re-initialize all the default lentic
+;; views. However, this is going to be problematic if some are already there --
+;; we will end up with two many. In general, configurations which have been
+;; created as a result of calls to the `lentic-init' functions should return
+;; false here if there is another call to the same function. Lentic buffers which
+;; are being used as a persistent view should generally return true here so that
+;; as many can be created as required.
+
+;; #+begin_src emacs-lisp
+(defgeneric lentic-coexist? (this-conf that-conf)
+  "Return non-nil if THIS-CONF and co-exist with THAT-CONF.
+By co-exist this means that both configurations are valid for a
+given buffer at the same time. A nil return indicates that there
+should only be one of these two for a given buffer.")
+;; #+end_src
+
+;; I've implemented `lentic-this' and `lentic-that' as methods although I think I
+;; have only over-ridden the implementation once in lentic-delayed which has
+;; since been deleted anyway.
+
+;; #+begin_src emacs-lisp
 (defmethod lentic-this ((conf lentic-configuration))
+  "Returns this-buffer for this configuration object.
+In most cases, this is likely to be the `current-buffer' but
+this should not be relied on."
   (oref conf :this-buffer))
 
 (defmethod lentic-that ((conf lentic-configuration))
+  "Returns the that-buffer for this configuration object.
+This may return nil if there is not that-buffer, probably because
+it has not been created."
   (and (slot-boundp conf :that-buffer)
        (oref conf :that-buffer)))
 
@@ -271,8 +381,21 @@ by which linking happens.")
 or create it if it does not exist."
   (or (lentic-that conf)
       (lentic-create conf)))
+;; #+end_src
 
+;; This part of the user interface is not ideal at the moment. I need something
+;; which allows me to see all the currently active lentic-buffers, but I am far
+;; from convinced that the mode-line is the best place, since the mode-line gets
+;; overly full for most users.
+
+;; As a second problem, supporting mode-line display directly in the
+;; configuration object seems right, and breaks the encapsulation between
+;; lentic.el and lentic-mode.el. Probably this needs to be replaced by some sort
+;; of status keyword return value.
+
+;; #+begin_src emacs-lisp
 (defmethod lentic-mode-line-string ((conf lentic-configuration))
+  "Returns a mode-line string for this configuration object."
   (when (slot-boundp conf :that-buffer)
     (let ((that (oref conf :that-buffer)))
       (if
@@ -280,56 +403,54 @@ or create it if it does not exist."
                (buffer-live-p that))
           "on"
         ""))))
-
-(defun lentic-m-oset (obj &rest plist)
-  "On OBJ set all properties in PLIST.
-Returns OBJ. See also `lentic-a-oset'"
-  (lentic-a-oset obj plist))
-
-(defun lentic-a-oset (obj plist)
-  "On OBJ, set all properties in PLIST.
-This is a utility function which just does the same as oset, but
-for lots of things at once. Returns OBJ."
-  (-map
-   (lambda (n)
-     (eieio-oset
-      obj
-      (car n)
-      (cadr n)))
-   (-partition 2 plist))
-  obj)
-
 ;; #+end_src
 
 ;; ** Default Configuration
 
-;; Two buffers with exactly the same contents, like an indirect buffer but
-;; without the equivalent transfer of text properties.
+;; This is the default implementation of a lentic configuration. It provides an
+;; identity transformation at that string level -- the two buffers will (should!)
+;; have identical `buffer-string' at all times. Or, more strictly, identical
+;; without properties, so identical ~(buffer-substring-no-properties (point-min)
+;; (point-max))~, which is not nearly so snappy.
 
+;; We add two more properties to this class -- perhaps these should be pushed upwards.
 
 ;; #+begin_src emacs-lisp
-
 (defclass lentic-default-configuration (lentic-configuration)
   ((lentic-file
     :initform nil
-    :initarg :lentic-file)
+    :initarg :lentic-file
+    :documentation
+    "The name of the file that will be associated with that lentic buffer.")
    (lentic-mode
     :initform nil
-    :initarg :lentic-mode))
+    :initarg :lentic-mode
+    :documentation
+    "The mode for that lentic buffer."))
   "Configuration which maintains two lentics with the same contents.")
+;; #+end_src
 
+;; We add in a string transformation function here. There has no actual
+;; function within lentic per se, but it is used in lentic-dev as something we
+;; can advice. This avoids bulking up the code in lentic, while still allows
+;; me to affect the transformation during development of new transforms.
+
+;; #+begin_src emacs-lisp
 (defun lentic-insertion-string-transform (string)
   "Transform the string that is about to be inserted.
 This function is not meant to do anything. It's useful to
 advice."
   string)
+;; #+end_src
 
+;; The default methods should be self-explanatory!
+
+;; #+begin_src emacs-lisp
 (defmethod lentic-create ((conf lentic-default-configuration))
-  "Create the lentic for this configuration.
-Given a `lentic-configuration' object, create the lentic
-appropriate for that configurationuration. It is the callers
-responsibility to check that buffer has not already been
-created."
+  "Create an new lentic buffer. This creates the new buffer sets
+the mode to the same as the main buffer or which ever is
+specified in the configuration. The current contents of the main
+buffer are copied."
   ;; make sure the world is ready for lentic buffers
   (lentic-ensure-hooks)
   ;; create lentic
@@ -369,8 +490,10 @@ created."
 
 (defmethod lentic-coexist? ((this-conf lentic-default-configuration)
                             that-conf)
-  "For this configuration, return true if that-conf can be allowed to coexist,
-or false if not."
+  "By default, we can have multiple lentic buffers with the same
+configuration, unless specifically disallowed, or unless it has
+the same associated file as pre-existing buffer (which is going
+to break!)."
   (and
    (not (oref this-conf :singleton))
    (not
@@ -380,6 +503,8 @@ or false if not."
                    (oref that-conf :lentic-file))))))
 
 (defmethod lentic-invert ((conf lentic-default-configuration))
+  "By default, return a clone of the existing object, but switch
+the this and that buffers around. "
   (clone
    conf
    :this-buffer (lentic-that conf)
@@ -388,51 +513,41 @@ or false if not."
 
 (defmethod lentic-convert ((conf lentic-default-configuration)
                            location)
-  "For this configuration, convert location to an equivalent location in
-the lentic."
+  "The two buffers should be identical, so we just return the
+  same location."
   location)
 
 (defmethod lentic-clone ((conf lentic-configuration)
                                 &optional start stop _length-before
                                 start-converted stop-converted)
-  "Updates that-buffer to reflect the contents in this-buffer.
-
-Updates at least the region that has been given between start and
-stop in the this-buffer, into the region start-converted and
-stop-converted in that-buffer.
-
-Returns a list of the start location in that-buffer of the
-change, the stop location in that-buffer of the change and the
-length-before in that buffer of the region changed before the
-change, if and only if the changes are exactly that suggested by
-the START, STOP, _LENGTH-BEFORE, START-CONVERTED and
-STOP-CONVERTED. Otherwise, this should return nil."
+  "The default clone method cuts out the before region and pastes
+in the new."
   (let ((this-b (lentic-this conf))
         (that-b (lentic-that conf)))
     (with-current-buffer this-b
       ;;(lentic-log "this-b (point,start,stop)(%s,%s,%s)" (point) start stop)
-      (save-restriction
-        (widen)
-        (let* ((start (or start (point-min)))
-               (stop (or stop (point-max))))
-          (with-current-buffer that-b
-            (save-restriction
-              ;; get the start location that we converted before the change.
-              ;; lentic-convert is not reliable now, because the two
-              ;; buffers do not share state until we have percolated it
-              (let ((converted-start
-                     (max (point-min)
-                          (or start-converted
-                              (point-min))))
-                    (converted-stop
-                     (min (point-max)
-                          (or stop-converted
-                              (point-max)))))
-                ;; does this widen do anything?
-                (widen)
-                (delete-region converted-start
-                               converted-stop)
-                (save-window-excursion
+      (save-window-excursion
+        (save-restriction
+          (widen)
+          (let* ((start (or start (point-min)))
+                 (stop (or stop (point-max))))
+            (with-current-buffer that-b
+              (save-restriction
+                ;; get the start location that we converted before the change.
+                ;; lentic-convert is not reliable now, because the two
+                ;; buffers do not share state until we have percolated it
+                (let ((converted-start
+                       (max (point-min)
+                            (or start-converted
+                                (point-min))))
+                      (converted-stop
+                       (min (point-max)
+                            (or stop-converted
+                                (point-max)))))
+                  ;; does this widen do anything?
+                  (widen)
+                  (delete-region converted-start
+                                 converted-stop)
                   (save-excursion
                     (goto-char converted-start)
                     ;; so this insertion is happening at the wrong place in block
@@ -459,16 +574,26 @@ see `lentic-init' for details."
 (add-to-list 'lentic-init-functions
              'lentic-default-init)
 
-
 ;; #+end_src
 
 ;; ** Basic Operation
 
-;; Hooks into Emacs change system, some basic window management tools and so on.
+;; In this section, we define some utility functions and the hooks we need into
+;; the core Emacs operations.
+
+;; *** Utility
+
+;; We start with some utility macros. These deal with the fact that a buffer can
+;; have a lentic or not, and that even if it does that lentic does not need to be
+;; live. This happens for instance if a lentic buffer is deleted -- the buffer
+;; object will still be live (because the configuration object hangs on to it).
+
+;; At some point, the hook system needs to clean this up by detecting the
+;; buffer-kill and removing the configuration objection.
 
 ;; #+begin_src emacs-lisp
 (defmacro lentic-when-lentic (&rest body)
-  "Evaluate BODY when in a lentic."
+  "Evaluate BODY when the current-buffer has a lentic buffer."
   (declare (debug t))
   `(when (and
           lentic-config
@@ -481,6 +606,7 @@ see `lentic-init' for details."
      ,@body))
 
 (defmacro lentic-when-buffer (buffer &rest body)
+  "Eval BODY when BUFFER is a live buffer."
   (declare (debug t)
            (indent 1))
   `(when (and ,buffer
@@ -488,6 +614,8 @@ see `lentic-init' for details."
      ,@body))
 
 (defmacro lentic-when-with-current-buffer (buffer &rest body)
+  "Eval BODY when BUFFER is a live buffer, with BUFFER as the 
+current buffer."
   (declare (debug t)
            (indent 1))
   `(lentic-when-buffer
@@ -497,13 +625,18 @@ see `lentic-init' for details."
       ,@body)))
 
 (defmacro lentic-with-lentic-buffer (buffer &rest body)
+  "Eval BODY with BUFFER as current, when BUFFER has a lentic."
   (declare (debug t)
            (indent 1))
   `(lentic-when-with-current-buffer
        buffer
      (when lentic-config
        ,@body)))
+;; #+end_src
 
+;; Recurse down the lentic tree to all lentic views.
+
+;; #+begin_src emacs-lisp
 (defun lentic-each (buffer fn &optional seen-buffer)
   "Starting at buffer, call fn on every lentic-buffer in the
 excluding buffer. fn should take a single argument which is the
@@ -519,7 +652,65 @@ buffer."
            (funcall fn that)
            (lentic-each that fn seen-buffer))))
      lentic-config)))
+;; #+end_src
 
+
+;; *** Initialisation
+
+;;#+begin_src emacs-lisp
+(defun lentic-ensure-init ()
+  "Ensure that the `lentic-init' has been run."
+  (setq lentic-config
+        ;; and attach to lentic-config
+        (-concat
+         lentic-config
+         ;; return only those that can co-exist
+         (-filter
+          (lambda (this-conf)
+            (-all?
+             (lambda (that-conf)
+               (lentic-coexist? this-conf that-conf))
+             lentic-config))
+          (-map
+           (lambda (init)
+             ;; instantiate a new conf object (but do not create the buffer)
+             (funcall init))
+           (if (not lentic-init)
+               '(lentic-default-init)
+             (-list lentic-init)))))))
+
+(defun lentic-init-all-create ()
+  "Create all lentics fo the current buffer."
+  (lentic-ensure-init)
+  (-map
+   (lambda (conf)
+     (if (and
+          (slot-boundp conf :that-buffer)
+          (buffer-live-p
+           (lentic-that conf)))
+         (lentic-that conf)
+       (lentic-create conf)))
+   (-list lentic-config)))
+;; #+end_src
+
+;; *** Hook System
+
+;; The lentic hook system is relatively involved, unfortunately, and will
+;; probably become more so. In so far as possible, though, all of the complexity
+;; should be here, using the methods provided in the lentic-configuration object.
+
+;; The complexity of the hook system and the fact that it is hooked deeply into
+;; the core of Emacs can make it quite hard to debug. There are a number of
+;; features put in place to help deal with this. These are:
+
+;;  - A logging system
+;;  - An emergency detection system.
+;;  - Two part hooks
+
+
+;; Start by enabling hooks!
+
+;; #+begin_src emacs-lisp
 (defun lentic-ensure-hooks ()
   "Ensures that the hooks that this mode requires are in place."
   (add-hook 'post-command-hook
@@ -537,6 +728,14 @@ buffer."
   (add-hook 'kill-emacs-hook
             'lentic-kill-emacs-hook))
 
+;; #+end_src
+
+;; The logging system which allows post-mortem analysis of what lentic has done.
+;; Originally, my plan was to leave logging in place so aid analysis of bug
+;; reports, but this requires so much logging that it the log buffer becomes
+;; impossible to analyse.
+
+;; #+begin_src emacs-lisp
 (defvar lentic-log t)
 (defmacro lentic-log (&rest rest)
   "Log REST."
@@ -550,6 +749,20 @@ buffer."
             (get-buffer-create "*lentic-log*")
           (goto-char (point-max))
           (insert msg))))))
+
+;; #+end_src
+
+;; An emergency detection system. Several of the hooks in use (post-command-hook,
+;; and the before- and after-change-functions) automatically remove hook
+;; functions which give errors. In development, this means that all errors are
+;; silently ignored and, worse, lentic continues in an inconsistent state with
+;; some hooks working and some not. Lentic catches all errors, therefore, and
+;; then drops into an "lentic-emergency" state, where all lentic functionality is
+;; disabled. This is still a dangerous state as changes do not percolate, but at
+;; least it should be predictable. The emergency state can be changed with
+;; `lentic-unemergency' and `lentic-emergency'.
+
+;; #+begin_src emacs-lisp
 
 (defvar lentic-emergency  nil
   "Iff lentic-emergency is non-nil stop all change related
@@ -591,6 +804,33 @@ repeated errors.")
   (interactive)
   (setq lentic-emergency nil))
 
+(defun lentic-hook-fail (err hook)
+  "Give an informative message when we have to fail.
+ERR is the error. HOOK is the hook type."
+  (message "lentic mode has failed on \"%s\" hook: %s "
+           hook (error-message-string err))
+  (lentic-emergency)
+  (with-output-to-temp-buffer "*lentic-fail*"
+    (princ "There has been an error in lentic-mode.\n")
+    (princ "The following is debugging information\n\n")
+    (princ (format "Hook: %s\n" hook))
+    (princ (error-message-string err)))
+  (select-window (get-buffer-window "*lentic-fail*")))
+;; #+end_src
+
+;; As a byproduct of the last, lentic also has two part hooks: the real hook
+;; function which just handles errors and calls the second function which does
+;; the work. This make it possible to call the second function interactively,
+;; without catching errors (so that they can be debugged) or causing the
+;; lentic-emergency state. There are some utility functions in lentic-dev for
+;; running hooks which require arguments.
+
+;; **** General Hook
+
+;; Start by handling saving, killing and general connecting with the Emacs
+;; behaviour.
+
+;; #+begin_src emacs-lisp
 (defun lentic-after-save-hook ()
   (unless lentic-emergency
     (condition-case err
@@ -669,7 +909,18 @@ repeated errors.")
            (delete-file (buffer-file-name))))
         lentic-config)))
    (buffer-list)))
+;; #+end_src
 
+;; **** Change Hooks
+
+;; Handling and percolating changes is the most complex part of lentic, made more
+;; complex still by the decision to support multiple buffers (why did I do that
+;; to myself?).
+
+;; The `post-command-hook' just percolates location of point through all the
+;; lentic buffers.
+
+;; #+begin_src emacs-lisp
 (defun lentic-post-command-hook ()
   "Update point according to config, with error handling."
   (unless lentic-emergency
@@ -700,60 +951,35 @@ repeated errors.")
              (lentic-update-point config))
            (lentic-post-command-hook-1 (lentic-that config) seen-buffer))))
      lentic-config)))
+;; #+end_src
 
-(defun lentic-hook-fail (err hook)
-  "Give an informative message when we have to fail.
-ERR is the error. HOOK is the hook type."
-  (message "lentic mode has failed on \"%s\" hook: %s "
-           hook (error-message-string err))
-  (lentic-emergency)
-  (with-output-to-temp-buffer "*lentic-fail*"
-    (princ "There has been an error in lentic-mode.\n")
-    (princ "The following is debugging information\n\n")
-    (princ (format "Hook: %s\n" hook))
-    (princ (error-message-string err)))
-  (select-window (get-buffer-window "*lentic-fail*")))
+;; The `after-change-function' is by far the most complex of the hooks. This is because
+;; we have to percolate the changes from the buffer that has changed as a result
+;; of the user doing something to all the other buffers. In theory, this should be
+;; straight-forward: combined with the `before-change-function', the data from
+;; the `after-change-function' defines a "dirty region" which we need to update
+;; by copying from the parent and then doing what ever transformation needs to
+;; happen. The problem is that that the contract from the configuration objects'
+;; `lentic-clone' method is that *at least* the dirty region will be replaced.
+;; `lentic-clone' can actually replace much more than this, and often needs to do
+;; so, to ensure a consistent transformation.
 
-(defun lentic-ensure-init ()
-  "Ensure that the `lentic-init' has been run."
-  (setq lentic-config
-        ;; and attach to lentic-config
-        (-concat
-         lentic-config
-         ;; return only those that can co-exist
-         (-filter
-          (lambda (this-conf)
-            (-all?
-             (lambda (that-conf)
-               (lentic-coexist? this-conf that-conf))
-             lentic-config))
-          (-map
-           (lambda (init)
-             ;; instantiate a new conf object (but do not create the buffer)
-             (funcall init))
-           (if (not lentic-init)
-               '(lentic-default-init)
-             (-list lentic-init)))))))
+;; So, when a lentic-buffer updates it needs to update it's own dirty region but
+;; also return the dirty region that it has created, so that any lentic buffers
+;; that it in turn has that are still to be updated can be so. Or, if it doesn't,
+;; we just assume the whole buffer is dirty which is safe but inefficient.
 
-(defun lentic-init-all-create ()
-  "Create all lentics fo the current buffer."
-  (lentic-ensure-init)
-  (-map
-   (lambda (conf)
-     (if (and
-          (slot-boundp conf :that-buffer)
-          (buffer-live-p
-           (lentic-that conf)))
-         (lentic-that conf)
-       (lentic-create conf)))
-   (-list lentic-config)))
+;; The main after-change-function also stores the its arguments if we are in
+;; debug mode which allows me to run `lentic-after-change-function-1'
+;; interactively with the correct arguments.
 
+;; #+begin_src emacs-lisp
 (defvar lentic-emergency-last-change nil)
 (make-variable-buffer-local 'lentic-emergency-last-change)
 
 (defun lentic-after-change-function (start stop length-before)
   "Run change update according to `lentic-config'.
-Errors are handled. REST is currently just ignored."
+Errors are handled."
   ;; store values in case we want to use them
   (when lentic-emergency-debug
     (setq lentic-emergency-last-change (list start stop length-before)))
@@ -767,8 +993,7 @@ Errors are handled. REST is currently just ignored."
 (defun lentic-after-change-function-1
     (buffer start stop
             length-before &optional seen-buffer)
-  "run change update according to `lentic-config'.
-rest is currently just ignored."
+  "Run change update according to `lentic-config'."
   (lentic-with-lentic-buffer buffer
     (setq seen-buffer (cons buffer seen-buffer))
     (-map
@@ -789,13 +1014,21 @@ rest is currently just ignored."
             seen-buffer))))
      lentic-config)))
 
-;; convert the start position and store it. we need to do this before
-;; the change so that we can use the value during clone. after the
-;; change, this-buffer and that-buffer will have different contents
-;; (until the change has been percolated). and the convert function
-;; may not work properly under these circumstances.
+;; #+end_src
+
+;; We also need to store the location of the area to be changed before the change
+;; happens. Further, we need to convert this at this time to the cognate
+;; positions in the lentic buffers. This is because it is only before the change
+;; that this-buffer and the lentic buffers are in a consistent state; after the
+;; change, this-buffer will have changes not percolated to other buffers. By
+;; making this conversion now, we can ease the implementation of the
+;; `lentic-convert' function because it does not have to cope with buffers with
+;; inconsistent content.
+
+
+;; #+begin_src emacs-lisp
 (defun lentic-before-change-function (start stop)
-  "run before change update."
+  "Run before change update."
   (unless (and
            lentic-emergency
            (not lentic-emergency-debug))
@@ -829,22 +1062,36 @@ rest is currently just ignored."
           (oref config :last-change-stop-converted)
           seen-buffer)))
      lentic-config)))
+;; #+end_src
 
+;; The `lentic-update-contents' actually transfers changes from one buffer to all
+;; the lentics. Unfortunately before-change-function and after-change-function
+;; are not always consistent with each other. So far the main culprit I have
+;; found is `subst-char-in-region', which is used under the hood of
+;; `fill-paragraph'. On the b-c-f this reports the real start of the change and
+;; the *maximal* end, while on the a-c-f it reports both the real start and real
+;; end. Unfortunately, we did our conversion to the cognate positions in the
+;; b-c-f *and* we need these values.
+
+;; The overestimate give inconsistency between the length before on a-c-f (which
+;; is the actual length) and the difference between b-c-f start and stop (which
+;; is the maximal change). Unfortunately, this can also occur in some correct
+;; circumstances -- replace-match for example can both insert and change
+;; simultaneously.
+
+;; So, the only solution that I have is to use a heuristic to detect /skew/ --
+;; when I think the b-c-f and a-c-f are inconsistent, and if it finds it, then
+;; use a full clone (i.e. the whole buffer is dirty).
+
+;; I need to do a full survey of all the functions that call b-c-f/a-c-f (there
+;; are not that many of them!) and rewrite them to all do-the-right thing. Need
+;; to learn C first!
+
+;; #+begin_src emacs-lisp
 (defun lentic-update-contents (conf &optional start stop length-before)
   "update the contents of that-buffer with the contents of this-buffer.
 update mechanism depends on conf."
   (let ((inhibit-read-only t))
-    ;; unfortunately b-c-f and a-c-f are not always consistent with each
-    ;; other. b-c-f signals the maximal extent that may be changed, while
-    ;; a-c-f signals the exact extend. We did our conversion on b-c-f when the
-    ;; buffers were in sync, so we these are the only values we have.
-
-    ;; Overestimate give inconsistency between the length before on a-c-f
-    ;; (which is the actual) and the different between b-c-f start and stop.
-    ;; Unfortunately, this can also occur in some correct circumstances --
-    ;; replace-match for example can both insert and change simultaneously.
-    ;; Currently, the best solution I have for this is to fall-back to a full
-    ;; clone.
     (let ((skewed
            (when
                (or
@@ -921,6 +1168,12 @@ same top-left location. Update details depend on CONF."
              (set-window-start window from-window-start))))
        (get-buffer-window-list (lentic-that conf))))))
 
+;; #+end_src
+
+;; Ugly, ugly, ugly. Not happy with mode-line behaviour anyway, so this will
+;; probably change into the future.
+
+;; #+begin_src emacs-lisp
 ;; put this here so we don't have to require lentic-mode to ensure that the
 ;; mode line is updated.
 (defun lentic-update-display ()
@@ -928,6 +1181,34 @@ same top-left location. Update details depend on CONF."
     (lentic-mode-update-mode-line)))
 ;; #+end_src
 
+
+;; *** Utility
+
+;; Just a couple of convienience functions for operating on eieio objects. The
+;; native `oset' only allows setting a single property-value pair which is
+;; irritating syntactically, and it does not return the object which prevents
+;; function chaining. Taken together, these really simplify construction of
+;; objects.
+
+;; #+begin_src emacs-lisp
+(defun lentic-m-oset (obj &rest plist)
+  "On OBJ set all properties in PLIST.
+Returns OBJ. See also `lentic-a-oset'"
+  (lentic-a-oset obj plist))
+
+(defun lentic-a-oset (obj plist)
+  "On OBJ, set all properties in PLIST.
+This is a utility function which just does the same as oset, but
+for lots of things at once. Returns OBJ."
+  (-map
+   (lambda (n)
+     (eieio-oset
+      obj
+      (car n)
+      (cadr n)))
+   (-partition 2 plist))
+  obj)
+;; #+end_src
 
 ;; ** Batch Functions
 
@@ -968,6 +1249,10 @@ Return the lentic contents without properties."
                (point-min)
                (point-max)))
         (set-buffer-modified-p nil)
+        ;; don't delete -- we haven't saved but there
+        ;; might already be a file with the same name,
+        ;; which will get deleted
+        (oset (car lentic-config) :delete-on-exit nil)
         (kill-buffer))
       (set-buffer-modified-p nil)
       (kill-buffer))

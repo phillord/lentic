@@ -51,6 +51,11 @@ lentic buffers this will have no effect.
 - Multiple lentic buffers are now possible.
 - Features to create new views.
 
+#### Known Issues
+
+- The location of point in a view can jump unexpectedly after some commands
+  (such as `fill-paragraph').
+
 #### Breaking Changes
 
 - The return value of lentic-clone has now changed.
