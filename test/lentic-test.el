@@ -70,12 +70,19 @@
 (defun lentic-test-clone-with-cleanup (file init)
   (unwind-protect
       (lentic-batch-clone-with-config (lentic-test-file file) init)
-    (let ((this (get-file-buffer (lentic-test-file file))))
+    (let ((this (get-file-buffer (lentic-test-file file)))
+          ;; keep everything!
+          (lentic-kill-retain t))
       (when this
         (with-current-buffer this
-          (let ((that (lentic-that (car lentic-config))))
-            (kill-buffer that)))
-        (kill-buffer this)))))
+          (let ((that (lentic-that (car lentic-config)))
+                (kill-buffer-query-functions nil))
+            (with-current-buffer that
+              (set-buffer-modified-p nil)
+              (kill-buffer that))))
+        (let ((kill-buffer-query-functions nil))
+          (set-buffer-modified-p nil)
+          (kill-buffer this))))))
 
 (defun lentic-test-clone-equal (init file cloned-file)
   (let ((cloned-file
