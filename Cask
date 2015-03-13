@@ -1,7 +1,7 @@
 ;; -*- emacs-lisp -*-
 (source gnu)
-(source melpa)
 (source marmalade)
+(source melpa-stable)
 
 (package-file "lentic.el")
 
