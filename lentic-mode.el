@@ -282,8 +282,7 @@ See also `lentic-mode-move-lentic-window'."
                       (lambda (conf)
                         (lentic-mode-line-string conf))
                       lentic-config))
-                  "")))
-  (force-mode-line-update))
+                  ""))))
 
 (defun lentic-mode-buffer-list-update-hook ()
   (if lentic-emergency
@@ -294,7 +293,8 @@ See also `lentic-mode-move-lentic-window'."
        (with-current-buffer
            b
          (lentic-mode-update-mode-line)))
-     (buffer-list))))
+     (buffer-list))
+    (force-mode-line-update t)))
 
 (add-hook 'buffer-list-update-hook
           'lentic-mode-buffer-list-update-hook)
