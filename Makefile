@@ -36,6 +36,7 @@ clean-butinfo:
 	-rm lentic.org
 	-rm lentic-*.org
 	-rm *.texi
+	-rm lenticular.html
 
 clean: clean-butinfo
 	-rm *.info
@@ -43,4 +44,3 @@ clean: clean-butinfo
 -include Makefile-local
 
 .PHONY: test org
-
