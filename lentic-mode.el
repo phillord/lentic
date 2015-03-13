@@ -177,8 +177,11 @@ then the current-buffer will be moved into that window. See also
          (point)))
     (lentic-mode-swap-buffer-windows
      (current-buffer)
-     (lentic-mode-find-next-visible-lentic-buffer
-      (current-buffer)))
+     (or
+      (lentic-mode-find-next-visible-lentic-buffer
+       (current-buffer))
+      (lentic-mode-find-next-lentic-buffer
+       (current-buffer))))
     (set-window-start
      (selected-window)
      before-window-start)
