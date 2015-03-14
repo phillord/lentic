@@ -46,7 +46,7 @@
 ;; mode for each combination. Another solution is to use one of the
 ;; multiple-mode tools which are available. The problem with this is that they
 ;; generally need some support from the modes in question. And, again, the
-;; dificulty is supporting both forms of editing in the same environment. A
+;; difficulty is supporting both forms of editing in the same environment. A
 ;; final problem is that it is not just the editing environment that needs to
 ;; be adapted; the programmatic environment needs to be untroubled by the
 ;; documentation, and the documentation environment untroubled by the program
@@ -196,7 +196,7 @@ This should be one or a list of functions that each return a
 This is a list of objects of the class `lentic-configuration'
 lentic-configuration', which defines the way in which the text in
 the different buffers is kept synchronized. This configuration is
-resiliant to changes of mode in the current buffer.")
+resilient to changes of mode in the current buffer.")
 
 (make-variable-buffer-local 'lentic-config)
 (put 'lentic-config 'permanent-local t)
@@ -328,7 +328,7 @@ STOP-CONVERTED. Otherwise, this should return nil.")
 ;; point in the future. So, the configuration object needs to be able to return
 ;; it's own inverse. This can be a configuration object of the same class which
 ;; is normal when the lentic transformation is symmetrical, or a different class
-;; which is normal whent he lentic transformation is asymmetrical.
+;; which is normal when the lentic transformation is asymmetrical.
 
 ;; #+begin_src emacs-lisp
 (defgeneric lentic-invert (conf)
@@ -1184,7 +1184,7 @@ same top-left location. Update details depend on CONF."
 
 ;; *** Utility
 
-;; Just a couple of convienience functions for operating on eieio objects. The
+;; Just a couple of convenience functions for operating on eieio objects. The
 ;; native `oset' only allows setting a single property-value pair which is
 ;; irritating syntactically, and it does not return the object which prevents
 ;; function chaining. Taken together, these really simplify construction of
