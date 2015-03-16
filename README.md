@@ -35,16 +35,19 @@ completed the relevant paperwork with the FSF.
 
 ### 0.8
 
-This buffer introduces multiple lentic buffers. This is important because
-lentic has more than one use -- both for maintaining two syntactic views (for
-example for literate programming) and for maintaining two identical persistent
-views (for example, for editing a file in two places at once). It's now
-possible to do both of these at the same time. Specific support has been added
-for views in lentic-mode.
+This buffer introduces two new features. First, it is now possible to have
+multiple lentic buffers. This is important because lentic has more than one
+use -- both for maintaining two syntactic views (for example for literate
+programming) and for maintaining two identical persistent views (for example,
+for editing a file in two places at once). It's now possible to do both of
+these at the same time. Specific support has been added for views in
+lentic-mode. This necessitates a change to the return value of lentic-clone to
+enable the percolation of changes between several buffers. In this default
+usage of two lentic buffers this will have no effect.
 
-This necessitates a change to the return value of lentic-clone to enable the
-percolation of changes between several buffers. In this default usage of two
-lentic buffers this will have no effect.
+Second, the documentation system introduced in 0.7 has been made generic and
+can be used to generate and display documentation for any package which
+supports it. The m-buffer (which is a dependency) is an example of this.
 
 #### New Features
 
