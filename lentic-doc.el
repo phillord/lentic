@@ -38,6 +38,11 @@
 ;; ** Orgify Package
 
 ;; #+begin_src emacs-lisp
+(defun lentic-doc-stringify (str-or-sym)
+  (if (symbolp str-or-sym)
+      (symbol-name str-or-sym)
+    str-or-sym))
+
 (defun lentic-doc-all-files-of-package (package)
   "Fetch all the files that are part of package.
 This function assumes that all the files are in one place and
@@ -76,24 +81,25 @@ as a prefix. "
 (defun lentic-doc-orgify-package (package)
   (lentic-doc-orgify-all-if-necessary
    (lentic-doc-all-files-of-package
-    (symbol-name package))))
+    (lentic-doc-stringify package))))
 ;; #+end_src
 
 ;; ** htmlify package
 
 ;; #+begin_src: emacs-lisp
 (defun lentic-doc-htmlify-package (package)
-  (lentic-doc-orgify-package package)
-  (with-current-buffer
-      (find-file-noselect
-       (lentic-doc-package-start-source package))
-    (let ((org-export-htmlize-generate-css 'css))
-      (org-html-export-to-html))))
+  (let ((package
+         (lentic-doc-stringify package)))
+    (lentic-doc-orgify-package package)
+    (with-current-buffer
+        (find-file-noselect
+         (lentic-doc-package-start-source package))
+      (let ((org-export-htmlize-generate-css 'css))
+        (org-html-export-to-html)))))
 ;; #+end_src
 
-
 ;; #+begin_src
-;; remove when 
+;; remove when it gets into f.el
 (defun lentic-f-swap-ext (path ext)
   "Return PATH but with EXT as the new extension.
 EXT must not be nil or empty."
@@ -101,48 +107,91 @@ EXT must not be nil or empty."
       (error "extension cannot be empty or nil.")
     (concat (f-no-ext path) "." ext)))
 
-(defun lentic-doc-package-start-source (package)
+(defun lentic-doc-package-explicit-start-source (package)
   (let ((doc-var
          (intern
-          (concat
-           (symbol-name package)
-           "-doc"))))
+          (concat package "-doc"))))
     (if (boundp doc-var)
-        (symbol-value doc-var)
+        ;; if it is set to a boolean return the implicit start
+        (if (booleanp
+             (symbol-value doc-var))
+            (lentic-doc-package-implicit-start-source package)
+          (symbol-value doc-var))
       ;; get the default
       (let*
           ((main-file
-            (locate-library
-             (symbol-name package)))
+            (locate-library package))
            (doc-file
-            (concat
-             (f-no-ext
-              main-file)
-             "-doc.org")))
-        (if (f-exists? doc-file)
-            doc-file
-          (lentic-f-swap-ext
-           main-file "org"))))))
+            (when main-file
+              (concat
+               (f-no-ext
+                main-file)
+               "-doc.org"))))
+        (when
+            (and doc-file
+                 (f-exists? doc-file))
+            doc-file)))))
+
+(defun lentic-doc-package-implicit-start-source (package)
+  (lentic-f-swap-ext
+   (locate-library package)
+   "org"))
+
+(defun lentic-doc-package-start-source (package)
+  (or (lentic-doc-package-explicit-start-source package)
+      (lentic-doc-package-implicit-start-source package)))
 
 (defun lentic-doc-package-doc-file (package)
   (lentic-f-swap-ext
    (lentic-doc-package-start-source package)
    "html"))
 
+(defun lentic-doc-ensure-doc (package)
+  (unless (f-exists?
+           (lentic-doc-package-doc-file package))
+    (lentic-doc-htmlify-package package)))
+
+(defvar lentic-doc-lentic-features nil)
+(defun lentic-doc-all-lentic-features-capture()
+  (setq lentic-doc-lentic-features
+        (cons
+         (length features)
+         (-map
+          (lambda (feat)
+            (symbol-name feat))
+          (-filter
+           (lambda (feat)
+             (lentic-doc-package-explicit-start-source feat))
+           features)))))
+
+(defun lentic-doc-all-lentic-features ()
+  (unless
+      (and lentic-doc-lentic-features
+           (equal
+            (car lentic-doc-lentic-features)
+            (length features)))
+    (lentic-doc-all-lentic-features-capture))
+  (cdr lentic-doc-lentic-features))
+
 (defun lentic-doc-external-view-package (package)
+  (interactive
+   (list
+    (completing-read
+     "Package Name: "
+     (lentic-doc-all-lentic-features))))
   (lentic-doc-ensure-doc package)
   (browse-url-default-browser
    (lentic-doc-package-doc-file package)))
 
 (defun lentic-doc-eww-view-package (package)
+  (interactive
+   (list
+    (completing-read
+     "Package Name: "
+     (lentic-doc-all-lentic-features))))
   (lentic-doc-ensure-doc package)
   (eww-open-file
    (lentic-doc-package-doc-file package)))
-
-(defun lentic-doc-ensure-doc (package)
-  (unless (f-exists?
-           (lentic-doc-package-doc-file package))
-    (lentic-doc-htmlify-package package)))
 ;; #+end_src
 
 ;; ** lentic self-doc
@@ -157,7 +206,6 @@ EXT must not be nil or empty."
 (defun lentic-doc-external-view ()
   (interactive)
   (lentic-doc-external-view-package 'lentic))
-
 
 (provide 'lentic-doc)
 ;; #+end_src
