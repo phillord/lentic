@@ -207,8 +207,7 @@ resiliant to changes of mode in the current buffer.")
   (format "lentic \"%s:%s\"" buffer (setq lentic-counter (+ 1 lentic-counter))))
 
 (defvar lentic-init-functions nil
-  "A list of all functions that can be used as lentic-init
-functions.")
+  "All functions that can be used as `lentic-init' function.")
 ;; #+end_src
 
 ;; ** Base Configuration
@@ -437,7 +436,7 @@ or create it if it does not exist."
 
 ;; #+begin_src emacs-lisp
 (defun lentic-insertion-string-transform (string)
-  "Transform the string that is about to be inserted.
+  "Transform the STRING that is about to be inserted.
 This function is not meant to do anything. It's useful to
 advice."
   string)
@@ -593,7 +592,7 @@ see `lentic-init' for details."
 
 ;; #+begin_src emacs-lisp
 (defmacro lentic-when-lentic (&rest body)
-  "Evaluate BODY when the current-buffer has a lentic buffer."
+  "Evaluate BODY when the `current-buffer' has a lentic buffer."
   (declare (debug t))
   `(when (and
           lentic-config
@@ -606,7 +605,7 @@ see `lentic-init' for details."
      ,@body))
 
 (defmacro lentic-when-buffer (buffer &rest body)
-  "Eval BODY when BUFFER is a live buffer."
+  "When BUFFER is a live buffer eval BODY."
   (declare (debug t)
            (indent 1))
   `(when (and ,buffer
@@ -614,8 +613,7 @@ see `lentic-init' for details."
      ,@body))
 
 (defmacro lentic-when-with-current-buffer (buffer &rest body)
-  "Eval BODY when BUFFER is a live buffer, with BUFFER as the 
-current buffer."
+  "When BUFFER is a live buffer eval BODY with BUFFER current."
   (declare (debug t)
            (indent 1))
   `(lentic-when-buffer
@@ -625,7 +623,7 @@ current buffer."
       ,@body)))
 
 (defmacro lentic-with-lentic-buffer (buffer &rest body)
-  "Eval BODY with BUFFER as current, when BUFFER has a lentic."
+  "With BUFFER as current, eval BODY when BUFFER has a lentic."
   (declare (debug t)
            (indent 1))
   `(lentic-when-with-current-buffer
@@ -638,9 +636,9 @@ current buffer."
 
 ;; #+begin_src emacs-lisp
 (defun lentic-each (buffer fn &optional seen-buffer)
-  "Starting at buffer, call fn on every lentic-buffer in the
-excluding buffer. fn should take a single argument which is the
-buffer."
+  "Starting at BUFFER, call FN on every lentic-buffer.
+FN should take a single argument which is the buffer.
+SEEN-BUFFER is a list of buffers to ignore."
   (lentic-with-lentic-buffer buffer
     (setq seen-buffer (cons buffer seen-buffer))
     (-map
@@ -765,22 +763,20 @@ buffer."
 ;; #+begin_src emacs-lisp
 
 (defvar lentic-emergency  nil
-  "Iff lentic-emergency is non-nil stop all change related
-  activity.
+  "Iff non-nil halt all lentic activity.
 
-This is not the same as disabling lentic mode. It stops
-all lentic related activity in all buffers; normally this
-happens as a result of an error condition. If lentic was
-to carry on in these circumstances, serious data loss could
-occur. In normal use, this variable will only be set as a result
-of a problem with the code; it is not recoverable from a user
-perspective.
+This is not the same as disabling lentic mode. It stops all
+lentic related activity in all buffers; this happens as a result
+of an error condition. If lentic was to carry on in these
+circumstances, serious data loss could occur. In normal use, this
+variable will only be set as a result of a problem with the code;
+it is not recoverable from a user perspective.
 
 It is useful to toggle this state on during development. Once
 enabled, buffers will not update automaticaly but only when
 explicitly told to. This is much easier than try to debug errors
 happening on the after-change-hooks. The
-`lentic-emergency' and `lentic-unemergency' functions
+function `lentic-emergency' and `lentic-unemergency' functions
 enable this.")
 
 (defvar lentic-emergency-debug nil
@@ -832,6 +828,7 @@ ERR is the error. HOOK is the hook type."
 
 ;; #+begin_src emacs-lisp
 (defun lentic-after-save-hook ()
+  "Error protected call to real after save hook."
   (unless lentic-emergency
     (condition-case err
         (lentic-after-save-hook-1)
@@ -839,6 +836,8 @@ ERR is the error. HOOK is the hook type."
        (lentic-hook-fail err "after-save-hook")))))
 
 (defun lentic-after-save-hook-1 ()
+  "Respond to a save in the `current-buffer'.
+This also saves every lentic which is file-associated."
   (lentic-each
    (current-buffer)
    (lambda (buffer)
@@ -851,6 +850,7 @@ ERR is the error. HOOK is the hook type."
   "If non-nil retain files even if requested to delete on exit.")
 
 (defun lentic-kill-buffer-hook ()
+  "Error protected call to real `kill-buffer-hook'."
   (unless lentic-emergency
     (condition-case err
         (lentic-kill-buffer-hook-1)
@@ -860,6 +860,10 @@ ERR is the error. HOOK is the hook type."
 (defvar lentic--killing-p nil)
 
 (defun lentic-kill-buffer-hook-1 ()
+  "Respond to any buffer being killed.
+If this killed buffer is lentic and is :creator, then kill all
+lentic-buffers recursively. If the buffer is :delete-on-exit,
+then remove any associated file."
   (lentic-when-lentic
    (when
        (and
@@ -889,6 +893,7 @@ ERR is the error. HOOK is the hook type."
           (kill-buffer buffer)))))))
 
 (defun lentic-kill-emacs-hook ()
+  "Error protected call to real `kill-emacs-hook'."
   (unless lentic-emergency
     (condition-case err
         (lentic-kill-emacs-hook-1)
@@ -896,6 +901,9 @@ ERR is the error. HOOK is the hook type."
        (lentic-hook-fail err "kill-emacs-hook")))))
 
 (defun lentic-kill-emacs-hook-1 ()
+  "Respond to `kill-emacs-hook.
+This removes any files associated with lentics which are
+marked as :delete-on-exit."
   (-map
    (lambda (buffer)
      (lentic-with-lentic-buffer
@@ -933,7 +941,8 @@ ERR is the error. HOOK is the hook type."
        (lentic-hook-fail err "post-command-hook")))))
 
 (defun lentic-post-command-hook-1 (buffer &optional seen-buffer)
-  "Update point according to config."
+  "Update point in BUFFER according to config.
+SEEN-BUFFER is a list of lentics that have already been updated."
   (lentic-with-lentic-buffer
       buffer
     ;; now we have seen this buffer don't look again
@@ -979,7 +988,10 @@ ERR is the error. HOOK is the hook type."
 
 (defun lentic-after-change-function (start stop length-before)
   "Run change update according to `lentic-config'.
-Errors are handled."
+Errors are handled.
+START is at most the start of the change.
+STOP is at least the end of the change.
+LENGTH-BEFORE is the length of the area before the change."
   ;; store values in case we want to use them
   (when lentic-emergency-debug
     (setq lentic-emergency-last-change (list start stop length-before)))
@@ -993,7 +1005,13 @@ Errors are handled."
 (defun lentic-after-change-function-1
     (buffer start stop
             length-before &optional seen-buffer)
-  "Run change update according to `lentic-config'."
+  "Run change update according to `lentic-config'.
+BUFFER is the changed buffer.
+START is at most the start of the change.
+STOP is at least the end of the change.
+LENGTH-BEFORE is the length of the area before the change.
+SEEN-BUFFER is a list of buffers to which we have already percolated
+the change."
   (lentic-with-lentic-buffer buffer
     (setq seen-buffer (cons buffer seen-buffer))
     (-map
@@ -1028,7 +1046,9 @@ Errors are handled."
 
 ;; #+begin_src emacs-lisp
 (defun lentic-before-change-function (start stop)
-  "Run before change update."
+  "Error protected call to real `before-change-function'.
+START is at most the start of the change.
+STOP is at least the end of the change."
   (unless (and
            lentic-emergency
            (not lentic-emergency-debug))
@@ -1038,6 +1058,11 @@ Errors are handled."
        (lentic-hook-fail err "before change")))))
 
 (defun lentic-before-change-function-1 (buffer start stop &optional seen-buffer)
+  "Calculate change position in all lentic buffers.
+BUFFER is the buffer being changed.
+START is at most the start of the change.
+STOP is at least the end of the change.
+SEEN-BUFFER is a list of buffers to which the change has been percolated."
   (lentic-with-lentic-buffer buffer
     (setq seen-buffer (cons buffer seen-buffer))
     (-map
@@ -1089,8 +1114,11 @@ Errors are handled."
 
 ;; #+begin_src emacs-lisp
 (defun lentic-update-contents (conf &optional start stop length-before)
-  "update the contents of that-buffer with the contents of this-buffer.
-update mechanism depends on conf."
+  "Update the contents of that-buffer with the contents of this-buffer.
+update mechanism depends on CONF.
+START is at most the start of the change.
+STOP is at least the end of the change.
+LENGTH-BEFORE is the length of area before the change."
   (let ((inhibit-read-only t))
     (let ((skewed
            (when
@@ -1177,6 +1205,7 @@ same top-left location. Update details depend on CONF."
 ;; put this here so we don't have to require lentic-mode to ensure that the
 ;; mode line is updated.
 (defun lentic-update-display ()
+  "Update the display with information about lentic's state."
   (when (fboundp 'lentic-mode-update-mode-line)
     (lentic-mode-update-mode-line)))
 ;; #+end_src
