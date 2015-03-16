@@ -299,6 +299,22 @@ See also `lentic-mode-move-lentic-window'."
 (add-hook 'buffer-list-update-hook
           'lentic-mode-buffer-list-update-hook)
 
+
+;; ** lentic self-doc
+
+;; #+begin_src: emacs-lisp
+;;;###autoload
+(defun lentic-mode-doc-eww-view ()
+  (interactive)
+  (lentic-doc-eww-view-package 'lentic))
+
+;;;###autoload
+(defun lentic-mode-doc-external-view ()
+  (interactive)
+  (lentic-doc-external-view-package 'lentic))
+
+
+
 ;;;###autoload
 (define-minor-mode lentic-mode
   "Documentation"
@@ -323,8 +339,8 @@ See also `lentic-mode-move-lentic-window'."
    ["Swap" lentic-mode-swap-lentic-window
     :active lentic-config]
    ["Insert File Local" lentic-mode-insert-file-local]
-   ["Read Doc (eww)" lentic-doc-eww-view]
-   ["Read Doc (external)" lentic-doc-external-view]
+   ["Read Doc (eww)" lentic-mode-doc-eww-view]
+   ["Read Doc (external)" lentic-mode-doc-external-view]
    ))
 
 ;;;###autoload

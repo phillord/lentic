@@ -181,9 +181,10 @@ EXT must not be nil or empty."
     (completing-read
      "Package Name: "
      (lentic-doc-all-lentic-features))))
-  (lentic-doc-ensure-doc package)
-  (browse-url-default-browser
-   (lentic-doc-package-doc-file package)))
+  (let ((package (lentic-doc-stringify package)))
+    (lentic-doc-ensure-doc package)
+    (browse-url-default-browser
+     (lentic-doc-package-doc-file package))))
 
 (defun lentic-doc-eww-view-package (package)
   (interactive
@@ -191,23 +192,11 @@ EXT must not be nil or empty."
     (completing-read
      "Package Name: "
      (lentic-doc-all-lentic-features))))
-  (lentic-doc-ensure-doc package)
-  (eww-open-file
-   (lentic-doc-package-doc-file package)))
+  (let ((package (lentic-doc-stringify package)))
+    (lentic-doc-ensure-doc package)
+    (eww-open-file
+     (lentic-doc-package-doc-file package))))
 ;; #+end_src
-
-;; ** lentic self-doc
-
-;; #+begin_src: emacs-lisp
-;;;###autoload
-(defun lentic-doc-eww-view ()
-  (interactive)
-  (lentic-doc-eww-view-package 'lentic))
-
-;;;###autoload
-(defun lentic-doc-external-view ()
-  (interactive)
-  (lentic-doc-external-view-package 'lentic))
 
 (provide 'lentic-doc)
 ;; #+end_src
