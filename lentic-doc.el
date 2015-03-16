@@ -162,7 +162,8 @@ EXT must not be nil or empty."
             (symbol-name feat))
           (-filter
            (lambda (feat)
-             (lentic-doc-package-explicit-start-source feat))
+             (lentic-doc-package-explicit-start-source
+              (symbol-name feat)))
            features)))))
 
 (defun lentic-doc-all-lentic-features ()
