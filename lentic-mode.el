@@ -306,12 +306,12 @@ See also `lentic-mode-move-lentic-window'."
 ;;;###autoload
 (defun lentic-mode-doc-eww-view ()
   (interactive)
-  (lentic-doc-eww-view-package 'lentic))
+  (lentic-doc-eww-view 'lentic))
 
 ;;;###autoload
 (defun lentic-mode-doc-external-view ()
   (interactive)
-  (lentic-doc-external-view-package 'lentic))
+  (lentic-doc-external-view 'lentic))
 
 
 

@@ -175,7 +175,7 @@ EXT must not be nil or empty."
     (lentic-doc-all-lentic-features-capture))
   (cdr lentic-doc-lentic-features))
 
-(defun lentic-doc-external-view-package (package)
+(defun lentic-doc-external-view (package)
   (interactive
    (list
     (completing-read
@@ -186,7 +186,7 @@ EXT must not be nil or empty."
     (browse-url-default-browser
      (lentic-doc-package-doc-file package))))
 
-(defun lentic-doc-eww-view-package (package)
+(defun lentic-doc-eww-view (package)
   (interactive
    (list
     (completing-read
