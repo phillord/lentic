@@ -32,6 +32,7 @@
 (require 'ox-html)
 (require 'browse-url)
 (require 'lentic)
+(require 'lentic-org)
 (require 'f)
 ;; #+end_src
 

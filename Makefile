@@ -12,12 +12,6 @@ test: install
 org:
 	cask exec emacs --debug --script build.el -- gen-org
 
-texinfo: org
-	cask exec emacs --debug --script build.el -- gen-texinfo
-
-info: texinfo
-	makeinfo lentic.texi
-
 html: org
 	cask exec emacs --debug --script build.el -- gen-html
 
@@ -30,16 +24,11 @@ DISTRIB-LENTIC=../distrib-lentic
 # 	cp lentic*.info $(DISTRIB-LENTIC)
 # 	cd $(DISTRIB-LENTIC);git pull;git add -A;git commit -m "automated-commit $(COMMIT_DATE)"
 
-infoclean: info clean-butinfo
-
-clean-butinfo:
+clean:
 	-rm lentic.org
 	-rm lentic-*.org
-	-rm *.texi
 	-rm lenticular.html
 
-clean: clean-butinfo
-	-rm *.info
 
 -include Makefile-local
 
