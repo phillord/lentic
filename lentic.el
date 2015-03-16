@@ -156,6 +156,8 @@
 (require 'm-buffer-at)
 ;; #+end_src
 
+(defvar lentic-doc "lenticular.org")
+
 ;; ** State
 
 ;; This section defines all of the variables that the basic state for lentic
@@ -655,7 +657,7 @@ SEEN-BUFFER is a list of buffers to ignore."
 
 ;; *** Initialisation
 
-;;#+begin_src emacs-lisp
+;; #+begin_src emacs-lisp
 (defun lentic-ensure-init ()
   "Ensure that the `lentic-init' has been run."
   (setq lentic-config

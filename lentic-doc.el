@@ -82,50 +82,81 @@ as a prefix. "
 ;; ** htmlify package
 
 ;; #+begin_src: emacs-lisp
-(defun lentic-doc-htmlify-package (package start)
+(defun lentic-doc-htmlify-package (package)
   (lentic-doc-orgify-package package)
   (with-current-buffer
       (find-file-noselect
-       (concat
-        (f-parent (locate-library (symbol-name package)))
-        "/"
-        start))
+       (lentic-doc-package-start-source package))
     (let ((org-export-htmlize-generate-css 'css))
       (org-html-export-to-html))))
+;; #+end_src
+
+
+;; #+begin_src
+;; remove when 
+(defun lentic-f-swap-ext (path ext)
+  "Return PATH but with EXT as the new extension.
+EXT must not be nil or empty."
+  (if (s-blank? ext)
+      (error "extension cannot be empty or nil.")
+    (concat (f-no-ext path) "." ext)))
+
+(defun lentic-doc-package-start-source (package)
+  (let ((doc-var
+         (intern
+          (concat
+           (symbol-name package)
+           "-doc"))))
+    (if (boundp doc-var)
+        (symbol-value doc-var)
+      ;; get the default
+      (let*
+          ((main-file
+            (locate-library
+             (symbol-name package)))
+           (doc-file
+            (concat
+             (f-no-ext
+              main-file)
+             "-doc.org")))
+        (if (f-exists? doc-file)
+            doc-file
+          (lentic-f-swap-ext
+           main-file "org"))))))
+
+(defun lentic-doc-package-doc-file (package)
+  (lentic-f-swap-ext
+   (lentic-doc-package-start-source package)
+   "html"))
+
+(defun lentic-doc-external-view-package (package)
+  (lentic-doc-ensure-doc package)
+  (browse-url-default-browser
+   (lentic-doc-package-doc-file package)))
+
+(defun lentic-doc-eww-view-package (package)
+  (lentic-doc-ensure-doc package)
+  (eww-open-file
+   (lentic-doc-package-doc-file package)))
+
+(defun lentic-doc-ensure-doc (package)
+  (unless (f-exists?
+           (lentic-doc-package-doc-file package))
+    (lentic-doc-htmlify-package package)))
 ;; #+end_src
 
 ;; ** lentic self-doc
 
 ;; #+begin_src: emacs-lisp
 ;;;###autoload
-(defun lentic-doc-generate-self ()
-  (interactive)
-  (lentic-doc-htmlify-package 'lentic "lenticular.org"))
-
-(defvar lentic-doc-file
-  (concat
-   (f-parent
-    (locate-library "lentic.el"))
-   "/" "lenticular.html"))
-
-(defun lentic-doc-attempt-doc-view ()
-  (eww-open-file lentic-doc-file))
-
-(defun lentic-doc-ensure-doc ()
-  (unless (f-exists? lentic-doc-file)
-    (lentic-doc-generate-self)))
-
-;;;###autoload
 (defun lentic-doc-eww-view ()
   (interactive)
-  (lentic-doc-ensure-doc)
-  (lentic-doc-attempt-doc-view))
+  (lentic-doc-eww-view-package 'lentic))
 
 ;;;###autoload
 (defun lentic-doc-external-view ()
   (interactive)
-  (lentic-doc-ensure-doc)
-  (browse-url-default-browser lentic-doc-file))
+  (lentic-doc-external-view-package 'lentic))
 
 
 (provide 'lentic-doc)
