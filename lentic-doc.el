@@ -128,9 +128,9 @@ EXT must not be nil or empty."
             (when main-file
               (f-join
                (f-parent main-file)
-               (f-no-ext
-                main-file)
-               "-doc.org"))))
+               (concat
+                (f-no-ext main-file)
+                "-doc.org")))))
         (when
             (and doc-file
                  (f-exists? doc-file))
