@@ -117,14 +117,17 @@ EXT must not be nil or empty."
         (if (booleanp
              (symbol-value doc-var))
             (lentic-doc-package-implicit-start-source package)
-          (symbol-value doc-var))
+          (f-join
+           (f-parent (locate-library package))
+           (symbol-value doc-var)))
       ;; get the default
       (let*
           ((main-file
             (locate-library package))
            (doc-file
             (when main-file
-              (concat
+              (f-join
+               (f-parent main-file)
                (f-no-ext
                 main-file)
                "-doc.org"))))
