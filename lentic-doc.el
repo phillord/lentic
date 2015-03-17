@@ -56,7 +56,11 @@ as a prefix. "
          (others
           (f-glob
            (concat dir "/" package "*.el"))))
-    others))
+    (-remove
+     (lambda (file)
+       (or (s-match ".*-pkg.el" file)
+           (s-match ".*-autoloads.el" file)))
+     others)))
 
 (defun lentic-doc-orgify-if-necessary (file)
   (let* ((target
