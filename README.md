@@ -1,3 +1,4 @@
+
 Lentic allows two buffers to share the same or similar content but
 otherwise operate independently. This can be used for several different
 purposes. Different buffers can be in the same mode, with different locations
@@ -16,7 +17,8 @@ an entirely valid Lisp file. The lentic documentation is self-hosting -- the
 source code contains all of the documentation written in Org-mode. It can be
 generated and viewed using the menu items (Edit->Lentic->Read Doc), or it can
 be viewed at
-http://homepages.cs.ncl.ac.uk/phillip.lord/lentic/lenticular.html.
+http://homepages.cs.ncl.ac.uk/phillip.lord/lentic/lenticular.html. Getting
+Started documentation is [available](lenticular.org#getting-started).
 
 As well as the core library, this package also contains various syntactic
 transformations, and a minor-mode for manipulating lentic buffers from a user
