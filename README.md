@@ -49,15 +49,23 @@ usage of two lentic buffers this will have no effect.
 
 Second, the documentation system introduced in 0.7 has been made generic and
 can be used to generate and display documentation for any package which
-supports it. The m-buffer (which is a dependency) is an example of this.
+supports it. The m-buffer package (which is a dependency) is an example of
+this.
 
 #### New Features
 
 - Multiple lentic buffers are now possible.
 - Features to create new views.
+- Documentation is now entirely self-hosting.
+- Substantial rework of major-mode
+- Haskell support
+- Rot13 support (as an example!)
 
 #### Known Issues
 
+- Lentic now crashes with backtraces in batch, rather than using the
+  error handling intended for interactive use.
+- Cleaner handling of invalidity for lentic-block.
 - The location of point in a view can jump unexpectedly after some commands
   (such as `fill-paragraph').
 
