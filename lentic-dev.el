@@ -156,6 +156,7 @@ to make sure there is a new one."
          lentic-dev-insert-face)))
 
 (defvar lentic-dev-enable-insertion-marking nil)
+
 ;;;###autoload
 (defun lentic-dev-enable-insertion-marking ()
   "Enable font locking properties for inserted text."
@@ -170,6 +171,36 @@ to make sure there is a new one."
     (ad-activate 'lentic-insertion-string-transform)
     (setq lentic-enable-insertion-marking t)
     (message "Insertion marking on")))
+
+
+(defadvice lentic-after-change-transform
+    (after pulse-transform (buffer start stop length-before) disable)
+  (with-current-buffer
+      buffer
+    (pulse-momentary-highlight-region
+     (or start (point-min))
+     (or stop (point-max)))))
+
+(defvar lentic-dev-enable-insertion-pulse nil)
+
+;;;###autoload
+(defun lentic-dev-enable-insertion-pulse ()
+  (interactive)
+  (if lentic-dev-enable-insertion-pulse
+      (progn
+        (ad-deactivate 'lentic-after-change-transform)
+        (setq lentic-dev-enable-insertion-pulse nil)
+        (message "insertion pulse off"))
+    (ad-enable-advice 'lentic-after-change-transform
+                      'after 'pulse-transform)
+    (ad-activate 'lentic-after-change-transform)
+    (setq lentic-dev-enable-insertion-pulse t)
+    (message "insertion pulse on")))
+
+
+(defun lentic-dev-edebug-trace-mode ()
+  (setq edebug-initial-mode 'continue)
+  (setq edebug-trace t))
 
 (provide 'lentic-dev)
 ;;; lentic-dev.el ends here
