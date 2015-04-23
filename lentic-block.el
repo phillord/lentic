@@ -122,23 +122,21 @@ function `lentic-configuration' object."
          :begin begin :end end)))
     (m-buffer-replace-match comments "")))
 
-(defun lentic-blk-uncomment-buffer (conf begin end buffer)
+(defun lentic-blk-uncomment-buffer (conf markers begin end buffer)
   "Given CONF, a `lentic-configuration' object, remove all
 start of line comment-characters in appropriate blocks. Changes
 should only have occurred between BEGIN and END in BUFFER."
   (-map
    (lambda (pairs)
-     ;; nil markers off as we go
-     (m-buffer-with-markers
+     (let
          ((block-begin (car pairs))
-          (block-end (cdr pairs)))
+          (block-end (cadr pairs)))
        (when
            (and (>= end block-begin)
                 (>= block-end begin))
          (lentic-blk-uncomment-region
           conf block-begin block-end buffer))))
-   (lentic-blk-marker-boundaries
-    conf buffer)))
+   markers))
 
 (defun lentic-blk-comment-region (conf begin end buffer)
   "Given CONF, a `lentic-configuration' object, add
@@ -162,7 +160,7 @@ start of line comment characters beween BEGIN and END in BUFFER."
      (m-buffer-match-exact-subtract line-match comment-match)
      (oref conf :comment) nil nil 1)))
 
-(defun lentic-blk-comment-buffer (conf begin end buffer)
+(defun lentic-blk-comment-buffer (conf markers begin end buffer)
   "Given CONF, a `lentic-configuration' object, add
 start of line comment-characters. Changes should only have occurred
 between BEGIN and END in BUFFER."
@@ -175,22 +173,15 @@ between BEGIN and END in BUFFER."
     (-map
      ;; comment each of these regions
      (lambda (pairs)
-       (m-buffer-with-markers
+       (let
            ((block-begin (car pairs))
-            (block-end (cdr pairs)))
+            (block-end (cadr pairs)))
          (when
              (and (>= end block-begin)
                   (>= block-end begin))
            (lentic-blk-comment-region
-            conf (car pairs) (cdr pairs) buffer))))
-     (lentic-blk-marker-boundaries conf buffer))))
-
-(put 'unmatched-delimiter-error
-     'error-conditions
-     '(error unmatched-delimiter-error))
-
-(put 'unmatched-delimiter-error
-     'error-message "Unmatched Delimiter in Buffer")
+            conf block-begin block-end buffer))))
+     markers)))
 
 (defun lentic-blk-marker-boundaries (conf buffer)
   "Given CONF, a `lentic-configuration' object, find
@@ -207,28 +198,30 @@ an implicit stop."
     (if
         (= (length match-start)
            (length match-end))
-        (unless
-            (oref conf :valid)
-          (oset conf :valid t)
-          (lentic-update-display))
+        (progn
+          (unless
+              (oref conf :valid)
+            (oset conf :valid t)
+            (lentic-update-display))
+          (with-current-buffer buffer
+            (-zip-with
+             #'list
+             ;; start comment markers
+             ;; plus the start of the region
+             (cons
+              (set-marker (make-marker) (point-min) buffer)
+              match-start)
+             ;; end comment markers
+             ;; plus the end of the buffer
+             (append
+              match-end
+              (list (set-marker (make-marker) (point-max) buffer))))))
+      ;; delimiters do not match so return error value
       (lentic-log "delimiters do not match")
       (when (oref conf :valid)
         (oset conf :valid nil)
         (lentic-update-display))
-      (signal 'unmatched-delimiter-error
-              (list buffer)))
-    (with-current-buffer buffer
-      (-zip
-       ;; start comment markers
-       ;; plus the start of the region
-       (cons
-        (set-marker (make-marker) (point-min) buffer)
-        match-start)
-       ;; end comment markers
-       ;; plus the end of the buffer
-       (append
-        match-end
-        (list (set-marker (make-marker) (point-max) buffer)))))))
+      :unmatched)))
 
 (defmethod lentic-block-match ((conf lentic-block-configuration)
                                       buffer)
@@ -348,32 +341,63 @@ between the two buffers; we don't care which one has comments."
                               start-converted stop-converted))
            (clone-return
             (unless (or start-in-comment stop-in-comment)
-              clone-return)))
-      ;; remove the line comments in the to buffer
-      ;; if the delimitors are unmatched, then we can do nothing other than clone.
-      (condition-case e
-          (lentic-blk-uncomment-buffer
-           conf
-           ;; the buffer at this point has been copied over, but is in an
-           ;; inconsistent state (because it may have comments that it should
-           ;; not). Still, the convertor should still work because it counts from
-           ;; the end
-           (lentic-convert
+              clone-return))
+           ;; record the validity of the buffer as it was
+           (validity (oref conf :valid))
+           (markers
+            (lentic-blk-marker-boundaries
+             conf
+             (lentic-that conf))))
+      (cond
+          ;; we are unmatched, but we used to be valid, which means that we
+          ;; have just become invalid, so we want to do a full clone
+          ;; straight-away to make sure that both buffers are now identical
+          ((and
+            (equal :unmatched
+                   markers)
+            validity)
+           (call-next-method conf))
+          ;; we are unmatched, and we were unmatched before. We have already
+          ;; done the incremental clone, so stop.
+          ((equal :unmatched markers)
+           nil)
+          ;; we have matched delimiters but we were not matched before. This
+          ;; means we will have done an identity clone which means that other
+          ;; buffer will be all commented up. So remove all comments and clean
+          ;; up all the markers
+          ((not validity)
+           (m-buffer-with-markers
+               ((markers markers))
+             (lentic-blk-uncomment-buffer
+              conf
+              markers
+              (lentic-convert conf (point-min))
+              (lentic-convert conf (point-max))
+              (lentic-that conf))
+             ))
+          (t
+           ;; just uncomment the bit we have cloned.
+           (lentic-blk-uncomment-buffer
             conf
-            ;; point-min if we know nothing else
-            (or start (point-min)))
-           (lentic-convert
-            conf
-            ;; if we have a stop
-            (if stop
-                ;; take stop (if we have got longer) or
-                ;; start length before (if we have got shorter)
-                (max stop
-                     (+ start length-before))
-              (point-max)))
-           (lentic-that conf))
-        (unmatched-delimiter-error
-         nil))
+            markers
+            ;; the buffer at this point has been copied over, but is in an
+            ;; inconsistent state (because it may have comments that it should
+            ;; not). Still, the convertor should still work because it counts from
+            ;; the end
+            (lentic-convert
+             conf
+             ;; point-min if we know nothing else
+             (or start (point-min)))
+            (lentic-convert
+             conf
+             ;; if we have a stop
+             (if stop
+                 ;; take stop (if we have got longer) or
+                 ;; start length before (if we have got shorter)
+                 (max stop
+                      (+ start length-before))
+               (point-max)))
+            (lentic-that conf))))
       clone-return)))
 
 (defmethod lentic-invert
@@ -423,29 +447,52 @@ between the two buffers; we don't care which one has comments."
                               start-converted stop-converted))
            (clone-return
             (unless start-at-bolp
-              clone-return)))
-      (condition-case e
+              clone-return))
+           (validity (oref conf :valid))
+           (markers
+            (lentic-blk-marker-boundaries
+             conf
+             (lentic-that conf))))
+      (cond
+       ((and (equal :unmatched markers)
+             validity)
+        (call-next-method conf))
+
+       ((equal :unmatched markers)
+        nil)
+
+       ((not validity)
+        (m-buffer-with-markers
+            ((markers markers))
           (lentic-blk-comment-buffer
            conf
-           ;; the buffer at this point has been copied over, but is in an
-           ;; inconsistent state (because it may have comments that it should
-           ;; not). Still, the convertor should still work because it counts from
-           ;; the end
-           (lentic-convert
-            conf
-            ;; point-min if we know nothing else
-            (or start (point-min)))
-           (lentic-convert
-            conf
-            ;; if we have a stop
-            (if stop
-                ;; take stop (if we have got longer) or
-                ;; start length before (if we have got shorter)
-                (max stop
-                     (+ start length-before))
-              (point-max)))
-           (lentic-that conf))
-        (unmatched-delimiter-error nil))
+           markers
+           (lentic-convert conf (point-min))
+           (lentic-convert conf (point-max))
+           (lentic-that conf))))
+
+       (t
+        (lentic-blk-comment-buffer
+         conf
+         markers
+         ;; the buffer at this point has been copied over, but is in an
+         ;; inconsistent state (because it may have comments that it should
+         ;; not). Still, the convertor should still work because it counts from
+         ;; the end
+         (lentic-convert
+          conf
+          ;; point-min if we know nothing else
+          (or start (point-min)))
+         (lentic-convert
+          conf
+          ;; if we have a stop
+          (if stop
+              ;; take stop (if we have got longer) or
+              ;; start length before (if we have got shorter)
+              (max stop
+                   (+ start length-before))
+            (point-max)))
+         (lentic-that conf))))
       clone-return)))
 
 (defmethod lentic-invert
