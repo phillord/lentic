@@ -37,6 +37,8 @@
 ;; #+end_src
 
 ;; ** Utility
+
+;; #+BEGIN_SRC emacs-lisp
 (defun lentic-mode-lentic-list (buffer)
   "Return a list of all lentics for BUFFER.
 Lentics are listed in an undefined order."
@@ -83,6 +85,9 @@ Lentics are listed in the same order as in fundamental
         (get-buffer-window it frame))
     (lentic-mode-buffer-list
      buffer (or frame (selected-frame))))))
+;; #+end_src
+
+
 
 ;; ** Window and Buffer Functions
 

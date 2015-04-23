@@ -68,6 +68,7 @@ To create the lentic buffer, press ~C-c,c~ or "Edit->Lentic->Create All",
 followed by ~C-c,b~ or "Edit->Lentic->Split Below" to show both Emacs-Lisp and
 Org-mode file at the same time.
 
+
 ** Converting legacy source
 
 To convert some an existing source file called, say, blah.el into a lentic
