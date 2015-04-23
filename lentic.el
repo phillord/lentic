@@ -632,6 +632,24 @@ see `lentic-init' for details."
        buffer
      (when lentic-config
        ,@body)))
+
+
+(defvar lentic-condition-case-disabled
+  noninteractive
+  "If non-nil throw exceptions from errors.
+
+By default this is set to the value of noninteractive, so that
+Emacs crashes with backtraces in batch." )
+
+(defmacro lentic-condition-case-unless-disabled (var bodyform &rest handlers)
+  "Like `condition-case' but can be disabled like `condition-case-unless-debug'."
+  (declare (debug condition-case) (indent 2))
+  `(if lentic-condition-case-disabled
+       ,bodyform
+     (condition-case-unless-debug ,var
+         ,bodyform
+       ,@handlers)))
+
 ;; #+end_src
 
 ;; Recurse down the lentic tree to all lentic views.
@@ -832,7 +850,7 @@ ERR is the error. HOOK is the hook type."
 (defun lentic-after-save-hook ()
   "Error protected call to real after save hook."
   (unless lentic-emergency
-    (condition-case err
+    (lentic-condition-case-unless-disabled err
         (lentic-after-save-hook-1)
       (error
        (lentic-hook-fail err "after-save-hook")))))
@@ -854,7 +872,7 @@ This also saves every lentic which is file-associated."
 (defun lentic-kill-buffer-hook ()
   "Error protected call to real `kill-buffer-hook'."
   (unless lentic-emergency
-    (condition-case err
+    (lentic-condition-case-unless-disabled err
         (lentic-kill-buffer-hook-1)
       (error
        (lentic-hook-fail err "kill-buffer-hook")))))
@@ -897,7 +915,7 @@ then remove any associated file."
 (defun lentic-kill-emacs-hook ()
   "Error protected call to real `kill-emacs-hook'."
   (unless lentic-emergency
-    (condition-case err
+    (lentic-condition-case-unless-disabled err
         (lentic-kill-emacs-hook-1)
       (error
        (lentic-hook-fail err "kill-emacs-hook")))))
@@ -934,7 +952,7 @@ marked as :delete-on-exit."
 (defun lentic-post-command-hook ()
   "Update point according to config, with error handling."
   (unless lentic-emergency
-    (condition-case err
+    (lentic-condition-case-unless-disabled err
         (progn
           ;; we test for this later anyway, but this makes it easier to debug.
           (when lentic-config
@@ -988,6 +1006,12 @@ SEEN-BUFFER is a list of lentics that have already been updated."
 (defvar lentic-emergency-last-change nil)
 (make-variable-buffer-local 'lentic-emergency-last-change)
 
+(defun lentic-after-change-transform (buffer start stop length-before)
+  "Function called after every change percolated by lentic.
+This function does nothing and is meant for advising. See
+lentic-dev."
+)
+
 (defun lentic-after-change-function (start stop length-before)
   "Run change update according to `lentic-config'.
 Errors are handled.
@@ -998,7 +1022,7 @@ LENGTH-BEFORE is the length of the area before the change."
   (when lentic-emergency-debug
     (setq lentic-emergency-last-change (list start stop length-before)))
   (unless lentic-emergency
-    (condition-case err
+    (lentic-condition-case-unless-disabled err
         (lentic-after-change-function-1
          (current-buffer) start stop length-before)
       (error
@@ -1026,6 +1050,9 @@ the change."
                  (lentic-update-contents config
                                          start stop length-before)
                  '(nil nil nil))))
+           (apply 'lentic-after-change-transform
+                  (lentic-that config)
+                  updates)
            (lentic-after-change-function-1
             (lentic-that config)
             (nth 0 updates)
@@ -1033,6 +1060,8 @@ the change."
             (nth 2 updates)
             seen-buffer))))
      lentic-config)))
+
+
 
 ;; #+end_src
 
@@ -1054,7 +1083,7 @@ STOP is at least the end of the change."
   (unless (and
            lentic-emergency
            (not lentic-emergency-debug))
-    (condition-case err
+    (lentic-condition-case-unless-disabled err
         (lentic-before-change-function-1 (current-buffer) start stop)
       (error
        (lentic-hook-fail err "before change")))))
