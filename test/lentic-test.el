@@ -3,9 +3,12 @@
 (require 'lentic-asciidoc)
 (require 'lentic-org)
 (require 'lentic-rot13)
+(require 'lentic-mode)
 (require 'f)
 
 (require 'load-relative)
+
+(setq lentic-condition-case-disabled t)
 
 (defvar lentic-test-dir
   (f-join
