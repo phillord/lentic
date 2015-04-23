@@ -29,7 +29,7 @@
 
 ;; A `lentic-block-configuration' environment where one buffer is latex
 ;; and the other is some programming language, with code blocks marked up with
-;; a \begin{code}\end{code} environment.
+;; a =\begin{code}\end{code}= environment.
 
 ;; The code environment is not normally defined and has been picked for this
 ;; reason. It avoids defining multiple init functions for different macros;

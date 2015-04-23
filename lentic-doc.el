@@ -91,7 +91,7 @@ as a prefix. "
 
 ;; ** htmlify package
 
-;; #+begin_src: emacs-lisp
+;; #+begin_src emacs-lisp
 (defun lentic-doc-htmlify-package (package)
   (let ((package
          (lentic-doc-stringify package)))
@@ -103,7 +103,7 @@ as a prefix. "
         (org-html-export-to-html)))))
 ;; #+end_src
 
-;; #+begin_src
+;; #+begin_src emacs-lisp
 ;; remove when it gets into f.el
 (defun lentic-f-swap-ext (path ext)
   "Return PATH but with EXT as the new extension.
@@ -203,7 +203,7 @@ EXT must not be nil or empty."
     (lentic-doc-ensure-doc package)
     (eww-open-file
      (lentic-doc-package-doc-file package))))
-;; #+end_src
+
 
 (provide 'lentic-doc)
 ;; #+end_src

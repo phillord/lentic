@@ -38,7 +38,7 @@
 
 ;; ** Utility
 
-;; #+BEGIN_SRC emacs-lisp
+;; #+begin_src emacs-lisp
 (defun lentic-mode-lentic-list (buffer)
   "Return a list of all lentics for BUFFER.
 Lentics are listed in an undefined order."

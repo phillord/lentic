@@ -169,6 +169,6 @@ Tools for developers of new configurations.
 
 Lentic has a self-hosting documentation system which is defined here.
 
-#+include "lentic-doc.org" :minlevel 2
+#+include: "lentic-doc.org" :minlevel 2
 
 

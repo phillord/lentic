@@ -25,7 +25,7 @@
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-;;
+
 ;; Lentic buffers with asciidoc [source] blocks.
 
 ;;; Code:
