@@ -26,3 +26,5 @@ auto
 /examples/literate-haskell.tex
 /examples/multi-orgel-org.org
 Makefile-local
+/examples/multi-block-comment.tex
+/examples/multi-block-comment-copy.tex
