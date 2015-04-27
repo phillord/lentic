@@ -1282,15 +1282,18 @@ for lots of things at once. Returns OBJ."
 
 This function does potentially evil things if the file or the
 lentic is open already."
-  (with-current-buffer
-      (find-file-noselect filename)
-    (setq lentic-init init)
+  (let ((retn))
     (with-current-buffer
-        (car
-         (lentic-init-all-create))
-      (save-buffer)
+        (find-file-noselect filename)
+      (setq lentic-init init)
+      (with-current-buffer
+          (car
+           (lentic-init-all-create))
+        (setq retn lentic-config)
+        (save-buffer)
+        (kill-buffer))
       (kill-buffer))
-    (kill-buffer)))
+    retn))
 
 (defun lentic-batch-clone-with-config
   (filename init)
