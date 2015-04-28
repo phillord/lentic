@@ -183,7 +183,8 @@ between BEGIN and END in BUFFER."
             conf block-begin block-end buffer))))
      markers)))
 
-(defun lentic-blk-marker-boundaries (conf buffer)
+(defmethod lentic-blk-marker-boundaries ((conf lentic-block-configuration)
+                                         buffer)
   "Given CONF, a `lentic-configuration' object, find
 demarcation markers. Returns a list of start end cons pairs.
 `point-min' is considered to be an implicit start and `point-max'
