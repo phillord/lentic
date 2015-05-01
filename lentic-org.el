@@ -82,7 +82,7 @@
 ;;;###autoload
 (defun lentic-org-el-init ()
   (lentic-org-oset
-   (lentic-uncommented-block-configuration
+   (lentic-unmatched-uncommented-block-configuration
     "lb-org-to-el"
     :lentic-file
     (concat
@@ -96,7 +96,7 @@
 ;;;###autoload
 (defun lentic-el-org-init ()
   (lentic-org-oset
-   (lentic-commented-block-configuration
+   (lentic-unmatched-commented-block-configuration
     "lb-el-to-org"
     :lentic-file
     (concat
@@ -205,7 +205,7 @@
 
 ;; #+BEGIN_SRC emacs-lisp
 (defclass lentic-org-to-orgel-configuration
-  (lentic-uncommented-block-configuration)
+  (lentic-unmatched-block-configuration lentic-uncommented-block-configuration)
   ())
 
 (defmethod lentic-clone
@@ -334,9 +334,8 @@
 ;; this.
 
 ;; #+BEGIN_SRC emacs-lisp
-
 (defclass lentic-orgel-to-org-configuration
-  (lentic-commented-block-configuration)
+  (lentic-unmatched-block-configuration lentic-commented-block-configuration)
   ())
 
 (defmethod lentic-create
@@ -403,7 +402,8 @@
 
 ;; #+END_SRC
 
-;; *** org->clojure
+
+;; ** org->clojure
 
 ;; #+BEGIN_SRC emacs-lisp
 (defun lentic-org-clojure-oset (conf)
@@ -412,15 +412,12 @@
    :this-buffer (current-buffer)
    :comment ";; "
    :comment-stop "#\\\+BEGIN_SRC clojure"
-   :comment-start "#\\\+END_SRC"
-   ;; don't ignore case -- so using lower case begin_src
-   ;; will be ignored. Probably we should count instead!
-   :case-fold-search nil))
+   :comment-start "#\\\+END_SRC"))
 
 ;;;###autoload
 (defun lentic-org-clojure-init ()
   (lentic-org-clojure-oset
-   (lentic-uncommented-block-configuration
+   (lentic-unmatched-uncommented-block-configuration
     "lb-org-to-clojure"
     :lentic-file
     (concat
@@ -434,7 +431,7 @@
 ;;;###autoload
 (defun lentic-clojure-org-init ()
   (lentic-org-clojure-oset
-   (lentic-commented-block-configuration
+   (lentic-unmatched-commented-block-configuration
     "lb-clojure-to-org"
     :lentic-file
     (concat
@@ -446,6 +443,45 @@
              'lentic-clojure-org-init)
 ;; #+END_SRC
 
+;; ** org->python
+
+;; #+begin_src emacs-lisp
+(defun lentic-org-python-oset (conf)
+  (lentic-m-oset
+   conf
+   :this-buffer (current-buffer)
+   :comment "# "
+   :comment-stop "#\\\+BEGIN_SRC python"
+   :comment-start "#\\\+END_SRC"))
+
+;;;###autoload
+(defun lentic-org-python-init ()
+  (lentic-org-python-oset
+   (lentic-unmatched-uncommented-block-configuration
+    "lb-org-to-python"
+    :lentic-file
+    (concat
+     (file-name-sans-extension
+      (buffer-file-name))
+     ".py"))))
+
+(add-to-list 'lentic-init-functions
+             'lentic-org-python-init)
+
+;;;###autoload
+(defun lentic-python-org-init ()
+  (lentic-org-python-oset
+   (lentic-unmatched-commented-block-configuration
+    "lb-python-to-org"
+    :lentic-file
+    (concat
+     (file-name-sans-extension
+      (buffer-file-name))
+     ".org"))))
+
+(add-to-list 'lentic-init-functions
+             'lentic-python-org-init)
+;; #+end_src
 
 ;;; Footer:
 

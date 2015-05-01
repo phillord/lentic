@@ -514,6 +514,56 @@ between the two buffers; we don't care which one has comments."
   ((conf lentic-uncommented-block-configuration))
   (oref conf :comment-stop))
 
+(defclass lentic-unmatched-block-configuration ()
+  ()
+  :documentation "Configuration for blocked lentics where the
+markers are not necessarily paired. Instead for every open block
+marker, the next close marker is used, and all others are
+ignored."
+  :abstract t)
+
+(defmethod lentic-blk-marker-boundaries
+  ((conf lentic-unmatched-block-configuration)
+   buffer)
+  "Given CONF, a `lentic-configuration' object, find
+demarcation markers. Returns a list of start end cons pairs.
+`point-min' is considered to be an implicit start and `point-max'
+an implicit stop."
+  (let* ((match-block
+          (lentic-block-match
+           conf buffer))
+         (match-start
+          (car match-block))
+         (match-end
+          (cadr match-block)))
+    (let* ((part
+            (-drop-while
+             (lambda (n)
+               (not (car n)))
+             (m-buffer-partition-by-marker
+              match-start match-end)))
+           (zipped
+            (with-current-buffer buffer
+              (-zip-with
+               #'list
+               (cons (point-min-marker)
+                     (-map #'cadr part))
+               (-snoc
+                (-map #'car part)
+                (point-max-marker))))))
+      zipped)))
+
+(defclass lentic-unmatched-commented-block-configuration
+  (lentic-unmatched-block-configuration
+   lentic-commented-block-configuration)
+  ())
+
+(defclass lentic-unmatched-uncommented-block-configuration
+  (lentic-unmatched-block-configuration
+   lentic-uncommented-block-configuration)
+  ())
+
+
 (provide 'lentic-block)
 
 ;;; lentic-block.el ends here
