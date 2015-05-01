@@ -55,7 +55,7 @@
 
 ;; The implementation
 
-;; ** Configuration Options
+;; ** Block Configuration
 
 ;; #+begin_src emacs-lisp
 (require 'm-buffer)
@@ -514,6 +514,26 @@ between the two buffers; we don't care which one has comments."
   ((conf lentic-uncommented-block-configuration))
   (oref conf :comment-stop))
 
+
+;; #+end_src
+
+;; ** Unmatched Block Configuration
+
+;; Unmatched blocks are those when the number of "start" delimitors and "end"
+;; delimitors are not the same. The motivating example here was org-mode where
+;; the =begin_src= tags name the language but the =end_src= do not. Hence, one
+;; org file with two languages break lentic.
+
+;; The solution is to search for the start tags and then take just the next stop
+;; tag, a solution we already use for asciidoc. The disadvantage is that the
+;; buffer can no longer become invalid which is useful for detecting accidentally
+;; mis-matched tags.
+
+;; The implementation is provided by the `lentic-unmatched-block-configuration'
+;; class, which is then mixed-in with the two subclasses.
+
+
+;; #+begin_src emacs-lisp
 (defclass lentic-unmatched-block-configuration ()
   ()
   :documentation "Configuration for blocked lentics where the

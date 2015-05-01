@@ -35,9 +35,16 @@ completed the relevant paperwork with the FSF.
 
 ## ChangeLog
 
+### 0.9
+
+This release introduces one new feature: unmatched-block buffers. These are
+forms of buffer where the start and end of blocks are not matched. They have
+been introduced mainly to support org-mode files which can support multiple
+embedded source languages, all of which share the same close tag.
+
 ### 0.8
 
-This buffer introduces two new features. First, it is now possible to have
+This release introduces two new features. First, it is now possible to have
 multiple lentic buffers. This is important because lentic has more than one
 use -- both for maintaining two syntactic views (for example for literate
 programming) and for maintaining two identical persistent views (for example,
