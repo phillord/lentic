@@ -1,4 +1,8 @@
 
+<img src="images/lentic-sphere.png"
+ alt="Tawny Logo" title="Lentic Logo" height="300" align="right" />
+
+
 Lentic allows two buffers to share the same or similar content but
 otherwise operate independently. This can be used for several different
 purposes. Different buffers can be in the same mode, with different locations
