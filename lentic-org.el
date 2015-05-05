@@ -76,7 +76,7 @@
    conf
    :this-buffer (current-buffer)
    :comment ";; "
-   :comment-stop "#\\\+BEGIN_SRC emacs-lisp"
+   :comment-stop "#\\\+BEGIN_SRC emacs-lisp.*"
    :comment-start "#\\\+END_SRC"))
 
 ;;;###autoload
@@ -411,7 +411,7 @@
    conf
    :this-buffer (current-buffer)
    :comment ";; "
-   :comment-stop "#\\\+BEGIN_SRC clojure"
+   :comment-stop "#\\\+BEGIN_SRC clojure.*"
    :comment-start "#\\\+END_SRC"))
 
 ;;;###autoload
@@ -451,7 +451,7 @@
    conf
    :this-buffer (current-buffer)
    :comment "# "
-   :comment-stop "#\\\+BEGIN_SRC python"
+   :comment-stop "#\\\+BEGIN_SRC python.*"
    :comment-start "#\\\+END_SRC"))
 
 ;;;###autoload

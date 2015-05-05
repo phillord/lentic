@@ -6,7 +6,9 @@ all: install test
 install:
 	cask install
 
-test: install
+test: install just-test
+
+just-test:
 	cask exec ert-runner $(TESTS)
 
 org:

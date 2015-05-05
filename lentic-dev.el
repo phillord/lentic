@@ -202,6 +202,15 @@ to make sure there is a new one."
   (setq edebug-initial-mode 'continue)
   (setq edebug-trace t))
 
+
+(defun lentic-dev-highlight-markers ()
+  (interactive)
+  (m-buffer-overlay-font-lock-face-match
+   (lentic-blk-marker-boundaries
+    (car lentic-config)
+    (current-buffer))
+   'highlight))
+
 (provide 'lentic-dev)
 ;;; lentic-dev.el ends here
 
