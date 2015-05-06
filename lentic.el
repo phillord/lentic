@@ -1099,7 +1099,9 @@ SEEN-BUFFER is a list of buffers to which the change has been percolated."
     (-map
      (lambda (config)
        (unless
-           (-contains? seen-buffer (lentic-that config))
+           (or (-contains? seen-buffer (lentic-that config))
+               ;; convert uses that buffer
+               (not (buffer-live-p (lentic-that config))))
          (oset config :last-change-start start)
          (oset config
                :last-change-start-converted

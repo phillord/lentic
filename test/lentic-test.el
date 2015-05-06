@@ -29,7 +29,7 @@
       (error "Test File does not exist: %s" file))
     file))
 
-(defvar lentic-test-quiet t)
+(defvar lentic-test-quiet nil)
 
 (defun lentic-test-equal-loudly (a b)
   "Actually, this just tests equality and shouts if not."
@@ -161,6 +161,15 @@
     'lentic-org-orgel-init
     "org-orgel.org" "org-orgel.el")))
 
+
+(ert-deftest lentic-orgel-org-with-tags ()
+  "Test that we can have tags on section headers.
+
+Addresses issue #19."
+  (should
+   (lentic-test-clone-equal
+    'lentic-orgel-org-init
+    "orgel-org-with-tags.el" "orgel-org-with-tags.org")))
 
 (ert-deftest lentic-org-clojure ()
   (should
