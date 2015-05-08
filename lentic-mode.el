@@ -357,16 +357,7 @@ See also `lentic-mode-move-lentic-window'."
            'symbol-name
            lentic-init-functions)
           'identity 'confirm)))
-  (save-excursion
-    (goto-char (point-max))
-    (let ((start (point)))
-      (insert
-       (format
-        ;; split this string or we get local variable not terminated properly
-        ;; errors.
-        (concat "\nLocal"
-                " Variables:\nlentic-init: %s\nEnd:\n") init-function))
-      (comment-region start (point)))))
+  (add-file-local-variable 'lentic-init (intern init-function)))
 
 ;;;###autoload
 (define-globalized-minor-mode global-lentic-mode
