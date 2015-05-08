@@ -37,6 +37,7 @@
 
 ;; #+BEGIN_SRC emacs-lisp
 (require 'cl-lib)
+(require 'rx)
 (require 'lentic-block)
 (require 'm-buffer-at)
 ;; #+END_SRC
@@ -208,6 +209,75 @@
   (lentic-unmatched-block-configuration lentic-uncommented-block-configuration)
   ())
 
+
+(defun lentic-org--first-line-fixup (conf first-line-end)
+  "Fixup the first line of an org->orgel file.
+
+This swaps lines of form:
+
+;; ;;; or
+# #
+
+into
+
+;;;"
+  (m-buffer-replace-match
+   (m-buffer-match
+    (lentic-that conf)
+    ;; we can be in one of two states depending on whether we have made a new
+    ;; clone or an incremental change
+    (rx
+     (and line-start ";; "
+          (submatch (or ";;;"
+                        "# #"))))
+    :end first-line-end)
+   ";;;"))
+
+(defun lentic-org--h1-fixup-from-start (conf first-line-end)
+  "Fixup h1 with start
+
+This swaps lines of form
+
+;; * Header
+
+or
+
+;; * Header    :tag:
+
+into
+
+;;; Header:    :tag:"
+  (m-buffer-replace-match
+           (m-buffer-match
+            (lentic-that conf)
+            (rx
+             (and line-start ";; * "
+                  (submatch (1+ word))
+                  (optional
+                   (submatch
+                    (0+ " ")
+                    ":" (1+ word) ":"))))
+            :begin first-line-end)
+           ";;; \\1:\\2"))
+
+(defun lentic-org--h1-fixup-from-semi (conf first-line-end)
+  "Fixup h1 with semis"
+  (m-buffer-replace-match
+   (m-buffer-match
+    (lentic-that conf)
+    (rx
+     (and line-start
+          ";; ;;; "
+          (submatch (1+ word))
+          (optional ":")
+          (optional
+           (submatch
+            (0+ " ")
+            ":" (1+ word) ":"))))
+    :begin first-line-end)
+   ";;; \\1:\\2"))
+
+
 (defmethod lentic-clone
   ((conf lentic-org-to-orgel-configuration)
    &optional start stop length-before
@@ -220,7 +290,11 @@
        (header-one-line
         (m-buffer-match
          (lentic-this conf)
-         "^[*] \\(\\w*\\)$"
+         (rx line-start
+             "* " (0+ word)
+             (optional (1+ " ")
+                       ":" (1+ word) ":")
+             line-end)
          :begin (cl-cadar first-line)))
        (special-lines
         (-concat first-line header-one-line)))
@@ -266,29 +340,10 @@
            (m-buffer-match-first-line
             (lentic-that conf))))
          ;; can't just use or here because we need non-short circuiting
-         (c1
-          (m-buffer-replace-match
-           (m-buffer-match
-            (lentic-that conf)
-            ;; we can be in one of two states depending on whether we have made a new
-            ;; clone or an incremental change
-            "^;; \\(;;;\\|# #\\)"
-            :end first-line-end-match)
-           ";;;"))
+         (c1 (lentic-org--first-line-fixup conf first-line-end-match))
          ;; replace big headers, in either of their two states
-         (c2
-          (m-buffer-replace-match
-           (m-buffer-match
-            (lentic-that conf)
-            "^;; [*] \\(\\w*\\)$"
-            :begin first-line-end-match)
-           ";;; \\1:"))
-         (c3
-          (m-buffer-replace-match
-           (m-buffer-match (lentic-that conf)
-                           "^;; ;;; \\(\\w*:\\)$"
-                           :begin first-line-end-match)
-           ";;; \\1")))
+         (c2 (lentic-org--h1-fixup-from-start conf first-line-end-match))
+         (c3 (lentic-org--h1-fixup-from-semi conf first-line-end-match)))
       (if (or start-in-special stop-in-special c1 c2 c3)
           nil
         clone-return))))
@@ -301,8 +356,21 @@
         (oref conf :this-buffer)
         location
       (beginning-of-line)
-      (if (looking-at "[*] \\w*$")
-          (- converted 1)
+      (if (looking-at
+           (rx (submatch "* ")
+               (submatch (1+ word))
+               (optional (1+ " ")
+                         ":" (1+ word) ":")
+               line-end))
+          (cond
+           ((= location (nth 2 (match-data)))
+            (m-buffer-at-line-beginning-position
+             (oref conf :that-buffer)
+             converted))
+           ((< location (nth 5 (match-data)))
+            (- converted 1))
+           (t
+            converted))
         converted))))
 
 (defmethod lentic-invert
@@ -367,14 +435,59 @@
          (m2
           (m-buffer-replace-match
            (m-buffer-match (lentic-that conf)
-                           "^;;; \\(\\\w*\\):")
-           "* \\1")))
+                           (rx line-start ";;; "
+                               (submatch (0+ word))
+                               ":"
+                               (optional
+                                (submatch
+                                 (0+ " ")
+                                 ":" (1+ word) ":"))
+                               line-end))
+           "* \\1\\2")))
     (unless
         ;; update some stuff
         (or m1 m2)
       ;; and return clone-return unless we have updated stuff in which case
       ;; return nil
       clone-return)))
+
+(defmethod lentic-convert
+  ((conf lentic-orgel-to-org-configuration)
+   location)
+  ;; if we are a header one and we are *after* the first :, then just call
+  ;; next-method.
+  (let* ((cnm
+         (call-next-method conf location))
+        (line-start-that
+         (m-buffer-at-line-beginning-position
+          (oref conf :that-buffer) cnm))
+        (line-start-this
+         (m-buffer-at-line-beginning-position
+          (oref conf :this-buffer) location)))
+    (if
+        (m-buffer-with-current-position
+            (oref conf :this-buffer)
+            location
+          (beginning-of-line)
+          (looking-at
+           (rx ";;; "
+               (1+ word)
+               (submatch ":")
+               (optional (1+ " ")
+                         ":" (1+ word) ":"))))
+        ;; hey global state!
+        (let ((colon (nth 3 (match-data))))
+          ;; if in the comments, just return the start of the
+          ;; line, if we are after the comments but before the colon, fudge
+          ;; it. If we are after the colon, count from the end
+          (cond
+           ((> 3 (- location line-start-this))
+            line-start-that)
+           ((> location colon)
+            cnm)
+           (t
+            (+ cnm 1))))
+      cnm)))
 
 (defmethod lentic-invert
   ((conf lentic-orgel-to-org-configuration))

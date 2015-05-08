@@ -109,6 +109,7 @@ true to disable command loop functionality."
 This can help if you have change the config object and need
 to make sure there is a new one."
   (interactive)
+  (setq lentic-config nil)
   (funcall lentic-init))
 
 ;; #+end_src

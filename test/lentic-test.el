@@ -171,6 +171,15 @@ Addresses issue #32."
     'lentic-org-orgel-init
     "org-orgel.org" "org-orgel.el")))
 
+(ert-deftest lentic-orgel-org-with-tags ()
+  "Test that we can have tags on section headers.
+
+Addresses issue #19."
+  (should
+   (lentic-test-clone-equal
+    'lentic-orgel-org-init
+    "orgel-org-with-tags.el" "orgel-org-with-tags.org")))
+
 (ert-deftest lentic-org-clojure ()
   (should
    (lentic-test-clone-equal

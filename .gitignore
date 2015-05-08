@@ -34,3 +34,4 @@ Makefile-local
 /examples/org-python.py
 /examples/many-multi-block-comment-copy.tex
 /dev-resources/asciidoc-clj.clj
+/examples/orgel-org-with-tags.org

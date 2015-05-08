@@ -31,6 +31,14 @@
 (defvar noisy-change-log nil)
 (make-variable-buffer-local 'noisy-change-log)
 
+(defun noisy-change-toggle ()
+  (interactive)
+  (if noisy-change-log
+      (progn (setq noisy-change-log nil)
+             (message "Noise-change off"))
+    (setq noisy-change-log t)
+    (message "noisy-change on")))
+
 (defmacro noisy-change-log (&rest rest)
   "Log REST."
   `(when noisy-change-log
