@@ -108,11 +108,15 @@ Lentics are listed in the same order as in fundamental
     (bury-buffer before-buffer)))
 
 ;;;###autoload
-(defun lentic-mode-create-from-init ()
-  (interactive)
-  (let ((all (lentic-init-all-create)))
-    (message "Created %s buffers"
-             (length all))))
+(defun lentic-mode-create-from-init (&optional force)
+  (interactive "P")
+  (if (and lentic-config (not force))
+      (message "Already initialized. C-u to force.")
+    (let ((before (length lentic-config))
+          (all (lentic-init-all-create)))
+      (message "Created %s buffers"
+               (- (length all)
+                  before)))))
 
 
 ;;;###autoload
