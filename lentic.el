@@ -7,7 +7,7 @@
 ;; Author: Phillip Lord <phillip.lord@newcastle.ac.uk>
 ;; Maintainer: Phillip Lord <phillip.lord@newcastle.ac.uk>
 ;; Version: 0.10
-;; Package-Requires: ((emacs "24.4")(m-buffer "0.10")(dash "2.5.0")(f "0.17.2"))
+;; Package-Requires: ((emacs "24.4")(m-buffer "0.13")(dash "2.5.0")(f "0.17.2"))
 
 ;; The contents of this file are subject to the GPL License, Version 3.0.
 
@@ -534,6 +534,7 @@ in the new."
                  (stop (or stop (point-max))))
             (with-current-buffer that-b
               (save-restriction
+                (widen)
                 ;; get the start location that we converted before the change.
                 ;; lentic-convert is not reliable now, because the two
                 ;; buffers do not share state until we have percolated it
@@ -545,8 +546,6 @@ in the new."
                        (min (point-max)
                             (or stop-converted
                                 (point-max)))))
-                  ;; does this widen do anything?
-                  (widen)
                   (delete-region converted-start
                                  converted-stop)
                   (save-excursion
@@ -650,6 +649,19 @@ Emacs crashes with backtraces in batch." )
          ,bodyform
        ,@handlers)))
 
+(defmacro lentic-widen (conf &rest body)
+  "Widen both buffers in CONF, then evaluate BODY."
+  (declare (debug t)
+           (indent 1))
+  `(with-current-buffer
+       (lentic-that ,conf)
+     (save-restriction
+       (widen)
+       (with-current-buffer
+           (lentic-this ,conf)
+         (save-restriction
+           (widen)
+           ,@body)))))
 ;; #+end_src
 
 ;; Recurse down the lentic tree to all lentic views.
@@ -1102,23 +1114,25 @@ SEEN-BUFFER is a list of buffers to which the change has been percolated."
            (or (-contains? seen-buffer (lentic-that config))
                ;; convert uses that buffer
                (not (buffer-live-p (lentic-that config))))
-         (oset config :last-change-start start)
-         (oset config
-               :last-change-start-converted
-               (lentic-convert
-                config
-                start))
-         (oset config :last-change-stop stop)
-         (oset config
-               :last-change-stop-converted
-               (lentic-convert
-                config
-                stop))
-         (lentic-before-change-function-1
-          (lentic-that config)
-          (oref config :last-change-start-converted)
-          (oref config :last-change-stop-converted)
-          seen-buffer)))
+         (lentic-widen
+             config
+           (oset config :last-change-start start)
+           (oset config
+                 :last-change-start-converted
+                 (lentic-convert
+                  config
+                  start))
+           (oset config :last-change-stop stop)
+           (oset config
+                 :last-change-stop-converted
+                 (lentic-convert
+                  config
+                  stop))
+           (lentic-before-change-function-1
+            (lentic-that config)
+            (oref config :last-change-start-converted)
+            (oref config :last-change-stop-converted)
+            seen-buffer))))
      lentic-config)))
 ;; #+end_src
 
@@ -1190,10 +1204,12 @@ LENGTH-BEFORE is the length of area before the change."
         (oset conf :last-change-start-converted nil)
         (oset conf :last-change-stop nil)
         (oset conf :last-change-stop-converted nil)
-        (if skewed
-            (lentic-clone conf)
-          (lentic-clone conf start stop length-before
-                        start-converted stop-converted))))))
+        (lentic-widen
+            conf
+          (if skewed
+              (lentic-clone conf)
+            (lentic-clone conf start stop length-before
+                          start-converted stop-converted)))))))
 
 (defun lentic-update-point (conf)
   "Update the location of point in that-buffer to reflect this-buffer.

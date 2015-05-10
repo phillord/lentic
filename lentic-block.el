@@ -141,7 +141,6 @@ should only have occurred between BEGIN and END in BUFFER."
 (defun lentic-blk-comment-region (conf begin end buffer)
   "Given CONF, a `lentic-configuration' object, add
 start of line comment characters beween BEGIN and END in BUFFER."
-  (lentic-log "comment-region (%s,%s,%s)" begin end buffer)
   (m-buffer-with-markers
       ((line-match
         (m-buffer-match
