@@ -682,14 +682,22 @@ SEEN-BUFFER is a list of buffers to ignore."
            (funcall fn that)
            (lentic-each that fn seen-buffer))))
      lentic-config)))
-;; #+end_src
 
+(defun lentic-garbage-collect-config ()
+  "Remove non-live configs in current-buffer."
+  (setq lentic-config
+        (--filter
+         (buffer-live-p
+          (lentic-that it))
+         lentic-config)))
+;; #+end_src
 
 ;; *** Initialisation
 
 ;; #+begin_src emacs-lisp
 (defun lentic-ensure-init ()
   "Ensure that the `lentic-init' has been run."
+  (lentic-garbage-collect-config)
   (setq lentic-config
         ;; and attach to lentic-config
         (-concat

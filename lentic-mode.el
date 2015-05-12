@@ -110,6 +110,7 @@ Lentics are listed in the same order as in fundamental
 ;;;###autoload
 (defun lentic-mode-create-from-init (&optional force)
   (interactive "P")
+  (lentic-garbage-collect-config)
   (if (and lentic-config (not force))
       (message "Already initialized. C-u to force.")
     (let ((before (length lentic-config))
