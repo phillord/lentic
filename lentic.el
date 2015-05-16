@@ -123,7 +123,7 @@
 ;;  - default: this copies all text exactly, but does not transfer
 ;;    text-properties (which is the behaviour of indirect buffers). It is
 ;;    possible to configure the default file or mode on a per-object basis.
-;;  - block: this is designed for programmatic syntaxes where blocks of code are
+;;  - chunk: this is designed for programmatic syntaxes where chunks of code are
 ;;    demarcated by start and end tags, and everything else is commented by
 ;;    line-start comments. Comments are added or removed between the two buffers.
 

@@ -27,19 +27,19 @@
 
 ;;; Commentary:
 
-;; A `lentic-block-configuration' environment where one buffer is latex
-;; and the other is some programming language, with code blocks marked up with
+;; A `lentic-chunk-configuration' environment where one buffer is latex
+;; and the other is some programming language, with code chunks marked up with
 ;; a =\begin{code}\end{code}= environment.
 
 ;; The code environment is not normally defined and has been picked for this
 ;; reason. It avoids defining multiple init functions for different macros;
-;; instead the code blocks can be interpreted using what ever environment the
+;; instead the code chunks can be interpreted using what ever environment the
 ;; author wants, by defining the code environment first.
 
 ;;; Code:
 
 ;; #+begin_src emacs-lisp
-(require 'lentic-block)
+(require 'lentic-chunk)
 
 (defun lentic-latex-clojure-oset (conf)
   (lentic-m-oset
@@ -51,7 +51,7 @@
 
 (defun lentic-clojure-to-latex-new ()
   (lentic-latex-clojure-oset
-   (lentic-commented-block-configuration
+   (lentic-commented-chunk-configuration
     "lb-commented clojure latex"
     :lentic-file
     (concat
@@ -68,7 +68,7 @@
 
 (defun lentic-latex-to-clojure-new ()
   (lentic-latex-clojure-oset
-   (lentic-uncommented-block-configuration
+   (lentic-uncommented-chunk-configuration
     "lb-commented latex clojure"
     :lentic-file
     (concat

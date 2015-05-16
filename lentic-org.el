@@ -38,7 +38,7 @@
 ;; #+BEGIN_SRC emacs-lisp
 (require 'cl-lib)
 (require 'rx)
-(require 'lentic-block)
+(require 'lentic-chunk)
 (require 'm-buffer-at)
 ;; #+END_SRC
 
@@ -48,7 +48,7 @@
 ;; ** Simple org->el
 
 ;; The simple transformation between org and elisp is to just comment out
-;; everything that is not inside a BEGIN_SRC/END_SRC block. This provides only
+;; everything that is not inside a BEGIN_SRC/END_SRC chunk. This provides only
 ;; minimal advantages over the embedded org mode environment. Org, for instance,
 ;; allows native fontification of the embedded code (i.e. elisp will be coloured
 ;; like elisp!), which is something that org-el translation also gives for free;
@@ -66,8 +66,8 @@
 
 ;; *** Implementation
 
-;; The implementation is a straight-forward use of `lentic-block' with
-;; regexps for org source blocks. It currently takes no account of
+;; The implementation is a straight-forward use of `lentic-chunk' with
+;; regexps for org source chunks. It currently takes no account of
 ;; org-mode :tangle directives -- so all lisp in the buffer will be present in
 ;; the emacs-lisp mode lentic.
 
@@ -83,7 +83,7 @@
 ;;;###autoload
 (defun lentic-org-el-init ()
   (lentic-org-oset
-   (lentic-unmatched-uncommented-block-configuration
+   (lentic-unmatched-uncommented-chunk-configuration
     "lb-org-to-el"
     :lentic-file
     (concat
@@ -97,7 +97,7 @@
 ;;;###autoload
 (defun lentic-el-org-init ()
   (lentic-org-oset
-   (lentic-unmatched-commented-block-configuration
+   (lentic-unmatched-commented-chunk-configuration
     "lb-el-to-org"
     :lentic-file
     (concat
@@ -126,7 +126,7 @@
 ;; file. Finally, tools which work over =.el= such as checkdoc will still work.
 ;; Finally, there is no disjoint between the org file and the emacs-lisp
 ;; comments. The commentary section, for example, can be edited using `org-mode'
-;; rather than as comments in an elisp code block.
+;; rather than as comments in an elisp code chunk.
 
 ;; The disadvantages are that the structure of the org file is not arbitrary; it
 ;; most follow a specific structure. Without an untangling process, things like
@@ -135,7 +135,7 @@
 ;; The transformation (orgel -> org) works as follows:
 ;;  - the first line summary is transformed into a comment in org
 ;;  - all single word ";;;" headers are transformed into level 1 org headings.
-;;  - ";;" comments are removed except inside emacs-lisp source blocks.
+;;  - ";;" comments are removed except inside emacs-lisp source chunks.
 
 ;; *** Converting an Existing file
 
@@ -155,10 +155,10 @@
 ;; `lentic-init' to `lentic-orgel-org-init' (normally with a
 ;; file-local or dir-local variable). Now lentic can be started. The
 ;; header will appear as normal text in the org-mode buffer, with all other
-;; comments inside a source block. You can now move through the buffer splitting
-;; the source block (with `org-babel-demarcate-block' which has to win a prize
+;; comments inside a source chunk. You can now move through the buffer splitting
+;; the source chunk (with `org-babel-demarcate-block' which has to win a prize
 ;; for the most obscurely named command), and move comments out of the source
-;; block into the newly created text block.
+;; chunk into the newly created text chunk.
 
 ;; *** Limitations
 
@@ -200,13 +200,13 @@
 ;; **** org to orgel
 
 ;; Here we define a new class or org-to-orgel, as well as clone function which
-;; adds the ";;;" header transformation in addition to the normal block semantics
+;; adds the ";;;" header transformation in addition to the normal chunk semantics
 ;; from the superclass. Currently only single word headers are allowed which
 ;; seems consistent with emacs-lisp usage.
 
 ;; #+BEGIN_SRC emacs-lisp
 (defclass lentic-org-to-orgel-configuration
-  (lentic-unmatched-block-configuration lentic-uncommented-block-configuration)
+  (lentic-unmatched-chunk-configuration lentic-uncommented-chunk-configuration)
   ())
 
 
@@ -403,7 +403,7 @@ into
 
 ;; #+BEGIN_SRC emacs-lisp
 (defclass lentic-orgel-to-org-configuration
-  (lentic-unmatched-block-configuration lentic-commented-block-configuration)
+  (lentic-unmatched-chunk-configuration lentic-commented-chunk-configuration)
   ())
 
 (defmethod lentic-create
@@ -530,7 +530,7 @@ into
 ;;;###autoload
 (defun lentic-org-clojure-init ()
   (lentic-org-clojure-oset
-   (lentic-unmatched-uncommented-block-configuration
+   (lentic-unmatched-uncommented-chunk-configuration
     "lb-org-to-clojure"
     :lentic-file
     (concat
@@ -544,7 +544,7 @@ into
 ;;;###autoload
 (defun lentic-clojure-org-init ()
   (lentic-org-clojure-oset
-   (lentic-unmatched-commented-block-configuration
+   (lentic-unmatched-commented-chunk-configuration
     "lb-clojure-to-org"
     :lentic-file
     (concat
@@ -570,7 +570,7 @@ into
 ;;;###autoload
 (defun lentic-org-python-init ()
   (lentic-org-python-oset
-   (lentic-unmatched-uncommented-block-configuration
+   (lentic-unmatched-uncommented-chunk-configuration
     "lb-org-to-python"
     :lentic-file
     (concat
@@ -584,7 +584,7 @@ into
 ;;;###autoload
 (defun lentic-python-org-init ()
   (lentic-org-python-oset
-   (lentic-unmatched-commented-block-configuration
+   (lentic-unmatched-commented-chunk-configuration
     "lb-python-to-org"
     :lentic-file
     (concat

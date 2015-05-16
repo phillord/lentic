@@ -32,7 +32,7 @@
 
 ;; #+begin_src emacs-lisp
 (require 'lentic)
-(require 'lentic-block)
+(require 'lentic-chunk)
 (require 'm-buffer)
 (require 'f)
 
@@ -74,16 +74,16 @@
              'lentic-asciidoc-clojure-init)
 
 (defclass lentic-commented-asciidoc-configuration
-  (lentic-commented-block-configuration)
+  (lentic-commented-chunk-configuration)
   ((srctags :initarg :srctags
-            :documentation "Language tags in source block"
+            :documentation "Language tags in source chunk"
             :initform '("clojure" "lisp")))
   "Lentic buffer config for asciidoc and other code.")
 
 (defclass lentic-uncommented-asciidoc-configuration
-  (lentic-uncommented-block-configuration)
+  (lentic-uncommented-chunk-configuration)
   ((srctags :initarg :srctags
-            :documentation "Language tags in source block"
+            :documentation "Language tags in source chunk"
             :initform '("clojure" "lisp")))
   "Lentic buffer config for asciidoc and other code")
 
@@ -116,7 +116,7 @@ This should remove other \"....\" matches.
            (< x (car l-source))))
     l-dots)))
 
-(defun lentic-block-match-asciidoc
+(defun lentic-chunk-match-asciidoc
   (conf buffer)
   (let* ((source
           (m-buffer-match-begin
@@ -141,13 +141,13 @@ This should remove other \"....\" matches.
        (-map 'cadr source-start)
        (-map 'car source-end)))))
 
-(defmethod lentic-block-match
+(defmethod lentic-chunk-match
   ((conf lentic-commented-asciidoc-configuration) buffer)
-  (lentic-block-match-asciidoc conf buffer))
+  (lentic-chunk-match-asciidoc conf buffer))
 
-(defmethod lentic-block-match
+(defmethod lentic-chunk-match
   ((conf lentic-uncommented-asciidoc-configuration) buffer)
-  (lentic-block-match-asciidoc conf buffer))
+  (lentic-chunk-match-asciidoc conf buffer))
 
 (defmethod lentic-invert
   ((conf lentic-commented-asciidoc-configuration))

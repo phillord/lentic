@@ -125,8 +125,8 @@
   (should
    (lentic-test-clone-equal
     'lentic-clojure-latex-init
-    "block-comment.clj"
-    "block-comment-out.tex")))
+    "chunk-comment.clj"
+    "chunk-comment-out.tex")))
 
 
 (ert-deftest lentic-asciidoc-clojure ()
@@ -197,15 +197,15 @@ Addresses issue #19."
   (should
    (with-current-buffer
        (find-file-noselect
-        (lentic-test-file "block-comment.clj"))
+        (lentic-test-file "chunk-comment.clj"))
      (setq lentic-init
            '(lentic-clojure-latex-init
              lentic-default-init))
      (lentic-init-all-create)
      (let ((tex
-            (get-buffer "block-comment.tex"))
+            (get-buffer "chunk-comment.tex"))
            (clj
-            (get-buffer "*lentic: block-comment.clj*")))
+            (get-buffer "*lentic: chunk-comment.clj*")))
        (kill-buffer tex)
        (kill-buffer clj)
        (and clj tex)))))
@@ -329,7 +329,7 @@ This mostly checks my test machinary."
    (and
     (lentic-test-clone-and-change-equal
      'lentic-clojure-latex-init
-     "block-comment.clj" "block-comment-changed-out.tex"
+     "chunk-comment.clj" "chunk-comment-changed-out.tex"
      (lambda ()
        (forward-line 1)
        (insert ";; inserted\n")))
@@ -339,7 +339,7 @@ This mostly checks my test machinary."
    (and
     (lentic-test-clone-and-change-equal
      'lentic-latex-clojure-init
-     "block-comment.tex" "block-comment-changed-1.clj"
+     "chunk-comment.tex" "chunk-comment-changed-1.clj"
      (lambda ()
        (forward-line 1)
        (insert ";; inserted\n")))
@@ -349,18 +349,18 @@ This mostly checks my test machinary."
    (and
     (lentic-test-clone-and-change-equal
      'lentic-latex-clojure-init
-     "block-comment.tex" "block-comment-changed-2.clj"
+     "chunk-comment.tex" "chunk-comment-changed-2.clj"
      (lambda ()
        (search-forward "\\begin{code}\n")
        (insert "(form inserted)\n")))
     (equal lentic-test-last-transform "(form inserted)\n"))))
 
 (ert-deftest clojure-latex-first-line ()
-  "Tests for a bug after introduction of incremental blocks."
+  "Tests for a bug after introduction of incremental chunks."
   (should
    (lentic-test-clone-and-change-equal
     'lentic-clojure-latex-init
-    "block-comment.clj" "block-comment.tex"
+    "chunk-comment.clj" "chunk-comment.tex"
     (lambda ()
       (delete-char 1)
       (delete-char 1)
@@ -372,7 +372,7 @@ This mostly checks my test machinary."
   (should
    (lentic-test-clone-and-change-equal
     'lentic-clojure-latex-init
-    "block-comment.clj" "block-comment.tex"
+    "chunk-comment.clj" "chunk-comment.tex"
     nil
     (lambda ()
       (goto-char (point-min))

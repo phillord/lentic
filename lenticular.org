@@ -131,14 +131,14 @@ how new lenticular transformations can be configured.
 
 #+include: "lentic-rot13.org" :minlevel 2
 
-* Lentic Block
+* Lentic Chunk
 
 Lentic Block provides configurations where blocks of the buffer are
 commented in one buffer and not in the others. There are quite a few
 extensions of this configuration, including the one that is used to
 document this file.
 
-#+include: "lentic-block.org" :minlevel 2
+#+include: "lentic-chunk.org" :minlevel 2
 
 * Lentic Asciidoc
 
