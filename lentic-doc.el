@@ -34,6 +34,7 @@
 (require 'lentic)
 (require 'lentic-org)
 (require 'f)
+(require 's)
 ;; #+end_src
 
 ;; ** Orgify Package
