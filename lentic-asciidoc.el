@@ -51,6 +51,7 @@
      (file-name-sans-extension
       (buffer-file-name)) ".adoc"))))
 
+;;;###autoload
 (defun lentic-clojure-asciidoc-init ()
   (lentic-asciidoc-commented-new))
 
