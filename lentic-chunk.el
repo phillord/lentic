@@ -413,13 +413,13 @@ between the two buffers; we don't care which one has comments."
 (defmethod lentic-chunk-comment-start-regexp
   ((conf lentic-commented-chunk-configuration))
   (concat
-   "\\(" (regexp-quote (oref conf :comment)) "\\)?"
+   "^\\(" (regexp-quote (oref conf :comment)) "\\)?"
    (oref conf :comment-start)))
 
 (defmethod lentic-chunk-comment-stop-regexp
   ((conf lentic-commented-chunk-configuration))
   (concat
-   "\\(" (regexp-quote (oref conf :comment)) "\\)?"
+   "^\\(" (regexp-quote (oref conf :comment)) "\\)?"
    (oref conf :comment-stop)))
 
 (defmethod lentic-clone
