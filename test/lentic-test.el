@@ -180,6 +180,18 @@ Addresses issue #19."
     'lentic-orgel-org-init
     "orgel-org-with-tags.el" "orgel-org-with-tags.org")))
 
+(ert-deftest lentic-orgel-org-with-inline-delimitor()
+  "Test that stringed or otherwise not at the start of
+line delimitors are not detected.
+
+Addresses issue #36."
+  (should
+   (lentic-test-clone-equal
+    'lentic-org-orgel-init
+    "string-src-block.org"
+    "string-src-block.el")))
+
+
 (ert-deftest lentic-org-clojure ()
   (should
    (lentic-test-clone-equal
