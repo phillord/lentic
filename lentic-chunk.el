@@ -92,17 +92,15 @@ start of line chunk comment in one buffer but not the other."
 (defmethod lentic-chunk-comment-start-regexp
   ((conf lentic-chunk-configuration))
   ;; todo -- what does this regexp do?
-  (format "^\\(%s\\)*%s"
+  (format "^\\(%s\\)?%s"
           (oref conf :comment)
-          (regexp-quote
-           (oref conf :comment-start))))
+          (oref conf :comment-start)))
 
 (defmethod lentic-chunk-comment-stop-regexp
   ((conf lentic-chunk-configuration))
-  (format "^\\(%s\\)*%s"
+  (format "^\\(%s\\)?%s"
           (oref conf :comment)
-          (regexp-quote
-           (oref conf :comment-stop))))
+          (oref conf :comment-stop)))
 
 (defmethod lentic-chunk-line-start-comment
   ((conf lentic-chunk-configuration))
@@ -410,18 +408,6 @@ between the two buffers; we don't care which one has comments."
    :comment-start (oref conf :comment-start)
    :comment-stop (oref conf :comment-stop)))
 
-(defmethod lentic-chunk-comment-start-regexp
-  ((conf lentic-commented-chunk-configuration))
-  (concat
-   "^\\(" (regexp-quote (oref conf :comment)) "\\)?"
-   (oref conf :comment-start)))
-
-(defmethod lentic-chunk-comment-stop-regexp
-  ((conf lentic-commented-chunk-configuration))
-  (concat
-   "^\\(" (regexp-quote (oref conf :comment)) "\\)?"
-   (oref conf :comment-stop)))
-
 (defmethod lentic-clone
   ((conf lentic-uncommented-chunk-configuration)
    &optional start stop length-before start-converted stop-converted)
@@ -504,15 +490,6 @@ between the two buffers; we don't care which one has comments."
    :comment (oref conf :comment)
    :comment-start (oref  conf :comment-start)
    :comment-stop (oref conf :comment-stop)))
-
-(defmethod lentic-chunk-comment-start-regexp
-  ((conf lentic-uncommented-chunk-configuration))
-  (oref conf :comment-start))
-
-(defmethod lentic-chunk-comment-stop-regexp
-  ((conf lentic-uncommented-chunk-configuration))
-  (oref conf :comment-stop))
-
 
 ;; #+end_src
 
