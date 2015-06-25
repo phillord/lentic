@@ -39,6 +39,17 @@ completed the relevant paperwork with the FSF.
 
 ## ChangeLog
 
+### 0.10
+
+This release is large a bug fix release, including a missing require, handling
+of delimiters in strings, and more consistent widening.
+
+This also includes one significant breaking change, which is that
+"lentic-block" has been renamed "lentic-chunk". The latter is more consistent
+with other peoples usage (polymode for instance), but also because "block" is
+better used in the context of block vs line comments.
+
+
 ### 0.9
 
 This release introduces one new feature: unmatched-block buffers. These are
