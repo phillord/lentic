@@ -2,7 +2,6 @@
 <img src="images/lentic-sphere.png"
  alt="Tawny Logo" title="Lentic Logo" height="300" align="right" />
 
-
 Lentic allows two buffers to share the same or similar content but
 otherwise operate independently. This can be used for several different
 purposes. Different buffers can be in the same mode, with different locations
@@ -29,6 +28,25 @@ transformations, and a minor-mode for manipulating lentic buffers from a user
 perspective.
 
 Previously, lentic was known as linked-buffer.
+
+## In Action
+
+It is fairly hard to explain what lentic does and much easier to show in
+pictures. I am indebted to https://github.com/tumashu[tumashu] for producing
+these excellent gifs, showing lentic in action combined with some advanced use
+of org-mode, web publishing and Chinese input methods.
+
+![Simple Lentic](https://cloud.githubusercontent.com/assets/67725/10606993/16504f82-7769-11e5-8431-90de09232239.gif)
+
+![Lentic in Chinese](https://cloud.githubusercontent.com/assets/67725/10629460/a08d0cc4-7801-11e5-8ce1-9eab0408bc03.gif)
+
+![Lentic and Org tables](https://cloud.githubusercontent.com/assets/67725/10688400/ace40c06-79a6-11e5-95f4-00c662c5dbc4.gif)
+
+There are also some videos of mine showing lentic over
+[emacs source](https://vimeo.com/116078853) and as part of a
+[latex workflow](https://vimeo.com/116141808).
+
+
 
 ## Contributions
 
