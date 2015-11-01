@@ -54,14 +54,19 @@ as a prefix. "
           (locate-library package))
          (dir
           (f-parent main-file))
+         (prefix
+          (concat dir "/" package))
          (others
           (f-glob
-           (concat dir "/" package "*.el"))))
+           (concat prefix "*.el")))
+         (scripts
+          (f-glob
+           (concat prefix "*.els"))))
     (-remove
      (lambda (file)
        (or (s-match ".*-pkg.el" file)
            (s-match ".*-autoloads.el" file)))
-     others)))
+     (append others scripts))))
 
 (defun lentic-doc-orgify-if-necessary (file)
   (let* ((target
