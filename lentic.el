@@ -154,6 +154,7 @@
 (require 'eieio)
 (require 'm-buffer)
 (require 'm-buffer-at)
+(require 'f)
 ;; #+end_src
 
 (defvar lentic-doc "lenticular.org")
