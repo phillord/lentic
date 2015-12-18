@@ -554,11 +554,31 @@ an implicit stop."
    lentic-commented-chunk-configuration)
   ())
 
+(defmethod lentic-invert
+  ((conf lentic-unmatched-commented-chunk-configuration))
+  (lentic-unmatched-uncommented-chunk-configuration
+   "unmatched-commented-inverted"
+   :this-buffer (lentic-that conf)
+   :that-buffer (lentic-this conf)
+   :comment (oref conf :comment)
+   :comment-start (oref conf :comment-start)
+   :comment-stop (oref conf :comment-stop)))
+
+
 (defclass lentic-unmatched-uncommented-chunk-configuration
   (lentic-unmatched-chunk-configuration
    lentic-uncommented-chunk-configuration)
   ())
 
+(defmethod lentic-invert
+  ((conf lentic-unmatched-uncommented-chunk-configuration))
+  (lentic-unmatched-commented-chunk-configuration
+   "unmatched-uncommented-inverted"
+   :this-buffer (lentic-that conf)
+   :that-buffer (lentic-this conf)
+   :comment (oref conf :comment)
+   :comment-start (oref conf :comment-start)
+   :comment-stop (oref conf :comment-stop)))
 
 (provide 'lentic-chunk)
 
