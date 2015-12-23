@@ -294,21 +294,17 @@ See also `lentic-mode-move-lentic-window'."
                       lentic-config))
                   ""))))
 
-(defun lentic-mode-buffer-list-update-hook ()
+(defun lentic-mode-update-all-display ()
   (if lentic-emergency
       (setq lentic-mode-line
             (format " %s[Emergency]" lentic-mode-line-lighter))
     (-map
      (lambda (b)
-       (with-current-buffer
+       (lentic-when-with-current-buffer
            b
          (lentic-mode-update-mode-line)))
      (buffer-list))
     (force-mode-line-update t)))
-
-(add-hook 'buffer-list-update-hook
-          'lentic-mode-buffer-list-update-hook)
-
 
 ;; ** lentic self-doc
 
@@ -322,8 +318,6 @@ See also `lentic-mode-move-lentic-window'."
 (defun lentic-mode-doc-external-view ()
   (interactive)
   (lentic-doc-external-view 'lentic))
-
-
 
 ;;;###autoload
 (define-minor-mode lentic-mode

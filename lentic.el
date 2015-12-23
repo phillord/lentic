@@ -834,12 +834,14 @@ repeated errors.")
 (defun lentic-emergency ()
   "Stop lentic from working due to code problem."
   (interactive)
-  (setq lentic-emergency t))
+  (setq lentic-emergency t)
+  (lentic-update-all-display))
 
 (defun lentic-unemergency ()
   "Start lentic working after stop due to code problem."
   (interactive)
-  (setq lentic-emergency nil))
+  (setq lentic-emergency nil)
+  (lentic-update-all-display))
 
 (defun lentic-hook-fail (err hook)
   "Give an informative message when we have to fail.
@@ -1266,6 +1268,10 @@ same top-left location. Update details depend on CONF."
   "Update the display with information about lentic's state."
   (when (fboundp 'lentic-mode-update-mode-line)
     (lentic-mode-update-mode-line)))
+
+(defun lentic-update-all-display ()
+  (when (fboundp 'lentic-mode-update-all-display)
+    (lentic-mode-update-all-display)))
 ;; #+end_src
 
 
