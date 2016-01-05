@@ -18,7 +18,11 @@ org:
 html: org
 	cask exec emacs --debug --script build.el -- gen-html
 
-travis: test html
+install-test:
+	echo [install] Installation Test Starting
+	$(MAKE) -C test/install-test/ test
+
+travis: test install-test html
 
 COMMIT_DATE = $(shell date +%y-%m-%d-%H-%m)
 DISTRIB-LENTIC=../distrib-lentic

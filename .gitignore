@@ -35,3 +35,4 @@ Makefile-local
 /examples/many-multi-block-comment-copy.tex
 /dev-resources/asciidoc-clj.clj
 /examples/orgel-org-with-tags.org
+/test/install-test/.cask
