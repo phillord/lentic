@@ -621,7 +621,7 @@ see `lentic-init' for details."
   `(lentic-when-buffer
     ,buffer
     (with-current-buffer
-        buffer
+        ,buffer
       ,@body)))
 
 (defmacro lentic-with-lentic-buffer (buffer &rest body)
