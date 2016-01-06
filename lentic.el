@@ -788,7 +788,6 @@ SEEN-BUFFER is a list of buffers to ignore."
             (get-buffer-create "*lentic-log*")
           (goto-char (point-max))
           (insert msg))))))
-
 ;; #+end_src
 
 ;; An emergency detection system. Several of the hooks in use (post-command-hook,
@@ -1083,9 +1082,6 @@ the change."
             (nth 2 updates)
             seen-buffer))))
      lentic-config)))
-
-
-
 ;; #+end_src
 
 ;; We also need to store the location of the area to be changed before the change

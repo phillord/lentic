@@ -231,6 +231,17 @@ See also `lentic-mode-move-lentic-window'."
    (selected-window)
    (lentic-mode-create-new-view)))
 
+(defun lentic-mode-force-clone-1 ()
+  (lentic-when-lentic
+   (let ((inhibit-modification-hooks t))
+     (lentic-after-change-function
+      (point-min) (point-max)
+      (- (point-max) (point-min))))))
+
+(defun lentic-mode-force-clone ()
+  (interactive)
+  (when (yes-or-no-p "Force Clone of the current buffer? ")
+    (lentic-mode-force-clone-1)))
 ;; #+end_src
 
 ;; ** Minor Mode
@@ -341,6 +352,8 @@ See also `lentic-mode-move-lentic-window'."
    ["Show All" lentic-mode-show-all-lentic
     :active lentic-config]
    ["Swap" lentic-mode-swap-lentic-window
+    :active lentic-config]
+   ["Force Clone" lentic-mode-force-clone
     :active lentic-config]
    ["Insert File Local" lentic-mode-insert-file-local]
    ["Read Doc (eww)" lentic-mode-doc-eww-view]
