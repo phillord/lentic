@@ -57,9 +57,22 @@ completed the relevant paperwork with the FSF.
 
 ## ChangeLog
 
+### 0.11
+
+This release is largely a bug fix release, with a single new feature. A new
+menu item has been added to force cloning, which can be useful with
+lentic-chunk which can fallback to an identical clone, and can need a full
+clone to restore the two buffers.
+
+The buffer-list-update-hook was very expensive, so handling has been improved.
+Finally, unmatched config was incorrectly returning the wrong type from
+lentic-invert. Finally, the f.el is now properly required.
+
+
+
 ### 0.10
 
-This release is large a bug fix release, including a missing require, handling
+This release is largely a bug fix release, including a missing require, handling
 of delimiters in strings, and more consistent widening.
 
 This also includes one significant breaking change, which is that
