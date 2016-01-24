@@ -118,7 +118,7 @@ EXT must not be nil or empty."
       (error "extension cannot be empty or nil.")
     (concat (f-no-ext path) "." ext)))
 
-(defun lentic-doc-package-explicit-start-source (package)
+(defun lentic-doc-package-start-source (package)
   (let ((doc-var
          (intern
           (concat package "-doc"))))
@@ -147,13 +147,13 @@ EXT must not be nil or empty."
             doc-file)))))
 
 (defun lentic-doc-package-implicit-start-source (package)
-  (lentic-f-swap-ext
-   (locate-library package)
-   "org"))
-
-(defun lentic-doc-package-start-source (package)
-  (or (lentic-doc-package-explicit-start-source package)
-      (lentic-doc-package-implicit-start-source package)))
+  (-if-let (lib (locate-library package))
+      (let ((start
+              (lentic-f-swap-ext
+               lib
+               "org")))
+        (if (f-exists? start)
+            start))))
 
 (defun lentic-doc-package-doc-file (package)
   (lentic-f-swap-ext
@@ -175,7 +175,7 @@ EXT must not be nil or empty."
             (symbol-name feat))
           (-filter
            (lambda (feat)
-             (lentic-doc-package-explicit-start-source
+             (lentic-doc-package-start-source
               (symbol-name feat)))
            features)))))
 
