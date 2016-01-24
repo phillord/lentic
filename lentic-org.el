@@ -402,6 +402,32 @@ into
 ;; this.
 
 ;; #+BEGIN_SRC emacs-lisp
+(defvar lentic-orgel-org-init-hook nil)
+
+;; shut byte compiler up and define var for setq-local
+(defvar org-archive-default-command)
+
+(defun lentic-orgel-org-init-default-hook ()
+  ;; Better to open all trees in lentic so that both buffers appears the same
+  ;; size.
+  (show-all)
+  ;; Archiving very easy to and almost always a disaster when it removes an
+  ;; entire tree from the buffer.
+  (require 'org-archive)
+  (setq-local org-archive-default-command
+              (let ((old-archive
+                     org-archive-default-command))
+                (lambda ()
+                  (interactive)
+                  (if (yes-or-no-p
+                       "Really archive in lentic mode? ")
+                      (funcall old-archive)
+                    (message "Archiving aborted"))))))
+
+(add-hook 'lentic-orgel-org-init-hook
+          #'lentic-orgel-org-init-default-hook)
+
+
 (defclass lentic-orgel-to-org-configuration
   (lentic-unmatched-chunk-configuration lentic-commented-chunk-configuration)
   ())
@@ -412,7 +438,7 @@ into
          (call-next-method conf)))
     (with-current-buffer
         buf
-      (show-all))
+      (run-hooks 'lentic-orgel-org-init-hook))
     buf))
 
 (defmethod lentic-clone
