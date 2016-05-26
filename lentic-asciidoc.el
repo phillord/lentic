@@ -4,8 +4,8 @@
 
 ;; This file is not part of Emacs
 
-;; Author: Phillip Lord <phillip.lord@newcastle.ac.uk>
-;; Maintainer: Phillip Lord <phillip.lord@newcastle.ac.uk>
+;; Author: Phillip Lord <phillip.lord@russet.org.uk>
+;; Maintainer: Phillip Lord <phillip.lord@russet.org.uk>
 
 ;; The contents of this file are subject to the GPL License, Version 3.0.
 ;;
