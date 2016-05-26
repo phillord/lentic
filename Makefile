@@ -1,16 +1,28 @@
-
-EMACS ?= /usr/local/bin/emacs
 CASK ?= cask
+
+-include makefile-local
+
+ifdef EMACS
+EMACS_ENV=EMACS=$(EMACS)
+endif
+
+
+.DEFAULT_GOAL=all
 
 all: install test
 
+.default: all
+
 install:
-	cask install
+	$(EMACS_ENV) $(CASK) install
 
 test: install just-test
 
 just-test:
-	cask exec ert-runner $(TESTS)
+	$(EMACS_ENV) $(CASK) emacs --batch -q \
+	--directory=. \
+	--load "assess-discover" \
+	--funcall assess-discover-run-and-exit-batch
 
 org:
 	cask exec emacs --debug --script build.el -- gen-org
