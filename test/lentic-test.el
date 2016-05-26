@@ -14,7 +14,8 @@
   (f-join
    (f-parent
     (f-dirname (__FILE__)))
-   "dev-resources/"))
+   "dev-resources/")
+  "Location of test files.")
 
 ;; (defvar lentic-test-dir
 ;;   (concat
@@ -23,6 +24,7 @@
 ;;    "dev-resources/"))
 
 (defun lentic-test-file (filename)
+  "Fetch the long name of the resource FILENAME."
   (let ((file
          (f-join lentic-test-dir filename)))
     (when (not (file-exists-p file))
@@ -71,6 +73,7 @@
       nil)))
 
 (defun lentic-test-clone-with-cleanup (file init)
+  "Clone FILE with INIT and clean up all buffers after."
   (unwind-protect
       (lentic-batch-clone-with-config (lentic-test-file file) init)
     (let ((this (get-file-buffer (lentic-test-file file)))
@@ -88,6 +91,7 @@
           (kill-buffer this))))))
 
 (defun lentic-test-clone-equal (init file cloned-file)
+  "With INIT function clone FILE and compare to CLONED-file."
   (let ((cloned-file
          (f-read
           (lentic-test-file cloned-file)))
@@ -102,12 +106,13 @@
   (f-write
    (lentic-test-clone-with-cleanup
     (lentic-test-file file) init)
-   o'utf-8
+   'utf-8
    (concat lentic-test-dir cloned-file))
   ;; return nil, so if we use this in a test by mistake, it will crash out.
   nil)
 
 (ert-deftest lentic-conf ()
+  "Test whether the default configuration does sensible things."
   (should
    (equal nil
           (oref
@@ -115,6 +120,7 @@
            :lentic-mode))))
 
 (ert-deftest lentic-simple ()
+  "Simple clone."
   (should
    (equal "simple\n"
           (lentic-test-clone-with-cleanup
@@ -122,6 +128,7 @@
            'lentic-default-init))))
 
 (ert-deftest lentic-clojure-latex ()
+  "Clojure to LaTeX transform."
   (should
    (lentic-test-clone-equal
     'lentic-clojure-latex-init
