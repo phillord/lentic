@@ -8,6 +8,8 @@
 
 (require 'load-relative)
 
+(require 'assess)
+
 (setq lentic-condition-case-disabled t)
 
 (defvar lentic-test-dir
@@ -72,23 +74,11 @@
                    (buffer-string))))
       nil)))
 
-(defun lentic-test-clone-with-cleanup (file init)
+(defun lentic-test-clone (file init)
   "Clone FILE with INIT and clean up all buffers after."
-  (unwind-protect
-      (lentic-batch-clone-with-config (lentic-test-file file) init)
-    (let ((this (get-file-buffer (lentic-test-file file)))
-          ;; keep everything!
-          (lentic-kill-retain t))
-      (when this
-        (with-current-buffer this
-          (let ((that (lentic-that (car lentic-config)))
-                (kill-buffer-query-functions nil))
-            (with-current-buffer that
-              (set-buffer-modified-p nil)
-              (kill-buffer that))))
-        (let ((kill-buffer-query-functions nil))
-          (set-buffer-modified-p nil)
-          (kill-buffer this))))))
+  (assess-with-preserved-buffer-list
+   (lentic-batch-clone-with-config
+    (lentic-test-file file) init)))
 
 (defun lentic-test-clone-equal (init file cloned-file)
   "With INIT function clone FILE and compare to CLONED-file."
@@ -96,7 +86,7 @@
          (f-read
           (lentic-test-file cloned-file)))
         (cloned-results
-         (lentic-test-clone-with-cleanup
+         (lentic-test-clone
           file init)))
     (lentic-test-equal-loudly cloned-file cloned-results)))
 
@@ -104,7 +94,7 @@
   (init file cloned-file)
   "Generates the test file for `lentic-batch-clone-equal'."
   (f-write
-   (lentic-test-clone-with-cleanup
+   (lentic-test-clone
     (lentic-test-file file) init)
    'utf-8
    (concat lentic-test-dir cloned-file))
@@ -123,7 +113,7 @@
   "Simple clone."
   (should
    (equal "simple\n"
-          (lentic-test-clone-with-cleanup
+          (lentic-test-clone
            "simple-contents.txt"
            'lentic-default-init))))
 
