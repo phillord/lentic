@@ -589,7 +589,7 @@ into
   (lentic-m-oset
    conf
    :this-buffer (current-buffer)
-   :comment "# "
+   :comment "## "
    :comment-stop "#\\\+BEGIN_SRC python.*"
    :comment-start "#\\\+END_SRC"))
 

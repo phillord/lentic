@@ -57,6 +57,12 @@ completed the relevant paperwork with the FSF.
 
 ## ChangeLog
 
+### 0.12
+
+This release adds significant support for use of lentic "out-of-the-box" with
+several languages when written as scripts, including where those scripts use a
+"magic cookie" line at the beginning.
+
 ### 0.11
 
 This release is largely a bug fix release, with a single new feature. A new
