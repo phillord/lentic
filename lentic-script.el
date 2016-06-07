@@ -52,6 +52,7 @@
 (defun lentic-script-lentic-file ()
   (lentic-script--lentic-file-1 (buffer-file-name)))
 
+;;;###autoload
 (defun lentic-python-script-init ()
   (lentic-org-python-oset
    (lentic-cookie-unmatched-commented-chunk-configuration
@@ -62,6 +63,7 @@
 (lentic-script-hook 'python-mode-hook
                     'lentic-python-script-init)
 
+;;;###autoload
 (defun lentic-bash-script-init ()
   (lentic-m-oset
    (lentic-cookie-unmatched-commented-chunk-configuration
@@ -76,6 +78,7 @@
 (lentic-script-hook 'shell-mode-hook
                     'lentic-bash-script-init)
 
+;;;###autoload
 (defun lentic-lua-script-init ()
   (lentic-m-oset
    (lentic-cookie-unmatched-commented-chunk-configuration

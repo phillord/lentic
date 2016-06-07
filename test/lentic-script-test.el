@@ -62,8 +62,8 @@
    (assess=
     (lentic-script-test-file "fulllua.org")
     (lentic-test-clone
-     "fulllua.sh"
-     #'lentic-bash-script-init))))
+     "fulllua.lua"
+     #'lentic-lua-script-init))))
 
 (provide 'lentic-script-test)
 ;;; lentic-script-test.el ends here
