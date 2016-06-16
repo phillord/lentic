@@ -1,4 +1,4 @@
-;;; lentic-cookie.el -- Lentic with a magic cookie -*- lexical-binding: t -*-
+;;; lentic-script.el -- Config for scripts -*- lexical-binding: t -*-
 
 ;;; Header:
 
