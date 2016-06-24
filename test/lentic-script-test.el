@@ -27,6 +27,7 @@
 ;;; Code:
 
 (require 'lentic-script)
+(require 'assess)
 
 (ert-deftest lentic-script-conf-test ()
   (should
