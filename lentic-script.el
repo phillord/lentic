@@ -33,13 +33,20 @@
 (defvar lentic-script-temp-location
   temporary-file-directory "/lentic-script")
 
-(defun lentic-script-hook (mode-hook init)
-  (add-to-list 'lentic-init-functions
-               init)
-  (add-hook mode-hook
-            (lambda ()
-              (unless lentic-init
-                (setq lentic-init init)))))
+;;;###autoload
+;; We need to copy this entire form into the autoloads file. If we use a
+;; normal autoload, it force loading of the entire package when it is called
+;; during autoload which defeats the point. Unfortunately, autoload files are
+;; normally dynamically bound, and we use closures. The eval form addresses
+;; both of these simultaneously.
+(eval
+ '(defun lentic-script-hook (mode-hook init)
+    (add-to-list 'lentic-init-functions init)
+    (add-hook mode-hook
+              (lambda nil
+                (unless lentic-init
+                  (setq lentic-init init)))))
+ t)
 
 (defun lentic-script--lentic-file-1 (file)
   (concat
