@@ -60,36 +60,37 @@
     :lentic-file
     (lentic-script-lentic-file))))
 
+;;;###autoload
 (lentic-script-hook 'python-mode-hook
                     'lentic-python-script-init)
 
 ;;;###autoload
 (defun lentic-bash-script-init ()
-  (lentic-m-oset
-   (lentic-cookie-unmatched-commented-chunk-configuration
-    "temp"
-    :this-buffer (current-buffer)
-    :comment "## "
-    :comment-start "#\\\+BEGIN_SRC sh"
-    :comment-stop "#\\\+END_SRC"
-    :lentic-file
-    (lentic-script-lentic-file))))
+  (lentic-cookie-unmatched-commented-chunk-configuration
+   "temp"
+   :this-buffer (current-buffer)
+   :comment "## "
+   :comment-start "#\\\+BEGIN_SRC sh"
+   :comment-stop "#\\\+END_SRC"
+   :lentic-file
+   (lentic-script-lentic-file)))
 
+;;;###autoload
 (lentic-script-hook 'shell-mode-hook
                     'lentic-bash-script-init)
 
 ;;;###autoload
 (defun lentic-lua-script-init ()
-  (lentic-m-oset
-   (lentic-cookie-unmatched-commented-chunk-configuration
-    "temp"
-    :this-buffer (current-buffer)
-    :comment "-- "
-    :comment-start "#\\\+BEGIN_SRC lua"
-    :comment-stop "#\\\+END_SRC"
-    :lentic-file
-    (lentic-script-lentic-file))))
+  (lentic-cookie-unmatched-commented-chunk-configuration
+   "temp"
+   :this-buffer (current-buffer)
+   :comment "-- "
+   :comment-start "#\\\+BEGIN_SRC lua"
+   :comment-stop "#\\\+END_SRC"
+   :lentic-file
+   (lentic-script-lentic-file)))
 
+;;;###autoload
 (lentic-script-hook 'lua-mode-hook
                     #'lentic-lua-script-init)
 
