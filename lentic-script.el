@@ -50,7 +50,10 @@
    ".org"))
 
 (defun lentic-script-lentic-file ()
-  (lentic-script--lentic-file-1 (buffer-file-name)))
+  (let ((l
+         (lentic-script--lentic-file-1 (buffer-file-name))))
+    (make-directory (file-name-nondirectory l) t)
+    l))
 
 ;;;###autoload
 (defun lentic-python-script-init ()
