@@ -29,13 +29,25 @@
 (require 'lentic-script)
 (require 'assess)
 
+(ert-deftest lentic-script-lentic-file ()
+  (should
+   (assess=
+    "/tmp/home/phillord/file.org"
+    (lentic-script--lentic-file-1
+     "/home/phillord/file.py"))))
+
+
 (ert-deftest lentic-script-conf-test ()
   (should
-   (let ((buffer-file-name "file.py"))
-     (lentic-python-script-init)))
+   (with-temp-buffer
+     (set-visited-file-name "/tmp/lentic-script-test-filename.py")
+     (lentic-python-script-init)
+     (set-visited-file-name nil)))
   (should
-   (let ((buffer-file-name "file.sh"))
-     (lentic-bash-script-init))))
+   (with-temp-buffer
+     (set-visited-file-name "/tmp/lentic-script-test-filename.sh")
+     (lentic-bash-script-init)
+     (set-visited-file-name nil))))
 
 (defun lentic-script-test-file (filename)
   (assess-file
