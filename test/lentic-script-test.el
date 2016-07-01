@@ -78,5 +78,33 @@
      "fulllua.lua"
      #'lentic-lua-script-init))))
 
+
+(ert-deftest lentic-script-lua-clone-change ()
+  (should
+   (lentic-test-clone-and-change=
+    #'lentic-lua-script-init
+    "fulllua.lua"
+    "fulllua.org"
+    (lambda ()
+      (forward-line)
+      (insert "-- hello")
+      (beginning-of-line)
+      (kill-line))))
+  (should
+   (lentic-test-clone-and-change=
+    #'lentic-lua-script-init
+    "fulllua.lua"
+    "fulllua.org"
+    nil
+    (lambda ()
+      (forward-line)
+      (insert "hello")
+      (beginning-of-line)
+      (kill-line))))
+  )
+
+
+
+
 (provide 'lentic-script-test)
 ;;; lentic-script-test.el ends here

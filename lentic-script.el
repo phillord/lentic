@@ -80,8 +80,8 @@
    "temp"
    :this-buffer (current-buffer)
    :comment "## "
-   :comment-start "#\\\+BEGIN_SRC sh"
-   :comment-stop "#\\\+END_SRC"
+   :comment-stop "#\\\+BEGIN_SRC sh"
+   :comment-start "#\\\+END_SRC"
    :lentic-file
    (lentic-script-lentic-file)))
 
@@ -95,8 +95,8 @@
    "temp"
    :this-buffer (current-buffer)
    :comment "-- "
-   :comment-start "#\\\+BEGIN_SRC lua"
-   :comment-stop "#\\\+END_SRC"
+   :comment-stop "#\\\+BEGIN_SRC lua"
+   :comment-start "#\\\+END_SRC"
    :lentic-file
    (lentic-script-lentic-file)))
 

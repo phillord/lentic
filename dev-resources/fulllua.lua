@@ -1,10 +1,9 @@
 #!/usr/bin/env lua
 
--- #+begin_src lua
--- print( "Hello World" )
--- #+end_src
+-- #+BEGIN_SRC lua
+print( "Hello World" )
+-- #+END_SRC
 
-
--- Local Variables:
--- lentic-init: lentic-lua-script-init
--- End:
+-- # Local Variables:
+-- # lentic-init: lentic-lua-script-init
+-- # End:

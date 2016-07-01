@@ -39,7 +39,8 @@
   :documentation "Configuration for a magic cookie containing
   lentic buffer that is not commented.")
 
-(defun lentic-cookie--uncommented-fixup-first-line-1 (buffer first-line-end)
+(defun lentic-cookie--uncommented-fixup-first-line-1 (buffer first-line-end
+                                                             comment)
   "Fixup the first line.
 
 BUFFER is the buffer.
@@ -51,8 +52,15 @@ despite the name of the function!"
    (m-buffer-replace-match
     (m-buffer-match
      buffer
-     (rx
-      (and line-start (0+ anything) "# #!"))
+     (rx-to-string
+      `(and line-start
+            (or
+             ;; the line may have been commented during the update
+             ,comment
+             ;; the line may have the comment from org-mode
+             "# ")
+            ;; and this is the actual start
+            "#!"))
      :end first-line-end)
     "#!")))
 
@@ -62,7 +70,8 @@ despite the name of the function!"
 CONF is the `lentic-configuration' object.
 FIRST-LINE-END is the location of the end of the line."
   (lentic-cookie--uncommented-fixup-first-line-1
-   (lentic-that conf) first-line-end))
+   (lentic-that conf) first-line-end
+   (oref conf :comment)))
 
 (defmethod lentic-clone
   ((conf lentic-cookie-uncommented-configuration)
@@ -71,30 +80,13 @@ FIRST-LINE-END is the location of the end of the line."
   (let ((clone-return
           (call-next-method conf start stop
                             length-before start-converted stop-converted)))
-    (if
-        (or
-         ;; next method has done strange things
-         (not clone-return)
-         ;; calling method is broad
-         (not start)
-         (not stop)
-         (m-buffer-with-markers
-             ((first-line
-               (m-buffer-match-first-line
-                (lentic-this conf))))
-           (or
-            (m-buffer-in-match-p
-             first-line start)
-            (m-buffer-in-match-p
-             first-line stop))))
-        (progn
-          (lentic-cookie-uncommented-fixup-first-line
-           conf
-           (cl-cadar
-            (m-buffer-match-first-line
-             (lentic-this conf)
-             :numeric t)))
-          nil)
+    (if (lentic-cookie-uncommented-fixup-first-line
+         conf
+         (cl-cadar
+          (m-buffer-match-first-line
+           (lentic-this conf)
+           :numeric t)))
+        nil
       clone-return)))
 
 (defclass lentic-cookie-commented-configuration
@@ -116,7 +108,9 @@ despite the name of the function!"
     (m-buffer-match
      buffer
      (rx
-      (and line-start "#!"))
+      (and line-start
+           (0+ anything)
+           "#!"))
      :end first-line-end)
     "# #!")))
 

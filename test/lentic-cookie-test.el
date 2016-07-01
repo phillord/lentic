@@ -38,7 +38,8 @@
 ")
       (lentic-cookie--uncommented-fixup-first-line-1
        (current-buffer)
-       (point-max))
+       (point-max)
+       "## ")
       (buffer-substring-no-properties
        (point-min)
        (point-max)))
@@ -61,6 +62,24 @@
        (point-max)))
     "# #!/usr/bin/python
 ")))
+
+(ert-deftest lentic-cookie-test-commented-fixup-with-comments-in ()
+  (should
+   (assess=
+    (with-temp-buffer
+      (insert
+       "-- #!/usr/bin/lua
+")
+      (lentic-cookie--commented-fixup-first-line-1
+       (current-buffer)
+       (point-max))
+      (buffer-substring-no-properties
+       (point-min)
+       (point-max)))
+    "# #!/usr/bin/lua
+")))
+
+
 
 
 
