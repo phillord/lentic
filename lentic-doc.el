@@ -105,7 +105,7 @@ as a prefix. "
     (with-current-buffer
         (find-file-noselect
          (lentic-doc-package-start-source package))
-      (let ((org-export-htmlize-generate-css 'css))
+      (let ((org-html-htmlize-output-type 'css))
         (org-html-export-to-html)))))
 ;; #+end_src
 

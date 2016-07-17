@@ -25,10 +25,10 @@ just-test:
 	--funcall assess-discover-run-and-exit-batch
 
 org:
-	cask exec emacs --debug --script build.el -- gen-org
+	$(EMACS_ENV) $(CASK) emacs --debug --script build.el -- gen-org
 
 html: org
-	cask exec emacs --debug --script build.el -- gen-html
+	$(EMACS_ENV) $(CASK) emacs --debug --script build.el -- gen-html
 
 install-test:
 	echo [install] Installation Test Starting
