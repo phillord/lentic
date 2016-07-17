@@ -157,6 +157,7 @@
 (require 'f)
 
 (defvar lentic-doc "lenticular.org")
+(defvar lentic-doc-html-files '("lenticular.css"))
 ;; #+end_src
 
 ;; ** State
