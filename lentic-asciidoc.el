@@ -71,8 +71,26 @@
 (defun lentic-asciidoc-clojure-init ()
   (lentic-asciidoc-uncommented-new))
 
+;;;###autoload
 (add-to-list 'lentic-init-functions
              'lentic-asciidoc-clojure-init)
+
+
+;; ** Support Emacs-Lisp
+;;;###autoload
+(defun lentic-asciidoc-el-init ()
+  (lentic-asciidoc-oset
+   (lentic-uncommented-asciidoc-configuration
+    "temp"
+    :lentic-file
+    (concat
+     (file-name-sans-extension
+      (buffer-file-name)) ".el"))))
+
+;;;###autoload
+(add-to-list 'lentic-init-functions
+             'lentic-asciidoc-el-init)
+
 
 (defclass lentic-commented-asciidoc-configuration
   (lentic-commented-chunk-configuration)
