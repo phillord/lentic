@@ -48,7 +48,7 @@
                   (setq lentic-init init)))))
  t)
 
-(defun lentic-script--lentic-file-1 (file)
+(defun lentic-script--lentic-file-2 (file)
   (concat
    lentic-script-temp-location
    (substring
@@ -56,11 +56,14 @@
     1)
    ".org"))
 
-(defun lentic-script-lentic-file ()
+(defun lentic-script--lentic-file-1 (file)
   (let ((l
-         (lentic-script--lentic-file-1 (buffer-file-name))))
-    (make-directory (file-name-nondirectory l) t)
+         (lentic-script--lentic-file-2 file)))
+    (make-directory (file-name-directory l) t)
     l))
+
+(defun lentic-script-lentic-file ()
+  (lentic-script--lentic-file-1 (buffer-file-name)))
 
 ;;;###autoload
 (defun lentic-python-script-init ()
@@ -97,6 +100,7 @@
    :comment "-- "
    :comment-stop "#\\\+BEGIN_SRC lua"
    :comment-start "#\\\+END_SRC"
+   :case-fold-search nil
    :lentic-file
    (lentic-script-lentic-file)))
 

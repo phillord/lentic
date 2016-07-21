@@ -33,7 +33,7 @@
   (should
    (assess=
     "/tmp/home/phillord/file.org"
-    (lentic-script--lentic-file-1
+    (lentic-script--lentic-file-2
      "/home/phillord/file.py"))))
 
 
