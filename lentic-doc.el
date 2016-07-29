@@ -33,9 +33,21 @@
 (require 'browse-url)
 (require 'lentic)
 (require 'lentic-org)
+(require 'lentic-ox)
 (require 'f)
 (require 's)
 ;; #+end_src
+
+
+;; #+begin_src emacs-lisp
+(defvar lentic-doc--includes
+    '(("http://phillord.github.io/lentic/include/lenticular.css" .
+       "include/lenticular.css")
+      ("http://orgmode.org/org-info.js" .
+       "include/org-info.js")
+      ))
+;; #+end_src
+
 
 ;; ** Orgify Package
 
@@ -105,8 +117,7 @@ as a prefix. "
     (with-current-buffer
         (find-file-noselect
          (lentic-doc-package-start-source package))
-      (let ((org-html-htmlize-output-type 'css))
-        (org-html-export-to-html)))))
+      (lentic-ox-html-export-to-html))))
 ;; #+end_src
 
 ;; #+begin_src emacs-lisp

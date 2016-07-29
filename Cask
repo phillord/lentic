@@ -5,7 +5,8 @@
 
 (package-file "lentic.el")
 
-(files "lentic*.el" "dir" "*info" "lenticular.org")
+(files "lentic*.el" "dir" "*info" "lenticular.org"
+       "include/*")
 
 (development
  (depends-on "f")

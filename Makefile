@@ -18,6 +18,9 @@ install:
 
 test: install just-test
 
+package:
+	$(EMACS_ENV) $(CASK) package
+
 just-test:
 	$(EMACS_ENV) $(CASK) emacs --batch -q \
 	--directory=. \
@@ -39,6 +42,14 @@ travis:
 
 COMMIT_DATE = $(shell date +%y-%m-%d-%H-%m)
 DISTRIB-LENTIC=../distrib-lentic
+
+publish-doc: ../lentic-pages/index.html ../lentic-pages/include/lenticular.css
+
+../lentic-pages/include/lenticular.css: ./include/lenticular.css
+	cp $< $@
+
+../lentic-pages/index.html: lenticular.html
+	cp $< $@
 
 # commit-distrib: info
 # 	cp lentic*.info $(DISTRIB-LENTIC)
