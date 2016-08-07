@@ -45,6 +45,7 @@
          (file (org-export-output-file-name extension))
          (org-export-coding-system org-html-coding-system)
          (org-html-htmlize-output-type 'css)
+         (org-html-postamble nil)
          (org-html-use-infojs t)
          (org-html-head
           "<link rel=\"stylesheet\" type=\"text/css\" href=\"http://phillord.github.io/lentic/include/lenticular.css\" />"))
