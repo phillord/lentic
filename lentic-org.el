@@ -407,13 +407,19 @@ into
 ;; shut byte compiler up and define var for setq-local
 (defvar org-archive-default-command)
 
-(defun lentic-orgel-org-init-default-hook ()
+(defun lentic-orgel-org-init-default-hook (conf)
   ;; Better to open all trees in lentic so that both buffers appears the same
   ;; size.
   (show-all)
   ;; Archiving very easy to and almost always a disaster when it removes an
   ;; entire tree from the buffer.
   (require 'org-archive)
+  ;; shorten the fill column by 3, so that the emacs-lisp buffer is the
+  ;; correct width.
+  (set-fill-column
+   (with-current-buffer
+       (lentic-that conf)
+     (- fill-column 3)))
   (setq-local org-archive-default-command
               (let ((old-archive
                      org-archive-default-command))
@@ -438,7 +444,7 @@ into
          (call-next-method conf)))
     (with-current-buffer
         buf
-      (run-hooks 'lentic-orgel-org-init-hook))
+      (run-hook-with-args 'lentic-orgel-org-init-hook conf))
     buf))
 
 (defmethod lentic-clone
