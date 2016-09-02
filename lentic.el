@@ -777,7 +777,7 @@ SEEN-BUFFER is a list of buffers to ignore."
 ;; impossible to analyse.
 
 ;; #+begin_src emacs-lisp
-(defvar lentic-log t)
+(defvar lentic-log nil)
 (defmacro lentic-log (&rest rest)
   "Log REST."
   `(when lentic-log
@@ -786,10 +786,7 @@ SEEN-BUFFER is a list of buffers to ignore."
              (concat
               (format ,@rest)
               "\n")))
-        (with-current-buffer
-            (get-buffer-create "*lentic-log*")
-          (goto-char (point-max))
-          (insert msg))))))
+        (princ msg #'external-debugging-output)))))
 ;; #+end_src
 
 ;; An emergency detection system. Several of the hooks in use (post-command-hook,
