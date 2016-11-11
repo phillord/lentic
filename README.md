@@ -32,7 +32,7 @@ Previously, lentic was known as linked-buffer.
 ## In Action
 
 It is fairly hard to explain what lentic does and much easier to show in
-pictures. I am indebted to https://github.com/tumashu[tumashu] for producing
+pictures. I am indebted to [tumashu](https://github.com/tumashu) for producing
 these excellent gifs, showing lentic in action combined with some advanced use
 of org-mode, web publishing and Chinese input methods.
 
