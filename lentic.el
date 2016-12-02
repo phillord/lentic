@@ -1172,50 +1172,44 @@ update mechanism depends on CONF.
 START is at most the start of the change.
 STOP is at least the end of the change.
 LENGTH-BEFORE is the length of area before the change."
-  (let ((inhibit-read-only t))
-    (let ((skewed
-           (when
-               (or
-                ;; previously this was not skewed if no region, but actually,
-                ;; if there is no region we need to copy everything, we can
-                ;; also do by declaring skew -- this is important for the
-                ;; multi-lentic situation
-                (not (or start stop length-before))
-                ;; skews only occur in insertions which result in a positive
-                ;; length-before. This also picks up no-insertion changes
-                (and (< 0 length-before)
-                     ;; = start stop means we have a deletion because
-                     ;; there is no range after. Deletions seem to be
-                     ;; safe.
-                     (not (= start stop))))
-             (lentic-log "Skew detected: %s" this-command)
-             t)))
-      (m-buffer-with-markers
-          ((start-converted
-            (when
-                (and (not skewed)
-                     (oref conf :last-change-start-converted))
-              (set-marker (make-marker)
-                          (oref conf :last-change-start-converted)
-                          (lentic-that conf))))
-           (stop-converted
-            (when
-                (and (not skewed)
-                     (oref conf :last-change-stop-converted))
-              (set-marker (make-marker)
-                          (oref conf :last-change-stop-converted)
-                          (lentic-that conf)))))
-        ;; used these, so dump them
-        (oset conf :last-change-start nil)
-        (oset conf :last-change-start-converted nil)
-        (oset conf :last-change-stop nil)
-        (oset conf :last-change-stop-converted nil)
-        (lentic-widen
-            conf
-          (if skewed
-              (lentic-clone conf)
-            (lentic-clone conf start stop length-before
-                          start-converted stop-converted)))))))
+  (let ((inhibit-read-only t)
+        (no-fall-back
+         (and start stop length-before)))
+    (when
+        (and no-fall-back
+             (< (+ start length-before) (oref conf :last-change-stop)))
+      (let ((diff
+             (- (oref conf :last-change-stop)
+                (+ start length-before))))
+        (lentic-log "Skew detected %s" this-command)
+        (cl-incf length-before diff)
+        (cl-incf end diff)))
+    (m-buffer-with-markers
+        ((start-converted
+          (when
+              (and no-fall-back
+                   (oref conf :last-change-start-converted))
+            (set-marker (make-marker)
+                        (oref conf :last-change-start-converted)
+                        (lentic-that conf))))
+         (stop-converted
+          (when
+              (and no-fall-back
+                   (oref conf :last-change-stop-converted))
+            (set-marker (make-marker)
+                        (oref conf :last-change-stop-converted)
+                        (lentic-that conf)))))
+      ;; used these, so dump them
+      (oset conf :last-change-start nil)
+      (oset conf :last-change-start-converted nil)
+      (oset conf :last-change-stop nil)
+      (oset conf :last-change-stop-converted nil)
+      (lentic-widen
+          conf
+        (if (not no-fall-back)
+            (lentic-clone conf)
+          (lentic-clone conf start stop length-before
+                        start-converted stop-converted))))))
 
 (defun lentic-update-point (conf)
   "Update the location of point in that-buffer to reflect this-buffer.
