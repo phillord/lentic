@@ -204,16 +204,20 @@ If both are current displayed, swap the windows they
 are displayed in, which keeping current buffer.
 See also `lentic-mode-move-lentic-window'."
   (interactive)
-  (lentic-mode-swap-buffer-windows
-   (current-buffer)
-   (lentic-mode-find-next-visible-lentic-buffer
-    (current-buffer)))
-  (when (window-live-p
-         (get-buffer-window
-          (current-buffer)))
-    (select-window
-     (get-buffer-window
-      (current-buffer)))))
+  (let ((next
+         (lentic-mode-find-next-visible-lentic-buffer
+          (current-buffer)))))
+  (if (not next)
+      (message "Cannot swap windows when only one is visible")
+    (lentic-mode-swap-buffer-windows
+     (current-buffer)
+     next)
+    (when (window-live-p
+           (get-buffer-window
+            (current-buffer)))
+      (select-window
+       (get-buffer-window
+        (current-buffer))))))
 
 (defun lentic-mode-create-new-view ()
   (let* ((conf (lentic-default-init))
