@@ -42,12 +42,14 @@
    (with-temp-buffer
      (set-visited-file-name "/tmp/lentic-script-test-filename.py")
      (lentic-python-script-init)
-     (set-visited-file-name nil)))
+     (set-visited-file-name nil)
+     t))
   (should
    (with-temp-buffer
      (set-visited-file-name "/tmp/lentic-script-test-filename.sh")
      (lentic-bash-script-init)
-     (set-visited-file-name nil))))
+     (set-visited-file-name nil)
+     t)))
 
 (defun lentic-script-test-file (filename)
   (assess-file
