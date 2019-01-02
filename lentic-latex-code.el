@@ -80,7 +80,7 @@
   (lentic-latex-to-clojure-new))
 
 (add-to-list 'lentic-init-functions
-             'lentic-clojure-latex-init)
+             'lentic-latex-clojure-init)
 
 ;;;###autoload
 (defun lentic-clojure-latex-delayed-init ()
