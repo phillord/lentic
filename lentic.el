@@ -1183,7 +1183,7 @@ LENGTH-BEFORE is the length of area before the change."
                 (+ start length-before))))
         (lentic-log "Skew detected %s" this-command)
         (cl-incf length-before diff)
-        (cl-incf end diff)))
+        (cl-incf stop diff)))
     (m-buffer-with-markers
         ((start-converted
           (when
