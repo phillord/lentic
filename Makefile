@@ -37,8 +37,7 @@ install-test:
 	echo [install] Installation Test Starting
 	$(MAKE) -C test/install-test/ test
 
-travis:
-	$(MAKE) test install-test html 2>&1 | grep --invert-match "newer than"
+travis: test install-test html
 
 COMMIT_DATE = $(shell date +%y-%m-%d-%H-%m)
 DISTRIB-LENTIC=../distrib-lentic
