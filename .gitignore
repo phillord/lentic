@@ -37,3 +37,4 @@ Makefile-local
 /examples/orgel-org-with-tags.org
 /test/install-test/.cask
 
+/examples/clojure-markdown.md
