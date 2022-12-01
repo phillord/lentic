@@ -1,5 +1,6 @@
+;; Here is an org file -*- lexical-binding: t; -*-
 
-;; Here is an org file
+;; Copyright (C) 2014-2022  Free Software Foundation, Inc.
 
 ;; * One
 

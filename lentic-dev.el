@@ -8,7 +8,7 @@
 ;; Maintainer: Phillip Lord <phillip.lord@russet.org.uk>
 ;; The contents of this file are subject to the GPL License, Version 3.0.
 
-;; Copyright (C) 2014, 2015, 2016, Phillip Lord, Newcastle University
+;; Copyright (C) 2014-2022  Free Software Foundation, Inc.
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -66,7 +66,7 @@ true to disable command loop functionality."
   (interactive)
   (message "Running after change with args: %s"
            lentic-emergency-last-change)
-  (apply 'lentic-after-change-function-1
+  (apply #'lentic-after-change-function-1
          lentic-emergency-last-change))
 
 ;;;###autoload
@@ -144,59 +144,43 @@ to make sure there is a new one."
             'face
             lentic-dev-insert-face)))
 
-(defadvice lentic-insertion-string-transform
-  (after face-transform
-         (string)
-         disable)
-  (setq ad-return-value
-        (propertize
-         string
-         'font-lock-face
-         lentic-dev-insert-face
-         'face
-         lentic-dev-insert-face)))
-
-(defvar lentic-dev-enable-insertion-marking nil)
+(defun lentic-dev--face-transform (string)
+  (propertize
+   string
+   'font-lock-face
+   lentic-dev-insert-face
+   'face
+   lentic-dev-insert-face))
 
 ;;;###autoload
-(defun lentic-dev-enable-insertion-marking ()
+(define-minor-mode lentic-dev-enable-insertion-marking
   "Enable font locking properties for inserted text."
-  (interactive)
+  :global t
+  :group 'lentic-dev
   (if lentic-dev-enable-insertion-marking
-      (progn
-        (ad-deactivate 'lentic-insertion-string-transform)
-        (setq lentic-enable-insertion-marking nil)
-        (message "Insertion marking off"))
-    (ad-enable-advice 'lentic-insertion-string-transform
-                      'after 'face-transform)
-    (ad-activate 'lentic-insertion-string-transform)
-    (setq lentic-enable-insertion-marking t)
-    (message "Insertion marking on")))
+      (advice-add 'lentic-insertion-string-transform :override
+                    #'lentic-dev--face-transform)
+    (advice-remove 'lentic-insertion-string-transform
+                     #'lentic-dev--face-transform)))
 
 
-(defadvice lentic-after-change-transform
-    (after pulse-transform (buffer start stop length-before) disable)
+(defun lentic-dev--pulse-transform (buffer start stop &rest _)
   (with-current-buffer
       buffer
     (pulse-momentary-highlight-region
      (or start (point-min))
      (or stop (point-max)))))
 
-(defvar lentic-dev-enable-insertion-pulse nil)
-
 ;;;###autoload
-(defun lentic-dev-enable-insertion-pulse ()
-  (interactive)
+(define-minor-mode lentic-dev-enable-insertion-pulse
+  "Enable momentary pulsing for inserted text."
+  :global t
+  :group 'lentic-dev
   (if lentic-dev-enable-insertion-pulse
-      (progn
-        (ad-deactivate 'lentic-after-change-transform)
-        (setq lentic-dev-enable-insertion-pulse nil)
-        (message "insertion pulse off"))
-    (ad-enable-advice 'lentic-after-change-transform
-                      'after 'pulse-transform)
-    (ad-activate 'lentic-after-change-transform)
-    (setq lentic-dev-enable-insertion-pulse t)
-    (message "insertion pulse on")))
+      (advice-add 'lentic-after-change-transform :after
+                  #'lentic-dev--pulse-transform)
+    (advice-remove 'lentic-after-change-transform
+                   #'lentic-dev--pulse-transform)))
 
 
 (defun lentic-dev-edebug-trace-mode ()

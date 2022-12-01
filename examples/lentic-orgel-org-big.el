@@ -7,11 +7,11 @@
 ;; Author: Phillip Lord <phillip.lord@newcastle.ac.uk>
 ;; Maintainer: Phillip Lord <phillip.lord@newcastle.ac.uk>
 ;; Version: 0.6
-;; Package-Requires: ((emacs "24")(m-buffer "0.6")(dash "2.5.0"))
+;; Package-Requires: ((emacs "25") (m-buffer "0.6") (dash "2.5.0"))
 
 ;; The contents of this file are subject to the GPL License, Version 3.0.
 
-;; Copyright (C) 2014, Phillip Lord, Newcastle University
+;; Copyright (C) 2014-2022  Free Software Foundation, Inc.
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -183,25 +183,25 @@ of mode in the current buffer.")
     :initarg :sync-point
     :initform t)
    (last-change-start-converted
-    :initarg :last-change-start-converted
+    :initarg :last-change-start-converted ;; FIXME: Not used.
     :initform nil)
    (last-change-stop-converted
-    :initarg :last-change-stop-converted
+    :initarg :last-change-stop-converted ;; FIXME: Not used.
     :initform nil))
   "Configuration object for lentic, which defines the mechanism
 by which linking happens.")
 
-(defgeneric lentic-create (conf))
-(defgeneric lentic-convert (conf location))
-(defgeneric lentic-invert (conf that-buffer))
+(cl-defgeneric lentic-create (conf))
+(cl-defgeneric lentic-convert (conf location))
+(cl-defgeneric lentic-invert (conf that-buffer))
 
-(defmethod lentic-this ((conf lentic-configuration))
-  (oref conf :this-buffer))
+(cl-defmethod lentic-this ((conf lentic-configuration))
+  (oref conf this-buffer))
 
-(defmethod lentic-that ((conf lentic-configuration))
-  (oref conf :that-buffer))
+(cl-defmethod lentic-that ((conf lentic-configuration))
+  (oref conf that-buffer))
 
-(defmethod lentic-ensure-that ((conf lentic-configuration))
+(cl-defmethod lentic-ensure-that ((conf lentic-configuration))
   "Get the lentic for this configuration
 or create it if it does not exist."
   (or (lentic-that conf)
@@ -232,10 +232,10 @@ This function is not meant to do anything. It's useful to
 advice."
   string)
 
-(defmethod lentic-create ((conf lentic-default-configuration))
+(cl-defmethod lentic-create ((conf lentic-default-configuration))
   "Create the lentic for this configuration.
 Given a `lentic-configuration' object, create the lentic
-appropriate for that configurationuration. It is the callers
+appropriate for that configuration. It is the callers'
 responsibility to check that buffer has not already been
 created."
   ;; make sure the world is ready for linked buffers
@@ -248,10 +248,10 @@ created."
            (format "*linked: %s*"
                    (buffer-name
                     this-buffer))))
-         (sec-mode (oref conf :linked-mode))
-         (sec-file (oref conf :linked-file)))
+         (sec-mode (oref conf linked-mode))
+         (sec-file (oref conf linked-file)))
     ;; make sure this-buffer knows about that-buffer
-    (oset conf :that-buffer that-buffer)
+    (oset conf that-buffer that-buffer)
     ;; insert the contents
     (lentic-update-contents conf)
     ;; init that-buffer with mode, file and config
@@ -266,26 +266,25 @@ created."
             (lentic-invert conf)))
     that-buffer))
 
-(defmethod lentic-invert ((conf lentic-default-configuration))
+(cl-defmethod lentic-invert ((conf lentic-default-configuration))
   (lentic-default-configuration
-   (lentic-config-name (lentic-that conf))
-   :this-buffer (oref conf :that-buffer)
-   :that-buffer (oref conf :this-buffer)))
+   :this-buffer (oref conf that-buffer)
+   :that-buffer (oref conf this-buffer)))
 
-(defmethod lentic-convert ((conf lentic-default-configuration)
+(cl-defmethod lentic-convert ((_conf lentic-default-configuration)
                                   location)
   "For this configuration, convert LOCATION to an equivalent location in
 the lentic."
   location)
 
-(defmethod lentic-clone ((conf lentic-configuration)
+(cl-defmethod lentic-clone ((conf lentic-configuration)
                                 &optional start stop _length-before
                                 start-converted stop-converted)
   "Updates that-buffer to reflect the contents in this-buffer.
 
 Currently, this is just a clone all method but may use regions in future."
-  (let ((this-b (oref conf :this-buffer))
-        (that-b (oref conf :that-buffer)))
+  (let ((this-b (oref conf this-buffer))
+        (that-b (oref conf that-buffer)))
     (with-current-buffer this-b
       ;;(lentic-log "this-b (point,start,stop)(%s,%s,%s)" (point) start stop)
       (let* ((start (or start (point-min)))
@@ -321,11 +320,9 @@ Currently, this is just a clone all method but may use regions in future."
 See `lentic-init' for details."
   (setq lentic-config
         (lentic-default-configuration
-         (lentic-config-name (current-buffer))
          :this-buffer (current-buffer))))
 
-(add-to-list 'lentic-init-functions
-             'lentic-default-init)
+(add-to-list 'lentic-init-functions #'lentic-default-init)
 
 
 ;; #+end_src
@@ -350,15 +347,16 @@ See `lentic-init' for details."
 (defun lentic-ensure-hooks ()
   "Ensures that the hooks that this mode requires are in place."
   (add-hook 'post-command-hook
-            'lentic-post-command-hook)
+            #'lentic-post-command-hook)
+  ;; FIXME: Do we really need these hook functions to affect *all* buffers?
   ;; after and before-change functions are hooks (with args) even if they are
   ;; not named as such.
   (add-hook 'after-change-functions
-            'lentic-after-change-function)
+            #'lentic-after-change-function)
   (add-hook 'before-change-functions
-            'lentic-before-change-function)
+            #'lentic-before-change-function)
   (add-hook 'after-save-hook
-            'lentic-after-save-hook))
+            #'lentic-after-save-hook))
 
 (defvar lentic-log t)
 (defmacro lentic-log (&rest rest)
@@ -503,7 +501,7 @@ A and B are the buffers."
   "Ensure that the `lentic-init' has been run."
   (unless (and lentic-config
                (slot-boundp
-                lentic-config :that-buffer)
+                lentic-config 'that-buffer)
                (buffer-live-p (lentic-that
                                lentic-config)))
     (funcall lentic-init)))
@@ -585,12 +583,12 @@ REST is currently just ignored."
         (progn
           (lentic-when-linked
            (oset lentic-config
-                 :last-change-start-converted
+                 last-change-start-converted
                  (lentic-convert
                   lentic-config
                   start))
            (oset lentic-config
-                 :last-change-stop-converted
+                 last-change-stop-converted
                  (lentic-convert
                   lentic-config
                   stop)))
@@ -598,9 +596,9 @@ REST is currently just ignored."
            "Before change:(%s,%s,%s,%s)"
            start stop
            (oref lentic-config
-                 :last-change-start-converted)
+                 last-change-start-converted)
            (oref lentic-config
-                 :last-change-stop-converted)))
+                 last-change-stop-converted)))
       (error
        (lentic-hook-fail err "before change")))))
 
@@ -610,18 +608,18 @@ Update mechanism depends on CONF."
   (unwind-protect
       (m-buffer-with-markers
           ((start-converted
-            (when (oref conf :last-change-start-converted)
+            (when (oref conf last-change-start-converted)
               (set-marker (make-marker)
-                          (oref conf :last-change-start-converted)
-                          (oref conf :that-buffer))))
+                          (oref conf last-change-start-converted)
+                          (oref conf that-buffer))))
            (stop-converted
-            (when (oref conf :last-change-stop-converted)
+            (when (oref conf last-change-stop-converted)
                 (set-marker (make-marker)
-                            (oref conf :last-change-stop-converted)
-                            (oref conf :that-buffer)))))
+                            (oref conf last-change-stop-converted)
+                            (oref conf that-buffer)))))
         ;; used these, so dump them
-        (oset conf :last-change-start-converted nil)
-        (oset conf :last-change-stop-converted nil)
+        (oset conf last-change-start-converted nil)
+        (oset conf last-change-stop-converted nil)
         (setq inhibit-read-only t)
         ;;(lentic-log
         ;;"Update config: %s" lentic-config)
@@ -634,7 +632,7 @@ Update mechanism depends on CONF."
 This also attempts to update any windows so that they show the
 same top-left location. Update details depend on CONF."
   ;; only sync when we are told to!
-  (when (oref conf :sync-point)
+  (when (oref conf sync-point)
     (let* ((from-point
             (lentic-convert
              conf
@@ -673,19 +671,18 @@ same top-left location. Update details depend on CONF."
 (defun lentic-toggle-auto-sync-point ()
   (interactive)
   (lentic-when-linked
-   (oset lentic-config :sync-point
-         (not (oref lentic-config :sync-point)))))
+   (oset lentic-config sync-point
+         (not (oref lentic-config sync-point)))))
 
-(defvar lentic-mode-map (make-sparse-keymap)
+(defvar lentic-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-c ,s") #'lentic-swap-linked-window)
+    (define-key map (kbd "C-c ,h") #'lentic-move-linked-window)
+    map)
   "Keymap for lentic-minor-mode")
 
-(define-key lentic-mode-map
-  (kbd "C-c ,s") 'lentic-swap-linked-window)
-
-(define-key lentic-mode-map
-  (kbd "C-c ,h") 'lentic-move-linked-window)
-
 (define-minor-mode lentic-mode
+  "<MISSING DOCSTRING>"
   :lighter "lb"
   :keymap lentic-mode-map)
 
@@ -703,9 +700,9 @@ same top-left location. Update details depend on CONF."
    (list (completing-read
           "Lentic init function: "
           (mapcar
-           'symbol-name
+           #'symbol-name
            lentic-init-functions)
-          'identity 'confirm)))
+          nil 'confirm)))
   (save-excursion
     (goto-char (point-max))
     (let ((start (point)))
@@ -714,27 +711,21 @@ same top-left location. Update details depend on CONF."
         ;; split this string or we get local variable not terminated properly
         ;; errors.
         (concat "\nLocal"
-                " Variables:\nlentic-init: %s\nEnd:\n") init-function))
+                " Variables:\nlentic-init: %s\nEnd:\n")
+        init-function))
       (comment-region start (point)))))
 
-(defvar lentic-start-mode-map (make-sparse-keymap))
-
-(define-key lentic-start-mode-map
-  (kbd "C-c ,b") 'lentic-split-window-below)
-
-(define-key lentic-start-mode-map
-  (kbd "C-c ,r") 'lentic-split-window-right)
-
-(define-key lentic-start-mode-map
-  (kbd "C-c ,f") 'lentic-insert-file-local)
-
-(define-key lentic-start-mode-map
-  (kbd "C-c ,c") 'lentic-create-in-selected-window)
-
+(defvar lentic-start-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-c ,b") #'lentic-split-window-below)
+    (define-key map (kbd "C-c ,r") #'lentic-split-window-right)
+    (define-key map (kbd "C-c ,f") #'lentic-insert-file-local)
+    (define-key map (kbd "C-c ,c") #'lentic-create-in-selected-window)
+    map))
 
 (define-minor-mode lentic-start-mode
-  :lighter ""
-  :keymap lentic-start-mode-map)
+  "<MISSING DOCSTRING>"
+  :lighter nil)
 
 (define-globalized-minor-mode global-lentic-start-mode
   lentic-start-mode
@@ -799,7 +790,7 @@ true to disable command loop functionality."
   (interactive)
   (message "Running after change with args: %s"
            lentic-emergency-last-change)
-  (apply 'lentic-after-change-function-1
+  (apply #'lentic-after-change-function-1
          lentic-emergency-last-change))
 
 (defun lentic-test-post-command-hook ()

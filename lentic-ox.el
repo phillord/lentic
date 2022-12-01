@@ -6,7 +6,7 @@
 
 ;; The contents of this file are subject to the GPL License, Version 3.0.
 
-;; Copyright (C) 2015, 2016, Phillip Lord, Newcastle University
+;; Copyright (C) 2015-2022  Free Software Foundation, Inc.
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 
 ;; #+begin_src emacs-lisp
 (require 'ox-html)
+(require 'dash)
 
 ;; Define an exporter
 (org-export-define-derived-backend 'lentic
@@ -55,7 +56,7 @@
 (defvar lentic-ox-no-export-headers '("Header")
   "List of headers to which noexport tags should be added.")
 
-(defun lentic-ox-filter-parse-tree (tree back-end info)
+(defun lentic-ox-filter-parse-tree (tree _back-end _info)
   "Filter preventing the export of specific headers.
 
 TREE is the parse tree. BACK-END is the symbol specifying

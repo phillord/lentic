@@ -1,4 +1,4 @@
-;;; lentic-rot13.el --- rot13 support for lentic
+;;; lentic-rot13.el --- rot13 support for lentic  -*- lexical-binding: t; -*-
 
 ;;; Header:
 
@@ -9,7 +9,7 @@
 
 ;; The contents of this file are subject to the GPL License, Version 3.0.
 
-;; Copyright (C) 2015, 2016, Phillip Lord, Newcastle University
+;; Copyright (C) 2015-2022  Free Software Foundation, Inc.
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -69,11 +69,9 @@
 ;; =lentic-clone= will probably return the changed region directly.
 
 ;; #+begin_src emacs-lisp
-(defmethod lentic-clone ((conf lentic-rot13-configuration)
-                         &optional start stop _length-before
-                         start-converted stop-converted)
-  (call-next-method conf start stop _length-before
-                    start-converted stop-converted)
+(cl-defmethod lentic-clone ((conf lentic-rot13-configuration)
+                            &optional start stop &rest _)
+  (cl-call-next-method)
   ;; and rot13 it!
   (with-current-buffer
       (lentic-that conf)
@@ -95,9 +93,8 @@
 ;; /that/ to /this/ uses an object of the same class as from /this/ to /that/.
 
 ;; #+begin_src emacs-lisp
-(defmethod lentic-invert ((conf lentic-rot13-configuration))
+(cl-defmethod lentic-invert ((conf lentic-rot13-configuration))
   (lentic-rot13-configuration
-   "rot13-config"
    :this-buffer (lentic-that conf)
    :that-buffer (lentic-this conf)))
 ;; #+end_src
@@ -109,7 +106,6 @@
 ;; #+begin_src emacs-lisp
 (defun lentic-rot13-init ()
   (lentic-rot13-configuration
-   "rot13"
    :this-buffer (current-buffer)))
 
 (provide 'lentic-rot13)

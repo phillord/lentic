@@ -9,7 +9,7 @@
 
 ;; The contents of this file are subject to the LGPL License, Version 3.0.
 
-;; Copyright (C) 2014, 2015, 2016, Phillip Lord, Newcastle University
+;; Copyright (C) 2014-2022  Free Software Foundation, Inc.
 
 ;; This program is free software: you can redistribute it and/or modify it
 ;; under the terms of the GNU Lesser General Public License as published by
@@ -83,29 +83,29 @@ A chunked lentic is one where chunks of the buffer have a
 start of line chunk comment in one buffer but not the other."
   :abstract t)
 
-(defmethod lentic-mode-line-string ((conf lentic-chunk-configuration))
+(cl-defmethod lentic-mode-line-string ((conf lentic-chunk-configuration))
   (if (not
-       (oref conf :valid))
+       (oref conf valid))
       "invalid"
-    (call-next-method conf)))
+    (cl-call-next-method conf)))
 
-(defmethod lentic-chunk-comment-start-regexp
+(cl-defmethod lentic-chunk-comment-start-regexp
   ((conf lentic-chunk-configuration))
   ;; todo -- what does this regexp do?
   (format "^\\(%s\\)?%s"
-          (oref conf :comment)
-          (oref conf :comment-start)))
+          (oref conf comment)
+          (oref conf comment-start)))
 
-(defmethod lentic-chunk-comment-stop-regexp
+(cl-defmethod lentic-chunk-comment-stop-regexp
   ((conf lentic-chunk-configuration))
   (format "^\\(%s\\)?%s"
-          (oref conf :comment)
-          (oref conf :comment-stop)))
+          (oref conf comment)
+          (oref conf comment-stop)))
 
-(defmethod lentic-chunk-line-start-comment
+(cl-defmethod lentic-chunk-line-start-comment
   ((conf lentic-chunk-configuration))
   (concat "^"
-          (oref conf :comment)))
+          (oref conf comment)))
 
 (defun lentic-chunk-uncomment-region (conf begin end buffer)
   "Given CONF,  remove start-of-line characters in region.
@@ -155,7 +155,7 @@ start of line comment characters beween BEGIN and END in BUFFER."
          :begin begin :end end)))
     (m-buffer-replace-match
      (m-buffer-match-exact-subtract line-match comment-match)
-     (oref conf :comment) nil nil 1)))
+     (oref conf comment) nil nil 1)))
 
 (defun lentic-chunk-comment-buffer (conf markers begin end buffer)
   "Given CONF, a `lentic-configuration' object, add
@@ -180,7 +180,7 @@ between BEGIN and END in BUFFER."
             conf chunk-begin chunk-end buffer))))
      markers)))
 
-(defmethod lentic-chunk-marker-boundaries ((conf lentic-chunk-configuration)
+(cl-defmethod lentic-chunk-marker-boundaries ((conf lentic-chunk-configuration)
                                          buffer)
   "Given CONF, a `lentic-configuration' object, find
 demarcation markers. Returns a list of start end cons pairs.
@@ -198,8 +198,8 @@ an implicit stop."
            (length match-end))
         (progn
           (unless
-              (oref conf :valid)
-            (oset conf :valid t)
+              (oref conf valid)
+            (oset conf valid t)
             (lentic-update-display))
           (with-current-buffer buffer
             (-zip-with
@@ -216,24 +216,24 @@ an implicit stop."
               (list (set-marker (make-marker) (point-max) buffer))))))
       ;; delimiters do not match so return error value
       (lentic-log "delimiters do not match")
-      (when (oref conf :valid)
-        (oset conf :valid nil)
+      (when (oref conf valid)
+        (oset conf valid nil)
         (lentic-update-display))
       :unmatched)))
 
-(defmethod lentic-chunk-match ((conf lentic-chunk-configuration)
+(cl-defmethod lentic-chunk-match ((conf lentic-chunk-configuration)
                                       buffer)
   (list
    (m-buffer-match-begin
     buffer
     (lentic-chunk-comment-start-regexp conf)
-    :case-fold-search (oref conf :case-fold-search))
+    :case-fold-search (oref conf case-fold-search))
    (m-buffer-match-end
     buffer
     (lentic-chunk-comment-stop-regexp conf)
-    :case-fold-search (oref conf :case-fold-search))))
+    :case-fold-search (oref conf case-fold-search))))
 
-(defmethod lentic-convert ((conf lentic-chunk-configuration)
+(cl-defmethod lentic-convert ((conf lentic-chunk-configuration)
                                   location)
   "Converts a LOCATION in buffer FROM into one from TO.
 This uses a simple algorithm; we pick the same line and then
@@ -278,7 +278,7 @@ between the two buffers; we don't care which one has comments."
   ()
   "Configuration for chunked lentic without comments.")
 
-(defmethod lentic-clone
+(cl-defmethod lentic-clone
   ((conf lentic-commented-chunk-configuration)
    &optional start stop length-before start-converted stop-converted)
   "Update the contents in the lentic without comments"
@@ -335,13 +335,13 @@ between the two buffers; we don't care which one has comments."
     ;; now clone the buffer, recording the return value unless either the
     ;; start or the stop is in comment, in which case we need a nil.
     (let* ((clone-return
-            (call-next-method conf start stop length-before
-                              start-converted stop-converted))
+            (cl-call-next-method conf start stop length-before
+                                 start-converted stop-converted))
            (clone-return
             (unless (or start-in-comment stop-in-comment)
               clone-return))
            ;; record the validity of the buffer as it was
-           (validity (oref conf :valid))
+           (validity (oref conf valid))
            (markers
             (lentic-chunk-marker-boundaries
              conf
@@ -354,7 +354,7 @@ between the two buffers; we don't care which one has comments."
             (equal :unmatched
                    markers)
             validity)
-           (call-next-method conf))
+           (cl-call-next-method conf))
           ;; we are unmatched, and we were unmatched before. We have already
           ;; done the incremental clone, so stop.
           ((equal :unmatched markers)
@@ -398,17 +398,16 @@ between the two buffers; we don't care which one has comments."
             (lentic-that conf))))
       clone-return)))
 
-(defmethod lentic-invert
+(cl-defmethod lentic-invert
   ((conf lentic-commented-chunk-configuration))
   (lentic-uncommented-chunk-configuration
-   "commented-inverted"
    :this-buffer (lentic-that conf)
    :that-buffer (lentic-this conf)
-   :comment (oref conf :comment)
-   :comment-start (oref conf :comment-start)
-   :comment-stop (oref conf :comment-stop)))
+   :comment (oref conf comment)
+   :comment-start (oref conf comment-start)
+   :comment-stop (oref conf comment-stop)))
 
-(defmethod lentic-clone
+(cl-defmethod lentic-clone
   ((conf lentic-uncommented-chunk-configuration)
    &optional start stop length-before start-converted stop-converted)
   "Update the contents in the lentic without comments."
@@ -429,12 +428,12 @@ between the two buffers; we don't care which one has comments."
                            (when start-at-bolp
                              "start")))
     (let* ((clone-return
-            (call-next-method conf start stop length-before
-                              start-converted stop-converted))
+            (cl-call-next-method conf start stop length-before
+                                 start-converted stop-converted))
            (clone-return
             (unless start-at-bolp
               clone-return))
-           (validity (oref conf :valid))
+           (validity (oref conf valid))
            (markers
             (lentic-chunk-marker-boundaries
              conf
@@ -442,7 +441,7 @@ between the two buffers; we don't care which one has comments."
       (cond
        ((and (equal :unmatched markers)
              validity)
-        (call-next-method conf))
+        (cl-call-next-method conf))
 
        ((equal :unmatched markers)
         nil)
@@ -481,15 +480,14 @@ between the two buffers; we don't care which one has comments."
          (lentic-that conf))))
       clone-return)))
 
-(defmethod lentic-invert
+(cl-defmethod lentic-invert
   ((conf lentic-uncommented-chunk-configuration))
   (lentic-commented-chunk-configuration
-   "uncommented-inverted"
    :this-buffer (lentic-that conf)
    :that-buffer (lentic-this conf)
-   :comment (oref conf :comment)
-   :comment-start (oref  conf :comment-start)
-   :comment-stop (oref conf :comment-stop)))
+   :comment (oref conf comment)
+   :comment-start (oref  conf comment-start)
+   :comment-stop (oref conf comment-stop)))
 
 ;; #+end_src
 
@@ -518,7 +516,7 @@ marker, the next close marker is used, and all others are
 ignored."
   :abstract t)
 
-(defmethod lentic-chunk-marker-boundaries
+(cl-defmethod lentic-chunk-marker-boundaries
   ((conf lentic-unmatched-chunk-configuration)
    buffer)
   "Given CONF, a `lentic-configuration' object, find
@@ -554,15 +552,14 @@ an implicit stop."
    lentic-commented-chunk-configuration)
   ())
 
-(defmethod lentic-invert
+(cl-defmethod lentic-invert
   ((conf lentic-unmatched-commented-chunk-configuration))
   (lentic-unmatched-uncommented-chunk-configuration
-   "unmatched-commented-inverted"
    :this-buffer (lentic-that conf)
    :that-buffer (lentic-this conf)
-   :comment (oref conf :comment)
-   :comment-start (oref conf :comment-start)
-   :comment-stop (oref conf :comment-stop)))
+   :comment (oref conf comment)
+   :comment-start (oref conf comment-start)
+   :comment-stop (oref conf comment-stop)))
 
 
 (defclass lentic-unmatched-uncommented-chunk-configuration
@@ -570,15 +567,14 @@ an implicit stop."
    lentic-uncommented-chunk-configuration)
   ())
 
-(defmethod lentic-invert
+(cl-defmethod lentic-invert
   ((conf lentic-unmatched-uncommented-chunk-configuration))
   (lentic-unmatched-commented-chunk-configuration
-   "unmatched-uncommented-inverted"
    :this-buffer (lentic-that conf)
    :that-buffer (lentic-this conf)
-   :comment (oref conf :comment)
-   :comment-start (oref conf :comment-start)
-   :comment-stop (oref conf :comment-stop)))
+   :comment (oref conf comment)
+   :comment-start (oref conf comment-start)
+   :comment-stop (oref conf comment-stop)))
 
 (provide 'lentic-chunk)
 

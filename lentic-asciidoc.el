@@ -9,7 +9,7 @@
 
 ;; The contents of this file are subject to the GPL License, Version 3.0.
 ;;
-;; Copyright (C) 2014,2015,2016, Phillip Lord, Newcastle University
+;; Copyright (C) 2014-2022  Free Software Foundation, Inc.
 ;;
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -34,13 +34,12 @@
 (require 'lentic)
 (require 'lentic-chunk)
 (require 'm-buffer)
-(require 'f)
 
 (defun lentic-asciidoc-oset (conf)
   (lentic-m-oset
    conf
-   :this-buffer (current-buffer)
-   :comment ";; "))
+   'this-buffer (current-buffer)
+   'comment ";; "))
 
 (defun lentic-asciidoc-commented-new ()
   (lentic-asciidoc-oset
@@ -55,8 +54,7 @@
 (defun lentic-clojure-asciidoc-init ()
   (lentic-asciidoc-commented-new))
 
-(add-to-list 'lentic-init-functions
-             'lentic-clojure-asciidoc-init)
+(add-to-list 'lentic-init-functions #'lentic-clojure-asciidoc-init)
 
 (defun lentic-asciidoc-uncommented-new ()
   (lentic-asciidoc-oset
@@ -72,8 +70,7 @@
   (lentic-asciidoc-uncommented-new))
 
 ;;;###autoload
-(add-to-list 'lentic-init-functions
-             'lentic-asciidoc-clojure-init)
+(add-to-list 'lentic-init-functions #'lentic-asciidoc-clojure-init)
 
 
 ;; ** Support Emacs-Lisp
@@ -85,12 +82,11 @@
     :lentic-file
     (concat
      (file-name-sans-extension
-      (buffer-file-name)) ".el"))))
+      buffer-file-name)
+     ".el"))))
 
 ;;;###autoload
-(add-to-list 'lentic-init-functions
-             'lentic-asciidoc-el-init)
-
+(add-to-list 'lentic-init-functions #'lentic-asciidoc-el-init)
 
 (defclass lentic-commented-asciidoc-configuration
   (lentic-commented-chunk-configuration)
@@ -142,7 +138,7 @@ This should remove other \"....\" matches.
            buffer
            (format ";* *\\[source,%s\\]"
                    (regexp-opt
-                    (oref conf :srctags)))))
+                    (oref conf srctags)))))
          ;; this could also be a start of title
          (dots
           (m-buffer-match buffer
@@ -160,23 +156,23 @@ This should remove other \"....\" matches.
        (-map 'cadr source-start)
        (-map 'car source-end)))))
 
-(defmethod lentic-chunk-match
+(cl-defmethod lentic-chunk-match
   ((conf lentic-commented-asciidoc-configuration) buffer)
   (lentic-chunk-match-asciidoc conf buffer))
 
-(defmethod lentic-chunk-match
+(cl-defmethod lentic-chunk-match
   ((conf lentic-uncommented-asciidoc-configuration) buffer)
   (lentic-chunk-match-asciidoc conf buffer))
 
-(defmethod lentic-invert
+(cl-defmethod lentic-invert
   ((conf lentic-commented-asciidoc-configuration))
   (lentic-m-oset (lentic-asciidoc-uncommented-new)
-                 :that-buffer (lentic-this conf)))
+                 'that-buffer (lentic-this conf)))
 
-(defmethod lentic-invert
+(cl-defmethod lentic-invert
   ((conf lentic-uncommented-asciidoc-configuration))
   (lentic-m-oset (lentic-asciidoc-commented-new)
-                 :that-buffer (lentic-this conf)))
+                 'that-buffer (lentic-this conf)))
 
 (provide 'lentic-asciidoc)
 ;;; lentic-asciidoc.el ends here

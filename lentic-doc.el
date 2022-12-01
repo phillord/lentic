@@ -6,7 +6,7 @@
 
 ;; The contents of this file are subject to the GPL License, Version 3.0.
 
-;; Copyright (C) 2015, 2016, Phillip Lord, Newcastle University
+;; Copyright (C) 2015-2022  Free Software Foundation, Inc.
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -34,8 +34,6 @@
 (require 'lentic)
 (require 'lentic-org)
 (require 'lentic-ox)
-(require 'f)
-(require 's)
 ;; #+end_src
 
 
@@ -65,19 +63,20 @@ as a prefix. "
   (let* ((main-file
           (locate-library package))
          (dir
-          (f-parent main-file))
+          (file-name-directory main-file))
          (prefix
-          (concat dir "/" package))
+          (concat dir package))
          (others
-          (f-glob
+          (file-expand-wildcards
            (concat prefix "*.el")))
          (scripts
-          (f-glob
+          (file-expand-wildcards
            (concat prefix "*.els"))))
     (-remove
      (lambda (file)
-       (or (s-match ".*-pkg.el" file)
-           (s-match ".*-autoloads.el" file)))
+       ;; FIXME: Shouldn't this regexp have a \\' to make sure it matches the
+       ;; end of the name?
+       (string-match-p "-\\(pkg\\|autoloads\\).el" file))
      (append others scripts))))
 
 (defun lentic-doc-orgify-if-necessary (file)
@@ -122,12 +121,12 @@ as a prefix. "
 
 ;; #+begin_src emacs-lisp
 ;; remove when it gets into f.el
-(defun lentic-f-swap-ext (path ext)
-  "Return PATH but with EXT as the new extension.
+(defun lentic-f-swap-ext (file ext)
+  "Return FILE but with EXT as the new extension.
 EXT must not be nil or empty."
-  (if (s-blank? ext)
-      (error "extension cannot be empty or nil.")
-    (concat (f-no-ext path) "." ext)))
+  (if (member ext '(nil ""))
+      (error "extension cannot be empty or nil")
+    (concat (file-name-sans-extension file) "." ext)))
 
 (defun lentic-doc-package-start-source (package)
   (let ((doc-var
@@ -138,23 +137,23 @@ EXT must not be nil or empty."
         (if (booleanp
              (symbol-value doc-var))
             (lentic-doc-package-implicit-start-source package)
-          (f-join
-           (f-parent (locate-library package))
-           (symbol-value doc-var)))
+          (expand-file-name
+           (symbol-value doc-var)
+           (file-name-directory (locate-library package))))
       ;; get the default
       (let*
           ((main-file
             (locate-library package))
            (doc-file
             (when main-file
-              (f-join
-               (f-parent main-file)
+              (expand-file-name
                (concat
-                (f-no-ext main-file)
-                "-doc.org")))))
+                (file-name-sans-extension main-file)
+                "-doc.org")
+               (file-name-directory main-file)))))
         (when
             (and doc-file
-                 (f-exists? doc-file))
+                 (file-exists-p doc-file))
             doc-file)))))
 
 (defun lentic-doc-package-implicit-start-source (package)
@@ -163,7 +162,7 @@ EXT must not be nil or empty."
               (lentic-f-swap-ext
                lib
                "org")))
-        (if (f-exists? start)
+        (if (file-exists-p start)
             start))))
 
 (defun lentic-doc-package-doc-file (package)
@@ -184,7 +183,7 @@ EXT must not be nil or empty."
 
 (defun lentic-doc-ensure-doc (package)
   (lentic-doc-ensure-allowed-html package)
-  (unless (f-exists?
+  (unless (file-exists-p
            (lentic-doc-package-doc-file package))
     (lentic-doc-htmlify-package package)))
 

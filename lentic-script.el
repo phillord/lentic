@@ -8,7 +8,7 @@
 ;; Maintainer: Phillip Lord <phillip.lord@russet.org.uk>
 ;; The contents of this file are subject to the GPL License, Version 3.0.
 
-;; Copyright (C) 2016, Phillip Lord, Newcastle University
+;; Copyright (C) 2016-2022  Free Software Foundation, Inc.
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@
     (add-to-list 'lentic-init-functions init)
     (add-hook mode-hook
               (lambda nil
-                (unless lentic-init
+                (unless (bound-and-true-p lentic-init)
                   (setq lentic-init init)))))
  t)
 
@@ -69,7 +69,6 @@
 (defun lentic-python-script-init ()
   (lentic-org-python-oset
    (lentic-cookie-unmatched-commented-chunk-configuration
-    "temp"
     :lentic-file
     (lentic-script-lentic-file))))
 
@@ -80,11 +79,10 @@
 ;;;###autoload
 (defun lentic-bash-script-init ()
   (lentic-cookie-unmatched-commented-chunk-configuration
-   "temp"
    :this-buffer (current-buffer)
    :comment "## "
-   :comment-stop "#\\\+BEGIN_SRC sh"
-   :comment-start "#\\\+END_SRC"
+   :comment-stop "#\\+BEGIN_SRC sh"
+   :comment-start "#\\+END_SRC"
    :lentic-file
    (lentic-script-lentic-file)))
 
@@ -95,11 +93,10 @@
 ;;;###autoload
 (defun lentic-lua-script-init ()
   (lentic-cookie-unmatched-commented-chunk-configuration
-   "temp"
    :this-buffer (current-buffer)
    :comment "-- "
-   :comment-stop "#\\\+BEGIN_SRC lua"
-   :comment-start "#\\\+END_SRC"
+   :comment-stop "#\\+BEGIN_SRC lua"
+   :comment-start "#\\+END_SRC"
    :case-fold-search nil
    :lentic-file
    (lentic-script-lentic-file)))

@@ -1,6 +1,8 @@
-;;; orgel-el-with-tags.el -- an example file
+;;; orgel-el-with-tags.el -- an example file  -*- lexical-binding: t; -*-
 
 ;;; Header:
+
+;; Copyright (C) 2015-2022  Free Software Foundation, Inc.
 
 ;;; Commentary:
 

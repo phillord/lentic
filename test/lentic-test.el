@@ -1,4 +1,4 @@
-;;; lentic-test.el --- Tests
+;;; lentic-test.el --- Tests  -*- lexical-binding: t; -*-
 
 ;;; Header:
 
@@ -32,9 +32,8 @@
 (require 'lentic-org)
 (require 'lentic-rot13)
 (require 'lentic-mode)
-(require 'f)
 
-(require 'load-relative)
+(require 'load-relative nil t)          ;Don't burp if not available.
 
 (require 'assess)
 (require 'assess-call)
@@ -42,10 +41,10 @@
 (setq lentic-condition-case-disabled t)
 
 (defvar lentic-test-dir
-  (f-join
-   (f-parent
-    (f-dirname (__FILE__)))
-   "dev-resources/")
+  (expand-file-name
+   "../dev-resources/"
+   (file-name-directory (if (fboundp 'macroexp-file-name) ;; Emacs≥28
+                            (macroexp-file-name) (__FILE__))))
   "Location of test files.")
 
 ;; (defvar lentic-test-dir
@@ -57,7 +56,7 @@
 (defun lentic-test-file (filename)
   "Fetch the long name of the resource FILENAME."
   (let ((file
-         (f-join lentic-test-dir filename)))
+         (expand-file-name filename lentic-test-dir)))
     (when (not (file-exists-p file))
       (error "Test File does not exist: %s" file))
     file))
@@ -80,7 +79,7 @@
   (let ((comp (lentic-test-clone-to-assess init file cloned-file)))
     (assess= (car comp) (cdr comp))))
 
-(put 'lentic-test-clone= 'ert-explainer 'lentic-test-clone-explain=)
+(put 'lentic-test-clone= 'ert-explainer #'lentic-test-clone-explain=)
 
 (defun lentic-test-clone-explain= (init file cloned-file)
   "With INIT function clone FILE and compare to CLONED-file."
@@ -92,8 +91,8 @@
   (should
    (equal nil
           (oref
-           (lentic-default-configuration "bob")
-           :lentic-mode))))
+           (lentic-default-configuration)
+           lentic-mode))))
 
 (ert-deftest lentic-simple ()
   "Simple clone."
@@ -214,37 +213,32 @@ buffer, else return that buffer."
   ;; most of this is the same as batch-clone..
   (let ((retn nil)
         (f-this
-         (or f-this
-             (lambda ())))
+         (or f-this #'ignore))
         (f-that
-         (or f-that
-             (lambda ()))))
+         (or f-that #'ignore)))
     (assess-with-preserved-buffer-list
-     (let (this that)
-       (with-current-buffer
-           (setq this
-                 (find-file-noselect filename))
-         (setq lentic-init (-list init))
-         (progn
-           (setq that
-                 (car (lentic-init-all-create)))
-           (funcall f-this)
-           (with-current-buffer
-               that
-             (funcall f-that)
-             (unless retn-this
-               (setq retn
-                     (buffer-substring-no-properties
-                      (point-min)
-                      (point-max))))
-             (set-buffer-modified-p nil)))
-         (when retn-this
-           (setq retn
-                 (buffer-substring-no-properties
-                  (point-min)
-                  (point-max))))
-         (set-buffer-modified-p nil)
-         retn)))))
+     (with-current-buffer
+         (find-file-noselect filename)
+       (setq lentic-init (-list init))
+       (let ((that
+              (car (lentic-init-all-create))))
+         (funcall f-this)
+         (with-current-buffer
+             that
+           (funcall f-that)
+           (unless retn-this
+             (setq retn
+                   (buffer-substring-no-properties
+                    (point-min)
+                    (point-max))))
+           (set-buffer-modified-p nil)))
+       (when retn-this
+         (setq retn
+               (buffer-substring-no-properties
+                (point-min)
+                (point-max))))
+       (set-buffer-modified-p nil)
+       retn))))
 
 (defun lentic-test-clone-and-change=
   (init file cloned-file
@@ -382,7 +376,7 @@ This mostly checks my test machinary."
     "orgel-org.el" "orgel-org.el"
     nil
     (lambda ()
-      (show-all)
+      (outline-show-all)
       (goto-char (point-min))
       (forward-line)
       (insert "a")
@@ -397,7 +391,7 @@ This mostly checks my test machinary."
     "orgel-org.el" "orgel-org.el"
     nil
     (lambda ()
-      (show-all)
+      (outline-show-all)
       (goto-char (point-max))
       ;; add a "a" just after the * character of the new line
       (search-backward " Commentary")

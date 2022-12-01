@@ -1,4 +1,4 @@
-;;; lentic-cookie-test.el --- Tests
+;;; lentic-cookie-test.el --- Tests  -*- lexical-binding: t; -*-
 
 ;;; Header:
 

@@ -1,5 +1,6 @@
 ;;; orgel-org.el --- A test file -*- lexical-binding: t -*-
 
+;; Copyright (C) 2016-2022  Free Software Foundation, Inc.
 ;; Author: Phillip Lord
 
 ;;; Commentary:

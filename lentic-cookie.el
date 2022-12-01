@@ -8,7 +8,7 @@
 ;; Maintainer: Phillip Lord <phillip.lord@russet.org.uk>
 ;; The contents of this file are subject to the GPL License, Version 3.0.
 
-;; Copyright (C) 2016, Phillip Lord, Newcastle University
+;; Copyright (C) 2016-2022  Free Software Foundation, Inc.
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -71,15 +71,15 @@ CONF is the `lentic-configuration' object.
 FIRST-LINE-END is the location of the end of the line."
   (lentic-cookie--uncommented-fixup-first-line-1
    (lentic-that conf) first-line-end
-   (oref conf :comment)))
+   (oref conf comment)))
 
-(defmethod lentic-clone
+(cl-defmethod lentic-clone
   ((conf lentic-cookie-uncommented-configuration)
    &optional start stop length-before
    start-converted stop-converted)
   (let ((clone-return
-          (call-next-method conf start stop
-                            length-before start-converted stop-converted)))
+          (cl-call-next-method conf start stop
+                               length-before start-converted stop-converted)))
     (if (lentic-cookie-uncommented-fixup-first-line
          conf
          (cl-cadar
@@ -122,13 +122,10 @@ FIRST-LINE-END is the location of the end of the line."
   (lentic-cookie--commented-fixup-first-line-1
    (lentic-that conf) first-line-end))
 
-(defmethod lentic-clone
+(cl-defmethod lentic-clone
   ((conf lentic-cookie-commented-configuration)
-   &optional start stop length-before
-   start-converted stop-converted)
-  (let ((clone-return
-          (call-next-method conf start stop
-                            length-before start-converted stop-converted)))
+   &optional start stop &rest _)
+  (let ((clone-return (cl-call-next-method)))
     (if
         (or
          ;; next method has done strange things
@@ -161,32 +158,30 @@ FIRST-LINE-END is the location of the end of the line."
    lentic-cookie-uncommented-configuration)
   ())
 
-(defmethod lentic-invert
+(cl-defmethod lentic-invert
   ((conf lentic-cookie-unmatched-uncommented-chunk-configuration))
   (lentic-cookie-unmatched-commented-chunk-configuration
-   "temp4"
    ;; FIXME: Factor this out
    :this-buffer (lentic-that conf)
    :that-buffer (lentic-this conf)
-   :comment (oref conf :comment)
-   :comment-start (oref conf :comment-start)
-   :comment-stop (oref conf :comment-stop)))
+   :comment (oref conf comment)
+   :comment-start (oref conf comment-start)
+   :comment-stop (oref conf comment-stop)))
 
 (defclass lentic-cookie-unmatched-commented-chunk-configuration
   (lentic-unmatched-commented-chunk-configuration
    lentic-cookie-commented-configuration)
   ())
 
-(defmethod lentic-invert
+(cl-defmethod lentic-invert
   ((conf lentic-cookie-unmatched-commented-chunk-configuration))
   (lentic-cookie-unmatched-uncommented-chunk-configuration
-   "temp2"
    ;; FIXME: Factor this out
    :this-buffer (lentic-that conf)
    :that-buffer (lentic-this conf)
-   :comment (oref conf :comment)
-   :comment-start (oref conf :comment-start)
-   :comment-stop (oref conf :comment-stop)))
+   :comment (oref conf comment)
+   :comment-start (oref conf comment-start)
+   :comment-stop (oref conf comment-stop)))
 
 (provide 'lentic-cookie)
 ;;; lentic-cookie ends here

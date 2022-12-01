@@ -10,7 +10,7 @@
 
 ;; The contents of this file are subject to the GPL License, Version 3.0.
 
-;; Copyright (C) 2014, 2015, 2016, Phillip Lord, Newcastle University
+;; Copyright (C) 2014-2022  Free Software Foundation, Inc.
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -44,65 +44,52 @@
 (defun lentic-latex-clojure-oset (conf)
   (lentic-m-oset
    conf
-   :this-buffer (current-buffer)
-   :comment ";; "
-   :comment-start "\\\\end{code}"
-   :comment-stop "\\\\begin{code}"))
+   'this-buffer (current-buffer)
+   'comment ";; "
+   'comment-start "\\\\end{code}"
+   'comment-stop "\\\\begin{code}"))
 
 (defun lentic-clojure-to-latex-new ()
   (lentic-latex-clojure-oset
    (lentic-commented-chunk-configuration
-    "lb-commented clojure latex"
     :lentic-file
-    (concat
-     (file-name-sans-extension
-      (buffer-file-name)) ".tex"))))
+    (concat (file-name-sans-extension buffer-file-name) ".tex"))))
 
 ;;;###autoload
 (defun lentic-clojure-latex-init ()
   (lentic-clojure-to-latex-new))
 
-(add-to-list 'lentic-init-functions
-             'lentic-clojure-latex-init)
+(add-to-list 'lentic-init-functions #'lentic-clojure-latex-init)
 
 
 (defun lentic-latex-to-clojure-new ()
   (lentic-latex-clojure-oset
    (lentic-uncommented-chunk-configuration
-    "lb-commented latex clojure"
     :lentic-file
-    (concat
-     (file-name-sans-extension
-      (buffer-file-name)) ".clj"))))
+    (concat (file-name-sans-extension buffer-file-name) ".clj"))))
 
 ;;;###autoload
 (defun lentic-latex-clojure-init ()
   (lentic-latex-to-clojure-new))
 
-(add-to-list 'lentic-init-functions
-             'lentic-latex-clojure-init)
+(add-to-list 'lentic-init-functions #'lentic-latex-clojure-init)
 
 ;;;###autoload
 (defun lentic-clojure-latex-delayed-init ()
-  (lentic-delayed-init 'lentic-clojure-latex-init))
+  (lentic-delayed-init #'lentic-clojure-latex-init))
 
-(add-to-list 'lentic-init-functions
-             'lentic-clojure-latex-delayed-init)
+(add-to-list 'lentic-init-functions #'lentic-clojure-latex-delayed-init)
 
 ;;;###autoload
 (defun lentic-haskell-latex-init ()
   (lentic-default-configuration
-   "lb-haskell"
    :this-buffer (current-buffer)
    :lentic-file
    (concat
-    (file-name-sans-extension
-     (buffer-file-name))
+    (file-name-sans-extension buffer-file-name)
     ".tex")))
 
-(add-to-list
- 'lentic-init-functions
- 'lentic-haskell-latex-init)
+(add-to-list 'lentic-init-functions #'lentic-haskell-latex-init)
 
 (provide 'lentic-latex-code)
 

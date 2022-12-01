@@ -8,7 +8,7 @@
 ;; Maintainer: Phillip Lord <phillip.lord@russet.org.uk>
 ;; The contents of this file are subject to the GPL License, Version 3.0.
 
-;; Copyright (C) 2014, 2015, 2016, Phillip Lord, Newcastle University
+;; Copyright (C) 2014-2022  Free Software Foundation, Inc.
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -44,12 +44,12 @@
 Lentics are listed in an undefined order."
   (lentic-mode--lentic-list-1 buffer nil))
 
-(defun lentic-mode--lentic-list-1 (buffer seen-buffer)
+(defun lentic-mode--lentic-list-1 (buffer _seen-buffer)
   (let ((buffers))
     (lentic-each
      buffer
      (lambda (b)
-       (setq buffers (cons b buffers))))
+       (push b buffers)))
     buffers))
 
 (defun lentic-mode-buffer-list (buffer &optional frame)
@@ -206,18 +206,18 @@ See also `lentic-mode-move-lentic-window'."
   (interactive)
   (let ((next
          (lentic-mode-find-next-visible-lentic-buffer
-          (current-buffer)))))
-  (if (not next)
-      (message "Cannot swap windows when only one is visible")
-    (lentic-mode-swap-buffer-windows
-     (current-buffer)
-     next)
-    (when (window-live-p
-           (get-buffer-window
-            (current-buffer)))
-      (select-window
-       (get-buffer-window
-        (current-buffer))))))
+          (current-buffer))))
+    (if (not next)
+        (message "Cannot swap windows when only one is visible")
+      (lentic-mode-swap-buffer-windows
+       (current-buffer)
+       next)
+      (when (window-live-p
+             (get-buffer-window
+              (current-buffer)))
+        (select-window
+         (get-buffer-window
+          (current-buffer)))))))
 
 (defun lentic-mode-create-new-view ()
   (let* ((conf (lentic-default-init))
@@ -256,39 +256,23 @@ See also `lentic-mode-move-lentic-window'."
 (defun lentic-mode-toggle-auto-sync-point ()
   (interactive)
   (lentic-when-lentic
-   (oset lentic-config :sync-point
-         (not (oref lentic-config :sync-point)))))
+   (oset lentic-config sync-point
+         (not (oref lentic-config sync-point)))))
 
-(defvar lentic-mode-map (make-sparse-keymap)
+(defvar lentic-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-c ,c") #'lentic-mode-create-from-init)
+    (define-key map (kbd "C-c ,v")
+                #'lentic-mode-create-new-view-in-selected-window)
+    (define-key map (kbd "C-c ,n") #'lentic-mode-next-lentic-buffer)
+    (define-key map (kbd "C-c ,s") #'lentic-mode-swap-lentic-window)
+    (define-key map (kbd "C-c ,h") #'lentic-mode-move-lentic-window)
+    (define-key map (kbd "C-c ,b") #'lentic-mode-split-window-below)
+    (define-key map (kbd "C-c ,t") #'lentic-mode-split-window-right)
+    (define-key map (kbd "C-c ,f") #'lentic-mode-insert-file-local)
+    (define-key map (kbd "C-c ,a") #'lentic-mode-show-all-lentic)
+    map)
   "Keymap for lentic-minor-mode")
-
-(define-key lentic-mode-map
-  (kbd "C-c ,c") 'lentic-mode-create-from-init)
-
-(define-key lentic-mode-map
-  (kbd "C-c ,v") 'lentic-mode-create-new-view-in-selected-window)
-
-(define-key lentic-mode-map
-  (kbd "C-c ,n") 'lentic-mode-next-lentic-buffer)
-
-(define-key lentic-mode-map
-  (kbd "C-c ,s") 'lentic-mode-swap-lentic-window)
-
-(define-key lentic-mode-map
-  (kbd "C-c ,h") 'lentic-mode-move-lentic-window)
-
-(define-key lentic-mode-map
-  (kbd "C-c ,b") 'lentic-mode-split-window-below)
-
-(define-key lentic-mode-map
-  (kbd "C-c ,t") 'lentic-mode-split-window-right)
-
-(define-key lentic-mode-map
-  (kbd "C-c ,f") 'lentic-mode-insert-file-local)
-
-(define-key lentic-mode-map
-  (kbd "C-c ,a") 'lentic-mode-show-all-lentic)
-
 
 (defcustom lentic-mode-line-lighter "Lentic"
   "Default mode lighter for lentic"
@@ -301,13 +285,9 @@ See also `lentic-mode-move-lentic-window'."
   (setq lentic-mode-line
         (format " %s[%s]"
                 lentic-mode-line-lighter
-                (if lentic-config
-                    (s-join ","
-                     (-map
-                      (lambda (conf)
-                        (lentic-mode-line-string conf))
-                      lentic-config))
-                  ""))))
+                (mapconcat #'lentic-mode-line-string
+                           lentic-config
+                           ","))))
 
 (defun lentic-mode-update-all-display ()
   (if lentic-emergency
@@ -337,10 +317,11 @@ See also `lentic-mode-move-lentic-window'."
 ;;;###autoload
 (define-minor-mode lentic-mode
   "Documentation"
-  :lighter lentic-mode-line
-  :keymap lentic-mode-map)
+  :lighter lentic-mode-line)
 
-;;;###autoload
+;; FIXME: Cannot autoload this before `lentic.el' is loaded since otherwise
+;; we get (void-variable lentic-config) errors in redisplay.
+;; ;;;###autoload
 (easy-menu-change
  '("Edit")
  "Lentic"
@@ -370,9 +351,9 @@ See also `lentic-mode-move-lentic-window'."
    (list (completing-read
           "Lentic init function: "
           (mapcar
-           'symbol-name
+           #'symbol-name
            lentic-init-functions)
-          'identity 'confirm)))
+          nil 'confirm)))
   (add-file-local-variable 'lentic-init (intern init-function)))
 
 ;;;###autoload

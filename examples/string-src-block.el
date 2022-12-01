@@ -1,4 +1,6 @@
-;;; lentic_test --- testing it
+;;; lentic_test --- testing it  -*- lexical-binding: t; -*-
+
+;; Copyright (C) 2015-2022  Free Software Foundation, Inc.
 
 ;; #+begin_src emacs-lisp
 (setq org-structure-template-alist

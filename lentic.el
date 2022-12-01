@@ -7,11 +7,11 @@
 ;; Author: Phillip Lord <phillip.lord@russet.org.uk>
 ;; Maintainer: Phillip Lord <phillip.lord@russet.org.uk>
 ;; Version: 0.11
-;; Package-Requires: ((emacs "24.4")(m-buffer "0.13")(dash "2.5.0")(f "0.17.2")(s "1.9.0"))
+;; Package-Requires: ((emacs "25") (m-buffer "0.13") (dash "2.5.0"))
 
 ;; The contents of this file are subject to the GPL License, Version 3.0.
 
-;; Copyright (C) 2014, 2015, 2016, Phillip Lord, Newcastle University
+;; Copyright (C) 2014-2022  Free Software Foundation, Inc.
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -154,7 +154,7 @@
 (require 'eieio)
 (require 'm-buffer)
 (require 'm-buffer-at)
-(require 'f)
+(require 'dash)
 
 (defvar lentic-doc "lenticular.org")
 (defvar lentic-doc-html-files '("lenticular.css"))
@@ -239,7 +239,7 @@ resilient to changes of mode in the current buffer.")
     live) should a lentic-configuration object for this-buffer in
     its `lentic-config'." )
    (creator
-    :initarg :creator
+    :initarg :creator ;; FIXME: Not used.
     :initform nil
     :documentation
     "Non-nil if this lentic-configuration was used to create a
@@ -251,7 +251,7 @@ resilient to changes of mode in the current buffer.")
     :initform nil
     :documentation
     "Non-nil if the file associated with this should be deleted on exit.")
-   (singleton
+   (singleton ;; FIXME: Not used?
     :initarg :singleton
     :initform nil
     :documentation
@@ -264,26 +264,26 @@ resilient to changes of mode in the current buffer.")
     "Non-nil if changes to the location of point in this-buffer
     should be percolated into that-buffer.")
    (last-change-start
-    :initarg :last-change-start
+    :initarg :last-change-start ;; FIXME: Not used.
     :initform nil
     :documentation
     "The location of the start of the last before-change event.
     This should only be set by lentic.")
    (last-change-start-converted
-    :initarg :last-change-start-converted
+    :initarg :last-change-start-converted ;; FIXME: Not used.
     :initform nil
     :documentation
     "The location of the start of the last before-change event,
     converted into the equivalent location in that-buffer. This
     should only be set by lentic.")
    (last-change-stop
-    :initarg :last-change-stop
+    :initarg :last-change-stop ;; FIXME: Not used.
     :initform nil
     :documentation
     "The location of the stop of the last before-change event.
     This should only be set by lentic." )
    (last-change-stop-converted
-    :initarg :last-change-stop-converted
+    :initarg :last-change-stop-converted ;; FIXME: Not used.
     :initform nil
     "The location of the stop of the last before-change event,
     converted into the equivalent location in that-buffer. This
@@ -297,14 +297,14 @@ resilient to changes of mode in the current buffer.")
 ;; to put the documentation.
 
 ;; #+begin_src emacs-lisp
-(defgeneric lentic-create (conf)
+(cl-defgeneric lentic-create (conf)
   "Create the lentic for this configuration.
 Given a `lentic-configuration' object, create the lentic
 appropriate for that configurationuration. It is the callers
 responsibility to check that buffer has not already been
 created.")
 
-(defgeneric lentic-convert (conf location)
+(cl-defgeneric lentic-convert (conf location)
   "Convert LOCATION in this-buffer to an equivalent location in
 that-buffer. LOCATION is a numeric location, rather than a
 marker. By equivalent, we mean the same semantic location as
@@ -312,7 +312,7 @@ determined by the transformation between the buffers. It is
 possible that a given LOCATION could map to more than one
 location in the lentic buffer.")
 
-(defgeneric lentic-clone (conf)
+(cl-defgeneric lentic-clone (conf)
   "Updates that-buffer to reflect the contents in this-buffer.
 
 Updates at least the region that has been given between start and
@@ -335,7 +335,7 @@ STOP-CONVERTED. Otherwise, this should return nil.")
 ;; which is normal when the lentic transformation is asymmetrical.
 
 ;; #+begin_src emacs-lisp
-(defgeneric lentic-invert (conf)
+(cl-defgeneric lentic-invert (conf)
   "Return a new configuration object for the lentic buffer.
 This method is called at the time that the lentic is created. It
 is the callers responsibility to ensure that this is only called
@@ -355,7 +355,7 @@ buffer.")
 ;; as many can be created as required.
 
 ;; #+begin_src emacs-lisp
-(defgeneric lentic-coexist? (this-conf that-conf)
+(cl-defgeneric lentic-coexist? (this-conf that-conf)
   "Return non-nil if THIS-CONF and co-exist with THAT-CONF.
 By co-exist this means that both configurations are valid for a
 given buffer at the same time. A nil return indicates that there
@@ -367,20 +367,20 @@ should only be one of these two for a given buffer.")
 ;; since been deleted anyway.
 
 ;; #+begin_src emacs-lisp
-(defmethod lentic-this ((conf lentic-configuration))
+(cl-defmethod lentic-this ((conf lentic-configuration))
   "Returns this-buffer for this configuration object.
 In most cases, this is likely to be the `current-buffer' but
 this should not be relied on."
-  (oref conf :this-buffer))
+  (oref conf this-buffer))
 
-(defmethod lentic-that ((conf lentic-configuration))
+(cl-defmethod lentic-that ((conf lentic-configuration))
   "Returns the that-buffer for this configuration object.
 This may return nil if there is not that-buffer, probably because
 it has not been created."
-  (and (slot-boundp conf :that-buffer)
-       (oref conf :that-buffer)))
+  (and (slot-boundp conf 'that-buffer)
+       (oref conf that-buffer)))
 
-(defmethod lentic-ensure-that ((conf lentic-configuration))
+(cl-defmethod lentic-ensure-that ((conf lentic-configuration))
   "Get the lentic for this configuration
 or create it if it does not exist."
   (or (lentic-that conf)
@@ -398,10 +398,10 @@ or create it if it does not exist."
 ;; of status keyword return value.
 
 ;; #+begin_src emacs-lisp
-(defmethod lentic-mode-line-string ((conf lentic-configuration))
+(cl-defmethod lentic-mode-line-string ((conf lentic-configuration))
   "Returns a mode-line string for this configuration object."
-  (when (slot-boundp conf :that-buffer)
-    (let ((that (oref conf :that-buffer)))
+  (when (slot-boundp conf 'that-buffer)
+    (let ((that (oref conf that-buffer)))
       (if
           (and that
                (buffer-live-p that))
@@ -428,7 +428,7 @@ or create it if it does not exist."
     "The name of the file that will be associated with that lentic buffer.")
    (lentic-mode
     :initform nil
-    :initarg :lentic-mode
+    :initarg :lentic-mode ;; FIXME: Not used.
     :documentation
     "The mode for that lentic buffer."))
   "Configuration which maintains two lentics with the same contents.")
@@ -450,7 +450,7 @@ advice."
 ;; The default methods should be self-explanatory!
 
 ;; #+begin_src emacs-lisp
-(defmethod lentic-create ((conf lentic-default-configuration))
+(cl-defmethod lentic-create ((conf lentic-default-configuration))
   "Create an new lentic buffer. This creates the new buffer sets
 the mode to the same as the main buffer or which ever is
 specified in the configuration. The current contents of the main
@@ -465,19 +465,19 @@ buffer are copied."
            (format "*lentic: %s*"
                    (buffer-name
                     this-buffer))))
-         (sec-file (oref conf :lentic-file))
+         (sec-file (oref conf lentic-file))
          (sec-mode
           (or
            ;; the specified normal mode
-           (oref conf :lentic-mode)
+           (oref conf lentic-mode)
            ;; if we have a file try normal mode
            (if sec-file
                'normal-mode
              ;; otherwise the same mode as the main file
              major-mode))))
-    (oset conf :creator t)
+    (oset conf creator t)
     ;; make sure this-buffer knows about that-buffer
-    (oset conf :that-buffer that-buffer)
+    (oset conf that-buffer that-buffer)
     ;; init that-buffer with mode, file and config
     ;; the mode must be init'd after adding content in case there are any
     ;; file-local variables need to be evaled
@@ -492,36 +492,42 @@ buffer are copied."
             (list (lentic-invert conf))))
     that-buffer))
 
-(defmethod lentic-coexist? ((this-conf lentic-default-configuration)
+(defun lentic--file-equal-p (f1 f2)
+  (let ((a1 (file-attributes f1))
+        (a2 (file-attributes f2)))
+    (and a1 (equal a1 a2))))
+
+(cl-defmethod lentic-coexist? ((this-conf lentic-default-configuration)
                             that-conf)
   "By default, we can have multiple lentic buffers with the same
 configuration, unless specifically disallowed, or unless it has
 the same associated file as pre-existing buffer (which is going
 to break!)."
   (and
-   (not (oref this-conf :singleton))
+   (not (oref this-conf singleton))
    (not
-    (and (oref this-conf :lentic-file)
-         (oref that-conf :lentic-file)
-         (f-equal? (oref this-conf :lentic-file)
-                   (oref that-conf :lentic-file))))))
+    (and (oref this-conf lentic-file)
+         (oref that-conf lentic-file)
+         (lentic--file-equal-p
+          (oref this-conf lentic-file)
+          (oref that-conf lentic-file))))))
 
-(defmethod lentic-invert ((conf lentic-default-configuration))
+(cl-defmethod lentic-invert ((conf lentic-default-configuration))
   "By default, return a clone of the existing object, but switch
 the this and that buffers around. "
   (clone
    conf
    :this-buffer (lentic-that conf)
    :that-buffer (lentic-this conf)
-   :sync-point (oref conf :sync-point)))
+   :sync-point (oref conf sync-point)))
 
-(defmethod lentic-convert ((conf lentic-default-configuration)
+(cl-defmethod lentic-convert ((_conf lentic-default-configuration)
                            location)
   "The two buffers should be identical, so we just return the
   same location."
   location)
 
-(defmethod lentic-clone ((conf lentic-configuration)
+(cl-defmethod lentic-clone ((conf lentic-configuration)
                                 &optional start stop _length-before
                                 start-converted stop-converted)
   "The default clone method cuts out the before region and pastes
@@ -571,11 +577,9 @@ in the new."
   "Default init function.
 see `lentic-init' for details."
   (lentic-default-configuration
-   (lentic-config-name (current-buffer))
    :this-buffer (current-buffer)))
 
-(add-to-list 'lentic-init-functions
-             'lentic-default-init)
+(add-to-list 'lentic-init-functions #'lentic-default-init)
 
 ;; #+end_src
 
@@ -626,7 +630,7 @@ see `lentic-init' for details."
         ,buffer
       ,@body)))
 
-(defmacro lentic-with-lentic-buffer (buffer &rest body)
+(defmacro lentic-with-lentic-buffer (_buffer &rest body)
   "With BUFFER as current, eval BODY when BUFFER has a lentic."
   (declare (debug t)
            (indent 1))
@@ -726,7 +730,7 @@ SEEN-BUFFER is a list of buffers to ignore."
   (-map
    (lambda (conf)
      (if (and
-          (slot-boundp conf :that-buffer)
+          (slot-boundp conf 'that-buffer)
           (buffer-live-p
            (lentic-that conf)))
          (lentic-that conf)
@@ -755,19 +759,18 @@ SEEN-BUFFER is a list of buffers to ignore."
 (defun lentic-ensure-hooks ()
   "Ensures that the hooks that this mode requires are in place."
   (add-hook 'post-command-hook
-            'lentic-post-command-hook)
-  ;; after and before-change functions are hooks (with args) even if they are
-  ;; not named as such.
+            #'lentic-post-command-hook)
+  ;; FIXME: Do we really need these hook functions to affect *all* buffers?
   (add-hook 'after-change-functions
-            'lentic-after-change-function)
+            #'lentic-after-change-function)
   (add-hook 'before-change-functions
-            'lentic-before-change-function)
+            #'lentic-before-change-function)
   (add-hook 'after-save-hook
-            'lentic-after-save-hook)
+            #'lentic-after-save-hook)
   (add-hook 'kill-buffer-hook
-            'lentic-kill-buffer-hook)
+            #'lentic-kill-buffer-hook)
   (add-hook 'kill-emacs-hook
-            'lentic-kill-emacs-hook))
+            #'lentic-kill-emacs-hook))
 
 ;; #+end_src
 
@@ -902,14 +905,14 @@ This also saves every lentic which is file-associated."
 
 (defun lentic-kill-buffer-hook-1 ()
   "Respond to any buffer being killed.
-If this killed buffer is lentic and is :creator, then kill all
-lentic-buffers recursively. If the buffer is :delete-on-exit,
+If this killed buffer is lentic and is `creator', then kill all
+lentic-buffers recursively. If the buffer is `delete-on-exit',
 then remove any associated file."
   (lentic-when-lentic
    (when
        (and
         (--any?
-         (oref it :delete-on-exit)
+         (oref it delete-on-exit)
          lentic-config)
         ;; might not exist if we not saved yet!
         (file-exists-p buffer-file-name)
@@ -918,20 +921,21 @@ then remove any associated file."
         (not noninteractive)
         ;; or we have blocked this anyway
         (not lentic-kill-retain))
-     (delete-file (buffer-file-name)))
+     (delete-file buffer-file-name))
    ;; if we were the creator buffer, blitz the lentics (which causes their
    ;; files to delete also).
+   ;; FIXME: "-p" is for *p*redicates, not boolean values.
+   (defvar lentic-killing-p)
    (let ((lentic-killing-p t))
      (when
          (and
           (not lentic-killing-p)
           (--any?
-           (oref it :creator)
+           (oref it creator)
            lentic-config))
        (lentic-each
         (current-buffer)
-        (lambda (buffer)
-          (kill-buffer buffer)))))))
+        #'kill-buffer)))))
 
 (defun lentic-kill-emacs-hook ()
   "Error protected call to real `kill-emacs-hook'."
@@ -952,7 +956,7 @@ marked as :delete-on-exit."
        (-map
         (lambda (conf)
           (and
-           (oref conf :delete-on-exit)
+           (oref conf delete-on-exit)
            (file-exists-p buffer-file-name)
            (not noninteractive)
            (delete-file (buffer-file-name))))
@@ -1027,7 +1031,7 @@ SEEN-BUFFER is a list of lentics that have already been updated."
 (defvar lentic-emergency-last-change nil)
 (make-variable-buffer-local 'lentic-emergency-last-change)
 
-(defun lentic-after-change-transform (buffer start stop length-before)
+(defun lentic-after-change-transform (_buffer _start _stop _length-before)
   "Function called after every change percolated by lentic.
 This function does nothing and is meant for advising. See
 lentic-dev."
@@ -1071,7 +1075,7 @@ the change."
                  (lentic-update-contents config
                                          start stop length-before)
                  '(nil nil nil))))
-           (apply 'lentic-after-change-transform
+           (apply #'lentic-after-change-transform
                   (lentic-that config)
                   updates)
            (lentic-after-change-function-1
@@ -1122,22 +1126,22 @@ SEEN-BUFFER is a list of buffers to which the change has been percolated."
                (not (buffer-live-p (lentic-that config))))
          (lentic-widen
              config
-           (oset config :last-change-start start)
+           (oset config last-change-start start)
            (oset config
-                 :last-change-start-converted
+                 last-change-start-converted
                  (lentic-convert
                   config
                   start))
-           (oset config :last-change-stop stop)
+           (oset config last-change-stop stop)
            (oset config
-                 :last-change-stop-converted
+                 last-change-stop-converted
                  (lentic-convert
                   config
                   stop))
            (lentic-before-change-function-1
             (lentic-that config)
-            (oref config :last-change-start-converted)
-            (oref config :last-change-stop-converted)
+            (oref config last-change-start-converted)
+            (oref config last-change-stop-converted)
             seen-buffer))))
      lentic-config)))
 ;; #+end_src
@@ -1177,9 +1181,9 @@ LENGTH-BEFORE is the length of area before the change."
          (and start stop length-before)))
     (when
         (and no-fall-back
-             (< (+ start length-before) (oref conf :last-change-stop)))
+             (< (+ start length-before) (oref conf last-change-stop)))
       (let ((diff
-             (- (oref conf :last-change-stop)
+             (- (oref conf last-change-stop)
                 (+ start length-before))))
         (lentic-log "Skew detected %s" this-command)
         (cl-incf length-before diff)
@@ -1188,22 +1192,22 @@ LENGTH-BEFORE is the length of area before the change."
         ((start-converted
           (when
               (and no-fall-back
-                   (oref conf :last-change-start-converted))
+                   (oref conf last-change-start-converted))
             (set-marker (make-marker)
-                        (oref conf :last-change-start-converted)
+                        (oref conf last-change-start-converted)
                         (lentic-that conf))))
          (stop-converted
           (when
               (and no-fall-back
-                   (oref conf :last-change-stop-converted))
+                   (oref conf last-change-stop-converted))
             (set-marker (make-marker)
-                        (oref conf :last-change-stop-converted)
+                        (oref conf last-change-stop-converted)
                         (lentic-that conf)))))
       ;; used these, so dump them
-      (oset conf :last-change-start nil)
-      (oset conf :last-change-start-converted nil)
-      (oset conf :last-change-stop nil)
-      (oset conf :last-change-stop-converted nil)
+      (oset conf last-change-start nil)
+      (oset conf last-change-start-converted nil)
+      (oset conf last-change-stop nil)
+      (oset conf last-change-stop-converted nil)
       (lentic-widen
           conf
         (if (not no-fall-back)
@@ -1216,7 +1220,7 @@ LENGTH-BEFORE is the length of area before the change."
 This also attempts to update any windows so that they show the
 same top-left location. Update details depend on CONF."
   ;; only sync when we are told to!
-  (when (oref conf :sync-point)
+  (when (oref conf sync-point)
     (let* ((from-point
             (lentic-convert
              conf
@@ -1337,7 +1341,7 @@ Return the lentic contents without properties."
         ;; don't delete -- we haven't saved but there
         ;; might already be a file with the same name,
         ;; which will get deleted
-        (oset (car lentic-config) :delete-on-exit nil)
+        (oset (car lentic-config) delete-on-exit nil)
         (kill-buffer))
       (set-buffer-modified-p nil)
       (kill-buffer))

@@ -10,7 +10,7 @@
 
 ;; The contents of this file are subject to the GPL License, Version 3.0.
 
-;; Copyright (C) 2014, 2015, 2016, Phillip Lord, Newcastle University
+;; Copyright (C) 2014-2022  Free Software Foundation, Inc.
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -37,26 +37,22 @@
 (defun lentic-markdown-clojure-oset (conf)
   (lentic-m-oset
    conf
-   :this-buffer (current-buffer)
-   :comment ";; "
-   :comment-start "```$"
-   :comment-stop "```{.*}$"))
+   'this-buffer (current-buffer)
+   'comment ";; "
+   'comment-start "```$"
+   'comment-stop "```{.*}$"))
 
 (defun lentic-clojure-to-markdown-new ()
   (lentic-markdown-clojure-oset
    (lentic-commented-chunk-configuration
-    "lb-commented clojure latex"
     :lentic-file
-    (concat
-     (file-name-sans-extension
-      (buffer-file-name)) ".md"))))
+    (concat (file-name-sans-extension buffer-file-name) ".md"))))
 
 ;;;###autoload
 (defun lentic-clojure-markdown-init ()
   (lentic-clojure-to-markdown-new))
 
-(add-to-list 'lentic-init-functions
-             'lentic-clojure-markdown-init)
+(add-to-list 'lentic-init-functions #'lentic-clojure-markdown-init)
 
 (provide 'lentic-markdown)
 

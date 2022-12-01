@@ -4,6 +4,7 @@
 
 ;; This file is not part of anything
 
+;; Copyright (C) 2014-2022  Free Software Foundation, Inc.
 ;; Author: Phillip Lord <phillip.lord@newcastle.ac.uk>
 
 ;; * Commentary:

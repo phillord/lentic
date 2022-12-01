@@ -9,7 +9,7 @@
 
 ;; The contents of this file are subject to the GPL License, Version 3.0.
 
-;; Copyright (C) 2014,2015,2016 Phillip Lord, Newcastle University
+;; Copyright (C) 2014-2022  Free Software Foundation, Inc.
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -75,38 +75,34 @@
 (defun lentic-org-oset (conf)
   (lentic-m-oset
    conf
-   :this-buffer (current-buffer)
-   :comment ";; "
-   :comment-stop "#\\\+BEGIN_SRC emacs-lisp.*"
-   :comment-start "#\\\+END_SRC"))
+   'this-buffer (current-buffer)
+   'comment ";; "
+   'comment-stop "#\\+BEGIN_SRC emacs-lisp.*"
+   'comment-start "#\\+END_SRC"))
 
 ;;;###autoload
 (defun lentic-org-el-init ()
   (lentic-org-oset
    (lentic-unmatched-uncommented-chunk-configuration
-    "lb-org-to-el"
     :lentic-file
     (concat
      (file-name-sans-extension
-      (buffer-file-name))
+      buffer-file-name)
      ".el"))))
 
-(add-to-list 'lentic-init-functions
-             'lentic-org-el-init)
+(add-to-list 'lentic-init-functions #'lentic-org-el-init)
 
 ;;;###autoload
 (defun lentic-el-org-init ()
   (lentic-org-oset
    (lentic-unmatched-commented-chunk-configuration
-    "lb-el-to-org"
     :lentic-file
     (concat
      (file-name-sans-extension
-      (buffer-file-name))
+      buffer-file-name)
      ".org"))))
 
-(add-to-list 'lentic-init-functions
-             'lentic-el-org-init)
+(add-to-list 'lentic-init-functions #'lentic-el-org-init)
 ;; #+END_SRC
 
 
@@ -278,7 +274,7 @@ into
    ";;; \\1:\\2"))
 
 
-(defmethod lentic-clone
+(cl-defmethod lentic-clone
   ((conf lentic-org-to-orgel-configuration)
    &optional start stop length-before
    start-converted stop-converted)
@@ -333,8 +329,8 @@ into
                stop-converted)
             stop-converted))
          (clone-return
-          (call-next-method conf start stop length-before
-                            start-converted stop-converted))
+          (cl-call-next-method conf start stop length-before
+                               start-converted stop-converted))
          (first-line-end-match
           (cl-cadar
            (m-buffer-match-first-line
@@ -348,12 +344,12 @@ into
           nil
         clone-return))))
 
-(defmethod lentic-convert
+(cl-defmethod lentic-convert
   ((conf lentic-org-to-orgel-configuration)
    location)
-  (let ((converted (call-next-method conf location)))
+  (let ((converted (cl-call-next-method conf location)))
     (m-buffer-with-current-position
-        (oref conf :this-buffer)
+        (oref conf this-buffer)
         location
       (beginning-of-line)
       (if (looking-at
@@ -365,7 +361,7 @@ into
           (cond
            ((= location (nth 2 (match-data)))
             (m-buffer-at-line-beginning-position
-             (oref conf :that-buffer)
+             (oref conf that-buffer)
              converted))
            ((< location (nth 5 (match-data)))
             (- converted 1))
@@ -373,26 +369,24 @@ into
             converted))
         converted))))
 
-(defmethod lentic-invert
+(cl-defmethod lentic-invert
   ((conf lentic-org-to-orgel-configuration))
   (lentic-m-oset
    (lentic-orgel-org-init)
-   :that-buffer
+   'that-buffer
    (lentic-this conf)))
 
 ;;;###autoload
 (defun lentic-org-orgel-init ()
   (lentic-org-oset
    (lentic-org-to-orgel-configuration
-    "lb-orgel-to-el"
     :lentic-file
     (concat
      (file-name-sans-extension
-      (buffer-file-name))
+      buffer-file-name)
      ".el"))))
 
-(add-to-list 'lentic-init-functions
-             'lentic-org-orgel-init)
+(add-to-list 'lentic-init-functions #'lentic-org-orgel-init)
 ;; #+END_SRC
 
 ;; **** orgel->org
@@ -410,7 +404,7 @@ into
 (defun lentic-orgel-org-init-default-hook (conf)
   ;; Better to open all trees in lentic so that both buffers appears the same
   ;; size.
-  (show-all)
+  (outline-show-all)
   ;; Archiving very easy to and almost always a disaster when it removes an
   ;; entire tree from the buffer.
   (require 'org-archive)
@@ -438,22 +432,17 @@ into
   (lentic-unmatched-chunk-configuration lentic-commented-chunk-configuration)
   ())
 
-(defmethod lentic-create
-  ((conf lentic-orgel-to-org-configuration))
+(cl-defmethod lentic-create ((conf lentic-orgel-to-org-configuration))
   (let ((buf
-         (call-next-method conf)))
+         (cl-call-next-method conf)))
     (with-current-buffer
         buf
       (run-hook-with-args 'lentic-orgel-org-init-hook conf))
     buf))
 
-(defmethod lentic-clone
-  ((conf lentic-orgel-to-org-configuration)
-   &optional start stop length-before start-converted stop-converted)
+(cl-defmethod lentic-clone ((conf lentic-orgel-to-org-configuration) &rest _)
   ;; do everything else to the buffer
-  (let* ((clone-return
-          (call-next-method conf start stop length-before
-                            start-converted stop-converted))
+  (let* ((clone-return (cl-call-next-method))
          (m1
           (m-buffer-replace-match
            (m-buffer-match
@@ -483,22 +472,22 @@ into
       ;; return nil
       clone-return)))
 
-(defmethod lentic-convert
+(cl-defmethod lentic-convert
   ((conf lentic-orgel-to-org-configuration)
    location)
   ;; if we are a header one and we are *after* the first :, then just call
   ;; next-method.
   (let* ((cnm
-         (call-next-method conf location))
+          (cl-call-next-method conf location))
         (line-start-that
          (m-buffer-at-line-beginning-position
-          (oref conf :that-buffer) cnm))
+          (oref conf that-buffer) cnm))
         (line-start-this
          (m-buffer-at-line-beginning-position
-          (oref conf :this-buffer) location)))
+          (oref conf this-buffer) location)))
     (if
         (m-buffer-with-current-position
-            (oref conf :this-buffer)
+            (oref conf this-buffer)
             location
           (beginning-of-line)
           (looking-at
@@ -521,29 +510,27 @@ into
             (+ cnm 1))))
       cnm)))
 
-(defmethod lentic-invert
+(cl-defmethod lentic-invert
   ((conf lentic-orgel-to-org-configuration))
   (lentic-m-oset
    (lentic-org-orgel-init)
-   :delete-on-exit t
-   :that-buffer (lentic-this conf)))
+   'delete-on-exit t
+   'that-buffer (lentic-this conf)))
 
 ;;;###autoload
 (defun lentic-orgel-org-init ()
   (lentic-org-oset
    (lentic-orgel-to-org-configuration
-    "lb-orgel-to-org"
     ;; we don't really need a file and could cope without, but org mode assumes
     ;; that the buffer is file name bound when it exports. As it happens, this
     ;; also means that file saving is possible which in turn saves the el file
     :lentic-file
     (concat
      (file-name-sans-extension
-      (buffer-file-name))
+      buffer-file-name)
      ".org"))))
 
-(add-to-list 'lentic-init-functions
-             'lentic-orgel-org-init)
+(add-to-list 'lentic-init-functions #'lentic-orgel-org-init)
 
 ;; #+END_SRC
 
@@ -554,38 +541,34 @@ into
 (defun lentic-org-clojure-oset (conf)
   (lentic-m-oset
    conf
-   :this-buffer (current-buffer)
-   :comment ";; "
-   :comment-stop "#\\\+BEGIN_SRC clojure.*"
-   :comment-start "#\\\+END_SRC"))
+   'this-buffer (current-buffer)
+   'comment ";; "
+   'comment-stop "#\\+BEGIN_SRC clojure.*"
+   'comment-start "#\\+END_SRC"))
 
 ;;;###autoload
 (defun lentic-org-clojure-init ()
   (lentic-org-clojure-oset
    (lentic-unmatched-uncommented-chunk-configuration
-    "lb-org-to-clojure"
     :lentic-file
     (concat
      (file-name-sans-extension
-      (buffer-file-name))
+      buffer-file-name)
      ".clj"))))
 
-(add-to-list 'lentic-init-functions
-             'lentic-org-clojure-init)
+(add-to-list 'lentic-init-functions #'lentic-org-clojure-init)
 
 ;;;###autoload
 (defun lentic-clojure-org-init ()
   (lentic-org-clojure-oset
    (lentic-unmatched-commented-chunk-configuration
-    "lb-clojure-to-org"
     :lentic-file
     (concat
      (file-name-sans-extension
-      (buffer-file-name))
+      buffer-file-name)
      ".org"))))
 
-(add-to-list 'lentic-init-functions
-             'lentic-clojure-org-init)
+(add-to-list 'lentic-init-functions #'lentic-clojure-org-init)
 ;; #+END_SRC
 
 ;; ** org->python
@@ -594,38 +577,34 @@ into
 (defun lentic-org-python-oset (conf)
   (lentic-m-oset
    conf
-   :this-buffer (current-buffer)
-   :comment "## "
-   :comment-stop "#\\\+BEGIN_SRC python.*"
-   :comment-start "#\\\+END_SRC"))
+   'this-buffer (current-buffer)
+   'comment "## "
+   'comment-stop "#\\+BEGIN_SRC python.*"
+   'comment-start "#\\+END_SRC"))
 
 ;;;###autoload
 (defun lentic-org-python-init ()
   (lentic-org-python-oset
    (lentic-unmatched-uncommented-chunk-configuration
-    "lb-org-to-python"
     :lentic-file
     (concat
      (file-name-sans-extension
-      (buffer-file-name))
+      buffer-file-name)
      ".py"))))
 
-(add-to-list 'lentic-init-functions
-             'lentic-org-python-init)
+(add-to-list 'lentic-init-functions #'lentic-org-python-init)
 
 ;;;###autoload
 (defun lentic-python-org-init ()
   (lentic-org-python-oset
    (lentic-unmatched-commented-chunk-configuration
-    "lb-python-to-org"
     :lentic-file
     (concat
      (file-name-sans-extension
-      (buffer-file-name))
+      buffer-file-name)
      ".org"))))
 
-(add-to-list 'lentic-init-functions
-             'lentic-python-org-init)
+(add-to-list 'lentic-init-functions #'lentic-python-org-init)
 ;; #+end_src
 
 ;;; Footer:

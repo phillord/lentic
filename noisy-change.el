@@ -9,7 +9,7 @@
 
 ;; The contents of this file are subject to the GPL License, Version 3.0.
 
-;; Copyright (C) 2014, 2016, Phillip Lord, Newcastle University
+;; Copyright (C) 2014-2022  Free Software Foundation, Inc.
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -65,11 +65,10 @@
   (noisy-change-log "after(%s,%s,%s,%s)" start stop length
                     this-command))
 
-(add-hook 'before-change-functions
-          'noisy-change-before-function)
+;; FIXME: The mere act of loading a file should not make such changes.
+(add-hook 'before-change-functions #'noisy-change-before-function)
 
-(add-hook 'after-change-functions
-          'noisy-change-after-function)
+(add-hook 'after-change-functions #'noisy-change-after-function)
 
 ;; Local Variables:
 ;; no-update-autoloads: t
