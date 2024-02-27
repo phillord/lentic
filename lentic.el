@@ -11,7 +11,7 @@
 
 ;; The contents of this file are subject to the GPL License, Version 3.0.
 
-;; Copyright (C) 2014-2022  Free Software Foundation, Inc.
+;; Copyright (C) 2014-2024  Free Software Foundation, Inc.
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -616,26 +616,22 @@ see `lentic-init' for details."
   "When BUFFER is a live buffer eval BODY."
   (declare (debug t)
            (indent 1))
-  `(when (and ,buffer
-              (buffer-live-p ,buffer))
+  `(when (buffer-live-p ,buffer)
      ,@body))
 
 (defmacro lentic-when-with-current-buffer (buffer &rest body)
   "When BUFFER is a live buffer eval BODY with BUFFER current."
   (declare (debug t)
            (indent 1))
-  `(lentic-when-buffer
-    ,buffer
-    (with-current-buffer
-        ,buffer
-      ,@body)))
+  `(lentic-when-buffer ,buffer
+     (with-current-buffer ,buffer
+       ,@body)))
 
-(defmacro lentic-with-lentic-buffer (_buffer &rest body)
+(defmacro lentic-with-lentic-buffer (buffer &rest body)
   "With BUFFER as current, eval BODY when BUFFER has a lentic."
   (declare (debug t)
            (indent 1))
-  `(lentic-when-with-current-buffer
-       buffer
+  `(lentic-when-with-current-buffer ,buffer
      (when lentic-config
        ,@body)))
 
@@ -1286,13 +1282,8 @@ Returns OBJ. See also `lentic-a-oset'"
   "On OBJ, set all properties in PLIST.
 This is a utility function which just does the same as oset, but
 for lots of things at once. Returns OBJ."
-  (-map
-   (lambda (n)
-     (eieio-oset
-      obj
-      (car n)
-      (cadr n)))
-   (-partition 2 plist))
+  (dolist (n (-partition 2 plist))
+    (eieio-oset obj (car n) (cadr n)))
   obj)
 ;; #+end_src
 

@@ -8,7 +8,7 @@
 ;; Maintainer: Phillip Lord <phillip.lord@russet.org.uk>
 ;; The contents of this file are subject to the GPL License, Version 3.0.
 
-;; Copyright (C) 2014-2022  Free Software Foundation, Inc.
+;; Copyright (C) 2014-2024  Free Software Foundation, Inc.
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -293,12 +293,9 @@ See also `lentic-mode-move-lentic-window'."
   (if lentic-emergency
       (setq lentic-mode-line
             (format " %s[Emergency]" lentic-mode-line-lighter))
-    (-map
-     (lambda (b)
-       (lentic-when-with-current-buffer
-           b
-         (lentic-mode-update-mode-line)))
-     (buffer-list))
+    (dolist (b (buffer-list))
+      (lentic-when-with-current-buffer b
+        (lentic-mode-update-mode-line)))
     (force-mode-line-update t)))
 
 ;; ** lentic self-doc

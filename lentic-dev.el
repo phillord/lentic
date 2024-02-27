@@ -8,7 +8,7 @@
 ;; Maintainer: Phillip Lord <phillip.lord@russet.org.uk>
 ;; The contents of this file are subject to the GPL License, Version 3.0.
 
-;; Copyright (C) 2014-2022  Free Software Foundation, Inc.
+;; Copyright (C) 2014-2024  Free Software Foundation, Inc.
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -127,9 +127,8 @@ to make sure there is a new one."
 
 ;; #+begin_src emacs-lisp
 
-(defvar lentic-dev-insert-face
-  "Start face to use for inserted text."
-  'font-lock-keyword-face)
+(defvar lentic-dev-insert-face 'font-lock-keyword-face
+  "Start face to use for inserted text.")
 
 ;;;###autoload
 (defun lentic-dev-random-face ()

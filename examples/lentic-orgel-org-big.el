@@ -11,7 +11,7 @@
 
 ;; The contents of this file are subject to the GPL License, Version 3.0.
 
-;; Copyright (C) 2014-2022  Free Software Foundation, Inc.
+;; Copyright (C) 2014-2024  Free Software Foundation, Inc.
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -605,27 +605,26 @@ REST is currently just ignored."
 (defun lentic-update-contents (conf &optional start stop length-before)
   "Update the contents of that-buffer with the contents of this-buffer.
 Update mechanism depends on CONF."
-  (unwind-protect
-      (m-buffer-with-markers
-          ((start-converted
-            (when (oref conf last-change-start-converted)
-              (set-marker (make-marker)
-                          (oref conf last-change-start-converted)
-                          (oref conf that-buffer))))
-           (stop-converted
-            (when (oref conf last-change-stop-converted)
-                (set-marker (make-marker)
-                            (oref conf last-change-stop-converted)
-                            (oref conf that-buffer)))))
-        ;; used these, so dump them
-        (oset conf last-change-start-converted nil)
-        (oset conf last-change-stop-converted nil)
-        (setq inhibit-read-only t)
-        ;;(lentic-log
-        ;;"Update config: %s" lentic-config)
-        (lentic-clone conf start stop length-before
-                             start-converted stop-converted)
-        (setq inhibit-read-only nil))))
+  (m-buffer-with-markers
+   ((start-converted
+     (when (oref conf last-change-start-converted)
+       (set-marker (make-marker)
+                   (oref conf last-change-start-converted)
+                   (oref conf that-buffer))))
+    (stop-converted
+     (when (oref conf last-change-stop-converted)
+       (set-marker (make-marker)
+                   (oref conf last-change-stop-converted)
+                   (oref conf that-buffer)))))
+   ;; used these, so dump them
+   (oset conf last-change-start-converted nil)
+   (oset conf last-change-stop-converted nil)
+   (setq inhibit-read-only t)
+   ;;(lentic-log
+   ;;"Update config: %s" lentic-config)
+   (lentic-clone conf start stop length-before
+                 start-converted stop-converted)
+   (setq inhibit-read-only nil)))
 
 (defun lentic-update-point (conf)
   "Update the location of point in that-buffer to reflect this-buffer.
