@@ -5,7 +5,7 @@
 # FIXME: `ox-texinfo` should use sane defaults like the file's name
 #        for TEXINFO_DIR_TITLE and the TITLE for TEXINFO_DIR_DESC?
 #+TEXINFO_DIR_CATEGORY: Emacs
-#+TEXINFO_DIR_TITLE: * lentic (lenticular).
+#+TEXINFO_DIR_TITLE: * lentic: (lenticular).
 #+TEXINFO_DIR_DESC: Lenticular Text For Emacs
 
 #+INFOJS_OPT: view:info toc:nil
@@ -43,16 +43,8 @@ to get started with.
 
 ** Installing
 
-Lentic can be installed using MELPA or Marmalade. Personally, I like MELPA
-stable, so add the following to your ~.emacs~ file.
-
-#+begin_src emacs-lisp
-(add-to-list 'package-archives
-             '("melpa-stable" . "http://stable.melpa.org/packages/") t)
-#+end_src
-
-Now install "lentic" and then type ~M-x global-lentic-mode~.
-
+Lentic can be installed from GNU ELPA, e.g. with ~M-x list-packages~.
+Once "lentic" is installed, type ~M-x global-lentic-mode~.
 
 ** With existing lentic source
 
