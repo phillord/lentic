@@ -2,6 +2,12 @@
 #+TITLE: Lenticular Text For Emacs
 #+AUTHOR: Phillip Lord
 
+# FIXME: `ox-texinfo` should use sane defaults like the file's name
+#        for TEXINFO_DIR_TITLE and the TITLE for TEXINFO_DIR_DESC?
+#+TEXINFO_DIR_CATEGORY: Emacs
+#+TEXINFO_DIR_TITLE: * lentic (lenticular).
+#+TEXINFO_DIR_DESC: Lenticular Text For Emacs
+
 #+INFOJS_OPT: view:info toc:nil
 
 
