@@ -6,7 +6,7 @@
 
 ;; Author: Phillip Lord <phillip.lord@russet.org.uk>
 ;; Maintainer: Phillip Lord <phillip.lord@russet.org.uk>
-;; Version: 0.11
+;; Version: 0.12
 ;; Package-Requires: ((emacs "25") (m-buffer "0.13") (dash "2.5.0"))
 
 ;; The contents of this file are subject to the GPL License, Version 3.0.
@@ -80,11 +80,11 @@
 
 ;;; Usage:
 
-;; lentic can be installed through MELPA/Marmalade then add
+;; lentic can be installed from GNU ELPA/Marmalade then add
 
-;; (global-lentic-mode)
+;;     (global-lentic-mode 1)
 
-;; to your .emacs.
+;; to your init file.
 
 ;; The main user entry points are accessible through the lentic edit menu, or
 ;; through `global-lentic-mode' which adds keybindings to create and manipulate
